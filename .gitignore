@@ -1,0 +1,22 @@
+# Ignorar archivos de compilación
+*.o
+*.exe
+*.out
+
+# Ignorar archivos de configuración
+*.env
+*.config
+
+# Ignorar carpetas de dependencias
+node_modules/
+
+# Ignorar archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos de log
+*.log
+
+# Ignorar directorios de desarrollo
+.idea/
+.vscode/

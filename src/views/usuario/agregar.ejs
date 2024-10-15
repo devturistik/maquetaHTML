@@ -1,0 +1,116 @@
+<%- include('../partials/header', { title: 'Agregar Usuario'}) %>
+
+<!-- Content wrapper -->
+<div class="content-wrapper">
+  <!-- Content -->
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-usuario">
+      <form action="/usuarios" method="POST">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-6 row-gap-4">
+          <div class="d-flex flex-column justify-content-center">
+            <h4 class="mb-1">Agregar Usuario</h4>
+            <p class="mb-0">Usuarios para los sistemas.</p>
+          </div>
+          <div class="d-flex align-content-center flex-wrap gap-4">
+            <div class="d-flex gap-4">
+              <a href="/usuarios" class="btn btn-label-secondary">Regresar</a>
+              <button type="button" class="btn btn-label-secondary" onclick="clearForm(this)">Cancelar</button>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </div>
+        </div>
+
+        <!-- Mensaje de error -->
+        <% if (typeof error !== "undefined" && error) { %>
+          <div class="alert alert-danger">
+            <%= error || "" %>
+          </div>
+        <% } %>
+
+        <!-- Mensaje de éxito -->
+        <% if (typeof success_msg !== "undefined" && success_msg) { %>
+          <div class="alert alert-success">
+            <%= success_msg || "" %>
+          </div>
+        <% } %>
+
+        <div class="row">
+          <div class="col-12 col-lg-12">
+            <div class="card mb-6">
+              <div class="card-header">
+                <h5 class="card-title mb-0">Información del Usuario</h5>
+              </div>
+              <div class="card-body">
+                <div class="row mb-6">
+                  <div class="col">
+                    <label class="form-label" for="usuario-nombre">Nombre</label>
+                    <input type="text" class="form-control" id="usuario-nombre" placeholder="Elvis" name="usuarioNombre" aria-label="Usuario Nombre" />
+                  </div>
+                  <div class="col">
+                    <label class="form-label" for="usuario-apellido">Apellido</label>
+                    <input type="text" class="form-control" id="usuario-apellido" placeholder="Santeliz" name="usuarioApellido" aria-label="Usuario Apellido" />
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <label class="form-label" for="usuario-departamento">Departamento</label>
+                  <select id="usuario-departamento" class="select2 form-select" name="usuarioDepartamento">
+                    <option value="">Seleccione:</option>
+                    <option value="TI">TI</option>
+                    <option value="MARKETING">MARKETING</option>
+                    <option value="FINANZAS">FINANZAS</option>
+                    <option value="COMERCIAL">COMERCIAL</option>
+                    <option value="CERRO">CERRO</option>
+                  </select>
+                </div>
+                <div class="row mb-6">
+                  <div class="col">
+                    <label class="form-label" for="usuario-correo">Correo</label>
+                    <input type="email" class="form-control" id="usuario-correo" placeholder="esanteliz@turistik.com" name="usuarioCorreo" aria-label="Correo de Usuario" />
+                  </div>
+                  <div class="col">
+                    <label class="form-label" for="usuario-clave">Contraseña</label>
+                    <input type="password" class="form-control" id="usuario-clave" placeholder="*******************" name="usuarioClave" aria-label="Contraseña de Usuario" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%- include('../partials/footer-text') %>
+  <div class="content-backdrop fade"></div>
+</div>
+<%- include('../partials/footer') %>
+
+<script src="../../assets/js/app-turistik-usuarios-add.js"></script>
+<script>
+  // Función para ocultar mensajes después de 5 segundos
+  window.onload = function() {
+    const successMsg = document.querySelector('.alert-success');
+    const errorMsg = document.querySelector('.alert-danger');
+
+    if (successMsg) {
+      setTimeout(() => {
+        successMsg.style.display = 'none';
+      }, 5000); // Oculta después de 5000 ms (5 segundos)
+    }
+
+    if (errorMsg) {
+      setTimeout(() => {
+        errorMsg.style.display = 'none';
+      }, 5000); // Oculta después de 5000 ms (5 segundos)
+    }
+  };
+
+  function clearForm(button) {
+    const form = button.closest('form'); // Encuentra el formulario más cercano
+    if (form) {
+      form.reset(); // Limpia todos los campos del formulario
+    } else {
+      console.error('Formulario no encontrado.');
+    }
+  }
+</script>

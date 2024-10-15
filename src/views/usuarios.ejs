@@ -1,0 +1,102 @@
+<%- include('partials/header', { title: 'Usuarios' }) %>
+<div class="content-wrapper">
+  <!-- Content -->
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <!-- Product List Widget -->
+    <div class="card mb-6">
+      <div class="card-widget-separator-wrapper">
+        <div class="card-body card-widget-separator">
+          <div class="row gy-4 gy-sm-1">
+            <div class="col-sm-6 col-lg-4">
+              <div class="d-flex justify-content-between align-items-start card-widget-1 border-end pb-4 pb-sm-0">
+                <div>
+                  <p class="mb-1">Total Usuarios</p>
+                  <h4 id="total-users" class="mb-1"></h4>
+                  <p class="mb-0"><span class="me-2">Cargados desde API</span></p>
+                </div>
+                <span class="avatar me-sm-6">
+                  <span class="avatar-initial rounded"><i class="ti-28px ti ti-users text-heading"></i></span>
+                </span>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="d-flex justify-content-between align-items-start card-widget-2 border-end pb-4 pb-sm-0">
+                <div>
+                  <p class="mb-1">Usuarios Activos</p>
+                  <h4 id="active-users" class="mb-1"></h4>
+                  <p class="mb-0"><span class="me-2">Cargados desde API</span></p>
+                </div>
+                <span class="avatar p-2 me-lg-6">
+                  <span class="avatar-initial rounded"><i class="ti-28px ti ti-user-check text-heading"></i></span>
+                </span>
+              </div>
+            </div>
+            <div class="col-sm-6 col-lg-4">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <p class="mb-1">Usuarios Inactivos</p>
+                  <h4 id="inactive-users" class="mb-1"></h4>
+                  <p class="mb-0"><span class="me-2">Cargados desde API</span></p>
+                </div>
+                <span class="avatar p-2">
+                  <span class="avatar-initial rounded"><i class="ti-28px ti ti-user-x text-heading"></i></span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje de error -->
+    <% if (typeof error !== "undefined" && error) { %>
+      <div class="alert alert-danger">
+        <%= error || "" %>
+      </div>
+    <% } %>
+
+    <!-- Mensaje de éxito -->
+    <% if (typeof success_msg !== "undefined" && success_msg) { %>
+      <div class="alert alert-success">
+        <%= success_msg || "" %>
+      </div>
+    <% } %>
+
+    <!-- Product List Table -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Listado de Usuarios</h5>
+      </div>
+      <div class="card-datatable table-responsive">
+        <table id="usuariosTable" class="datatables-products table">
+          <thead class="border-top">
+            <tr>
+              <th></th>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Apellido</th>
+              <th>Departamento</th>
+              <th>Correo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Las filas de usuarios se añadirán dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- / Content -->
+
+
+  <%- include('partials/footer-text') %>
+  <div class="content-backdrop fade"></div>
+</div>
+<%- include('partials/footer') %>
+
+<!-- Incluir el archivo JavaScript -->
+<script src="/assets/js/app-turistik-usuarios-list.js"></script>
+</body>
+</html>
