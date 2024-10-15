@@ -6,6 +6,9 @@ import flash from "express-flash";
 import routes from "./routes/routes.js";
 import routesLogin from "./routes/routesLogin.js"; // Ruta de login
 import requireAuth from "./middleware/auth.js";
+import dotenv from "dotenv";
+
+dotenv.config(); // Carga las variables de entorno desde el archivo .env
 
 const app = express();
 

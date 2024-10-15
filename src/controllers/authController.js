@@ -1,12 +1,41 @@
 // src/controllers/authController.js
-import authService from "../application/authService.js";
+import fetch from "node-fetch"; // Usa import en lugar de require
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await authService.login(email, password);
 
-    if (!user) {
+    // 1. Obtener el token
+    const tokenResponse = await fetch("https://turistik-sistema-user.azurewebsites.net/api/v1/auth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: process.env.API_USERNAME, // Debe estar seguro en variables de entorno
+        password: process.env.API_PASSWORD, // Debe estar seguro en variables de entorno
+        scope: "OC"
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      throw new Error("No se pudo obtener el token");
+    }
+
+    const tokenData = await tokenResponse.json();
+    const token = tokenData.token; // Asegúrate de que el token esté en esta propiedad
+
+    // 2. Autenticar al usuario con el token
+    const authResponse = await fetch("https://turistik-sistema-user.azurewebsites.net/api/v1/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const user = await authResponse.json();
+
+    if (!authResponse.ok || !user) {
       return res.render("login", {
         title: "Login",
         error: "Correo o contraseña incorrectos",
@@ -14,11 +43,11 @@ export const login = async (req, res) => {
     }
 
     // Codificación en Base64 para mayor seguridad
-    const encodedUserId = Buffer.from(user.id.toString()).toString("base64");
+    //const encodedUserId = Buffer.from(user.id.toString()).toString("base64");
 
     // Guardado de la sesión
     req.session.user = {
-      id: encodedUserId,
+      id: user.id,
       nombre: user.nombre,
       apellido: user.apellido,
       departamento: user.departamento,
@@ -32,7 +61,6 @@ export const login = async (req, res) => {
       return res.render("login", { title: "Login", error: error.message });
     }
 
-    // Otros errores
     console.error("Error al iniciar sesión:", error);
     res.render("login", { title: "Login", error: "Error en el servidor" });
   }
