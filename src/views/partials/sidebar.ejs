@@ -1,0 +1,29 @@
+<aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
+  <div class="menu-inner-shadow"></div>
+
+  <ul class="menu-inner py-1">
+    <!-- Home -->
+    <li class="menu-item <%= currentUrl === '/dashboard' ? 'active' : '' %>">
+      <a href="/dashboard" class="menu-link">
+        <i class="menu-icon tf-icons ti ti-home"></i>
+        <div data-i18n="Home">Inicio</div>
+      </a>
+    </li>
+
+    <!-- Solicitudes -->
+    <li class="menu-item <%= currentUrl === '/solicitudes' ? 'active' : '' %>">
+      <a href="/solicitudes" class="menu-link">
+        <i class="menu-icon tf-icons ti ti-file"></i>
+        <div data-i18n="Solicitudes">Solicitudes</div>
+      </a>
+    </li>
+
+    <!-- OC -->
+    <li class="menu-item <%= currentUrl === '/ordenes' ? 'active' : '' %>">
+      <a href="/ordenes" class="menu-link">
+        <i class="menu-icon tf-icons ti ti-file-invoice"></i>
+        <div data-i18n="OC">OC</div>
+      </a>
+    </li>
+  </ul>
+</aside>

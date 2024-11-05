@@ -1,0 +1,288 @@
+<!-- src/views/orden/crear.ejs -->
+<%- include('../partials/header', { title: 'Crear Orden de Compra' }) %>
+<%- include('../partials/navbar') %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-orden-compra">
+      <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
+        <div class="card-body p-2">
+          <h6 class="mb-0" style="color: #fff;">DATOS</h6>
+        </div>
+      </div>
+
+      <% if (errorMessage && errorMessage.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= errorMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      <% } %>
+
+      <form action="/ordenes-crear/<%= solicitud.id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-numero">Número de Orden <span class="text-danger">*</span></label>
+            <input type="text" class="form-control <%= errors && errors.ordenNumero ? 'is-invalid' : '' %>" id="orden-numero" name="ordenNumero" aria-label="Número de la Orden" value="<%= solicitud.codigo || '' %>" required />
+            <% if (errors && errors.ordenNumero) { %>
+              <div class="invalid-feedback"><%= errors.ordenNumero %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-proveedor">Proveedor <span class="text-danger">*</span></label>
+            <select id="orden-proveedor" class="form-select select2 <%= errors && errors.ordenProveedor ? 'is-invalid' : '' %>" name="ordenProveedor" required>
+              <option value="">Seleccione un proveedor</option>
+              <% proveedores.forEach(proveedor => { %>
+                <option value="<%= proveedor.id_proveedor %>" <%= solicitud.id_proveedor === proveedor.id_proveedor ? 'selected' : '' %>><%= proveedor.nombre %></option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenProveedor) { %>
+              <div class="invalid-feedback"><%= errors.ordenProveedor %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-banco">Banco <span class="text-danger">*</span></label>
+            <select id="orden-banco" class="form-select select2 <%= errors && errors.ordenBanco ? 'is-invalid' : '' %>" name="ordenBanco" required>
+              <option value="">Seleccione un banco</option>
+              <% bancos.forEach(banco => { %>
+                <option value="<%= banco.id_banco %>" <%= solicitud.id_banco === banco.id_banco ? 'selected' : '' %>><%= banco.nombre_banco %></option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenBanco) { %>
+              <div class="invalid-feedback"><%= errors.ordenBanco %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-plazo">Plazo de Pago <span class="text-danger">*</span></label>
+            <select id="orden-plazo" class="form-select select2 <%= errors && errors.ordenPlazo ? 'is-invalid' : '' %>" name="ordenPlazo" required>
+              <option value="">Seleccione plazo de pago</option>
+              <% plazoPagos.forEach(plazo => { %>
+                <option value="<%= plazo.id_plazo %>" <%= solicitud.id_plazo === plazo.id_plazo ? 'selected' : '' %>><%= plazo.descripcion %> (<%= plazo.dias %> días)</option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenPlazo) { %>
+              <div class="invalid-feedback"><%= errors.ordenPlazo %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-empresa">Empresa <span class="text-danger">*</span></label>
+            <select id="orden-empresa" class="form-select select2 <%= errors && errors.ordenEmpresa ? 'is-invalid' : '' %>" name="ordenEmpresa" required>
+              <option value="">Seleccione una empresa</option>
+              <% empresas.forEach(empresa => { %>
+                <option value="<%= empresa.id_empresa %>" <%= solicitud.id_empresa === empresa.id_empresa ? 'selected' : '' %>><%= empresa.nombre %></option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenEmpresa) { %>
+              <div class="invalid-feedback"><%= errors.ordenEmpresa %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-centro-costo">Centro de Costo <span class="text-danger">*</span></label>
+            <select id="orden-centro-costo" class="form-select select2 <%= errors && errors.ordenCentroCosto ? 'is-invalid' : '' %>" name="ordenCentroCosto" required>
+              <option value="">Seleccione un centro de costo</option>
+              <% categorias.forEach(categoria => { %>
+                <option value="<%= categoria.id_categoria %>" <%= solicitud.id_centro_costo === categoria.id_categoria ? 'selected' : '' %>><%= categoria.nombre_categoria %></option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenCentroCosto) { %>
+              <div class="invalid-feedback"><%= errors.ordenCentroCosto %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-tipo">Tipo de Orden <span class="text-danger">*</span></label>
+            <select id="orden-tipo" class="form-select select2 <%= errors && errors.ordenTipo ? 'is-invalid' : '' %>" name="ordenTipo" required>
+              <option value="">Seleccione un tipo de orden</option>
+              <% tipoOrdenes.forEach(tipo => { %>
+                <option value="<%= tipo.id_tipo %>" <%= solicitud.id_tipo_orden === tipo.id_tipo ? 'selected' : '' %>><%= tipo.tipo %></option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenTipo) { %>
+              <div class="invalid-feedback"><%= errors.ordenTipo %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-moneda">Moneda <span class="text-danger">*</span></label>
+            <select id="orden-moneda" class="form-select select2 <%= errors && errors.ordenMoneda ? 'is-invalid' : '' %>" name="ordenMoneda" required>
+              <option value="">Seleccione una moneda</option>
+              <% monedas.forEach(moneda => { %>
+                <option value="<%= moneda.id_moneda %>" <%= solicitud.id_moneda === moneda.id_moneda ? 'selected' : '' %>><%= moneda.nombre_moneda %> (<%= moneda.codigo_moneda %>)</option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenMoneda) { %>
+              <div class="invalid-feedback"><%= errors.ordenMoneda %></div>
+            <% } %>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-fecha">Fecha <span class="text-danger">*</span></label>
+            <input
+              type="date"
+              class="form-control"
+              id="orden-fecha"
+              name="ordenFecha"
+              required
+            />
+          </div>
+          <div class="col-md-9 mb-3">
+            <label class="form-label" for="orden-nota">Nota</label>
+            <textarea class="form-control" id="orden-nota" name="ordenNota" rows="1" style="resize: vertical;"></textarea>
+          </div>
+        </div>
+
+        <!-- Sección de Detalle de Productos (Sin Cambios) -->
+        <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
+          <div class="card-body p-2">
+            <h6 class="mb-0" style="color: #fff;">DETALLE</h6>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-9">
+            <label class="form-label" for="producto">Producto</label>
+            <select id="producto" class="form-select select2">
+              <option value="">Seleccione un producto</option>
+              <% productos.forEach(producto => { %>
+                <option value="<%= producto.id_producto %>" data-price="<%= producto.precio_unitario %>"><%= producto.nombre %> - $<%= producto.precio_unitario %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" id="add-producto">Agregar Producto</button>
+          </div>
+        </div>
+
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Valor Unitario</th>
+                <th>Valor Total</th>
+              </tr>
+            </thead>
+            <tbody id="boleta-table-body"></tbody>
+          </table>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 offset-md-6">
+            <table class="table table-sm">
+              <tbody>
+                <tr><td>Sub-total:</td><td id="subtotal">$0.00</td></tr>
+                <tr><td>Impuesto:</td><td id="impuesto">$0.00</td></tr>
+                <tr><td>Retención:</td><td id="retencion">$0.00</td></tr>
+                <tr><td>Propina:</td><td id="propina">$0.00</td></tr>
+                <tr><th>Total:</th><th id="total">$0.00</th></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-4">
+          <a href="/ordenes" class="btn btn-secondary">Regresar</a>
+          <button type="submit" class="btn btn-primary" id="submit-btn">Crear Orden</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="content-backdrop fade"></div>
+</div>
+
+<script>
+  $(document).ready(function () {
+    $('.select2').select2({
+      width: '100%',
+      placeholder: 'Seleccione una opción'
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+    const fechaInput = document.getElementById("orden-fecha");
+    if (fechaInput.value === "") {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const formattedDate = `${yyyy}-${mm}-${dd}`;
+      fechaInput.value = formattedDate;
+    }
+  });
+
+  const subtotalElement = document.getElementById("subtotal");
+  const impuestoElement = document.getElementById("impuesto");
+  const retencionElement = document.getElementById("retencion");
+  const propinaElement = document.getElementById("propina");
+  const totalElement = document.getElementById("total");
+
+  document.getElementById("add-producto").addEventListener("click", () => {
+    const productoSelect = document.getElementById("producto");
+    const selectedOption = productoSelect.options[productoSelect.selectedIndex];
+    const productoId = selectedOption.value;
+    const productoText = selectedOption.textContent;
+    const valorUnitario = parseFloat(selectedOption.getAttribute("data-price"));
+    const cantidad = 1;
+    const valorTotal = cantidad * valorUnitario;
+
+    if (!productoId) {
+      alert("Por favor seleccione un producto.");
+      return;
+    }
+
+    const newRow = document.createElement("tr");
+    newRow.innerHTML = `
+      <td>${productoText}</td>
+      <td><input type="number" value="${cantidad}" min="1" class="form-control cantidad-input" name="cantidad[]" required /></td>
+      <td>$${valorUnitario.toFixed(2)}</td>
+      <td class="valor-total">$${valorTotal.toFixed(2)}
+        <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
+      </td>
+    `;
+
+    document.getElementById("boleta-table-body").appendChild(newRow);
+
+    actualizarTotales();
+
+    productoSelect.value = "";
+    $('.select2').trigger('change');
+
+    newRow.querySelector(".cantidad-input").addEventListener("input", function () {
+      const nuevaCantidad = parseInt(this.value);
+      if (nuevaCantidad < 1 || isNaN(nuevaCantidad)) {
+        this.value = 1;
+        return;
+      }
+      const nuevoValorTotal = nuevaCantidad * valorUnitario;
+      newRow.querySelector(".valor-total").innerText = `$${nuevoValorTotal.toFixed(2)}`;
+      actualizarTotales();
+    });
+
+    newRow.querySelector(".remove-producto").addEventListener("click", function () {
+      newRow.remove();
+      actualizarTotales();
+    });
+  });
+
+  function actualizarTotales() {
+    let subtotal = 0;
+    document.querySelectorAll("#boleta-table-body tr").forEach(row => {
+      const valorTotal = parseFloat(row.querySelector(".valor-total").innerText.slice(1));
+      subtotal += valorTotal;
+    });
+    let impuesto = subtotal * 0.16;
+    let retencion = subtotal * 0.05;
+    let propina = subtotal * 0.02;
+    let total = subtotal + impuesto + retencion + propina;
+    subtotalElement.innerText = `$${subtotal.toFixed(2)}`;
+    impuestoElement.innerText = `$${impuesto.toFixed(2)}`;
+    retencionElement.innerText = `$${retencion.toFixed(2)}`;
+    propinaElement.innerText = `$${propina.toFixed(2)}`;
+    totalElement.innerText = `$${total.toFixed(2)}`;
+  }
+</script>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>

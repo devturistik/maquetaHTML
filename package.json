@@ -1,5 +1,5 @@
 {
-  "name": "api-user-100924",
+  "name": "sistema-oc",
   "version": "1.0.0",
   "description": "",
   "main": "src/app.js",
@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@azure/storage-blob": "^12.25.0",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
@@ -20,6 +21,7 @@
     "express-flash": "^0.0.2",
     "express-session": "^1.18.1",
     "mssql": "^11.0.1",
+    "multer": "^1.4.5-lts.1",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {

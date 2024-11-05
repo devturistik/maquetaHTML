@@ -1,0 +1,149 @@
+<%- include('partials/header', { title: 'Solicitudes' }) %> <%-
+include('partials/navbar') %> <%- include('partials/sidebar') %> <%-
+include('partials/content-wrapper-open') %>
+
+<div class="content-wrapper">
+  <!-- Content -->
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-solicitudes-lista">
+      <!-- Mensajes de éxito y error -->
+      <% if (successMessage && successMessage.length > 0) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= successMessage %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Cerrar"
+        ></button>
+      </div>
+      <% } %> <% if (errorMessage && errorMessage.length > 0) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= errorMessage %>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Cerrar"
+        ></button>
+      </div>
+      <% } %>
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 class="mb-1">Lista de Solicitudes</h4>
+          <p class="mb-0">Solicitudes realizadas por los usuarios.</p>
+        </div>
+        <div>
+          <a href="/solicitudes-crear" class="btn btn-primary"
+            >Crear Nueva Solicitud</a
+          >
+        </div>
+      </div>
+
+      <!-- Tabla de solicitudes -->
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="table-solicitudes" class="table table-hover">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Asunto</th>
+                  <th>Descripción</th>
+                  <th>Archivos</th>
+                  <th>Estatus</th>
+                  <th>Usuario Solicitante</th>
+                  <th>Correo Solicitante</th>
+                  <th></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (solicitudes.length > 0) { %> <%
+                solicitudes.forEach(solicitud => { %>
+                <tr>
+                  <td><%= solicitud.id %></td>
+                  <td><%= solicitud.asunto %></td>
+                  <td><%= solicitud.descripcion %></td>
+                  <td>
+                    <% if (solicitud.archivos && solicitud.archivos.length > 0)
+                    { %> <% const archivos = JSON.parse(solicitud.archivos);
+                    archivos.forEach(archivo => { %>
+                    <a href="/uploads/<%= archivo %>" target="_blank"
+                      ><%= archivo %></a
+                    ><br />
+                    <% }) %> <% } else { %> No disponible <% } %>
+                  </td>
+                  <td>
+                    <span
+                      class="badge <% if (solicitud.estatus.toLowerCase() === 'pendiente') { %> bg-warning <% } else if (solicitud.estatus.toLowerCase() === 'aprobado') { %> bg-success <% } else if (solicitud.estatus.toLowerCase() === 'rechazado') { %> bg-danger <% } else { %> bg-secondary <% } %>"
+                    >
+                      <%= solicitud.estatus %>
+                    </span>
+                  </td>
+                  <td><%= solicitud.usuario_solicitante %></td>
+                  <td><%= solicitud.correo_solicitante %></td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <a
+                        href="/solicitudes/<%= solicitud.id %>"
+                        class="btn btn-sm btn-outline-primary"
+                        title="Ver"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      <a
+                        href="/solicitudes-editar/<%= solicitud.id %>"
+                        class="btn btn-sm btn-outline-secondary"
+                        title="Editar"
+                      >
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      <a
+                        href="/solicitudes-eliminar/<%= solicitud.id %>"
+                        class="btn btn-sm btn-outline-danger"
+                        title="Eliminar"
+                      >
+                        <i class="fas fa-trash-alt"></i>
+                      </a>
+                    </div>
+                  </td>
+                  <td>
+                    <a
+                      href="/ordenes-crear/<%= solicitud.id %>"
+                      class="btn btn-sm btn-primary"
+                      >Crear Orden de Compra</a
+                    >
+                  </td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr>
+                  <td colspan="9" class="text-center">
+                    No hay solicitudes disponibles.
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-backdrop fade"></div>
+</div>
+
+<script>
+  $(document).ready(function () {
+    $("#table-solicitudes").DataTable({
+      responsive: true,
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.11.3/i18n/es_es.json",
+      },
+    });
+  });
+</script>
+<%- include('partials/footer-text') %> <%- include('partials/footer') %> <%-
+include('partials/content-wrapper-close') %>

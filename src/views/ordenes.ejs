@@ -1,0 +1,139 @@
+<%- include('partials/header', { title: 'Órdenes' }) %>
+<%- include('partials/navbar') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/content-wrapper-open') %>
+
+<!-- Content wrapper -->
+<div class="content-wrapper">
+  <!-- Content -->
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-ordenes-lista">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h4 class="mb-1">Lista de Órdenes</h4>
+          <p class="mb-0">
+            Órdenes creadas basadas en las solicitudes de los usuarios.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tabla de órdenes -->
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>ID Orden</th>
+                  <th>Solicitud Asociada</th>
+                  <th>Monto Total</th>
+                  <th>Aprobaciones</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (ordenes.length > 0) { %> <% ordenes.forEach(orden => { %>
+                <tr>
+                  <td><%= orden.id %></td>
+                  <td>
+                    <a href="/solicitudes/<%= orden.solicitudId %>"
+                      ><%= orden.solicitudId %></a
+                    >
+                  </td>
+                  <td><%= orden.producto %></td>
+                  <td><%= orden.cantidad %></td>
+                  <td>$<%= orden.montoTotal.toLocaleString('es-CL') %></td>
+                  <td>
+                    <% orden.aprobaciones.forEach(aprobacion => { %>
+                    <p>
+                      <%= aprobacion.aprobador %>:
+                      <span
+                        class="badge <%= aprobacion.estado === 'Aprobado' ? 'bg-success' : 'bg-warning' %>"
+                        ><%= aprobacion.estado %></span
+                      >
+                    </p>
+                    <% }) %>
+                  </td>
+                  <td>
+                    <span
+                      class="badge <%= orden.estado === 'Pendiente' ? 'bg-warning' : orden.estado === 'Completada' ? 'bg-success' : 'bg-danger' %>"
+                    >
+                      <%= orden.estado %>
+                    </span>
+                  </td>
+                  <td>
+                    <a
+                      href="/ordenes/<%= orden.id %>"
+                      class="btn btn-sm btn-label-primary"
+                      >Ver</a
+                    >
+                    <a
+                      href="/ordenes/editar/<%= orden.id %>"
+                      class="btn btn-sm btn-label-secondary"
+                      >Editar</a
+                    >
+                    <form
+                      action="/ordenes/eliminar/<%= orden.id %>"
+                      method="POST"
+                      class="d-inline"
+                    >
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-label-danger"
+                        onclick="return confirm('¿Estás seguro de eliminar esta orden?')"
+                      >
+                        Eliminar
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                <% }) %> <% } else { %>
+                <tr>
+                  <td colspan="8" class="text-center">
+                    No hay órdenes disponibles.
+                  </td>
+                </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-backdrop fade"></div>
+</div>
+
+<script>
+  // Función para ocultar mensajes después de 5 segundos
+  window.onload = function () {
+    const successMsg = document.querySelector(".alert-success");
+    const errorMsg = document.querySelector(".alert-danger");
+
+    if (successMsg) {
+      setTimeout(() => {
+        successMsg.style.display = "none";
+      }, 5000); // Oculta después de 5000 ms (5 segundos)
+    }
+
+    if (errorMsg) {
+      setTimeout(() => {
+        errorMsg.style.display = "none";
+      }, 5000); // Oculta después de 5000 ms (5 segundos)
+    }
+  };
+
+  function clearForm(button) {
+    const form = button.closest("form"); // Encuentra el formulario más cercano
+    if (form) {
+      form.reset(); // Limpia todos los campos del formulario
+    } else {
+      console.error("Formulario no encontrado.");
+    }
+  }
+</script>
+<%- include('partials/footer-text') %>
+<%- include('partials/footer') %>
+<%- include('partials/content-wrapper-close') %>

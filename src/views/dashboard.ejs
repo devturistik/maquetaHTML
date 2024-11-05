@@ -1,6 +1,7 @@
 <%- include('partials/header', { title: 'Dashboard' }) %>
-<div class="content-wrapper">
-  <!-- Content -->
+<%- include('partials/navbar') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/content-wrapper-open') %>
 
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="row g-6">
@@ -849,15 +850,6 @@
   </div>
   <!-- / Content -->
 
-  <%- include('partials/footer-text')%>
-  <!-- / Footer -->
-
-  <div class="content-backdrop fade"></div>
-  <div class="layout-overlay layout-menu-toggle"></div>
-  <div class="drag-target"></div>
-</div>
-
-<%- include('partials/footer') %>
-
-</body>
-</html>
+  <%- include('partials/footer-text') %>
+  <%- include('partials/footer') %>
+  <%- include('partials/content-wrapper-close') %>

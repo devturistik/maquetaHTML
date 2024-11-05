@@ -1,0 +1,147 @@
+<nav
+  class="layout-navbar container-xxl navbar navbar-expand-xl navbar-detached align-items-center bg-navbar-theme"
+  id="layout-navbar"
+>
+  <div class="d-flex align-items-center me-3">
+    <!-- Logo de la empresa (extendiéndose horizontalmente) -->
+    <a href="/" class="navbar-brand">
+      <img
+        src="/assets/img/logoTK/logo.png"
+        alt="Logo Turistik"
+        style="height: 50px"
+      />
+    </a>
+  </div>
+  <div class="navbar-nav-right d-flex align-items-center" id="navbar-collapse">
+    <ul class="navbar-nav flex-row align-items-center ms-auto">
+      <!-- Style Switcher -->
+      <li class="nav-item dropdown dropdown-style-switcher">
+        <a
+          class="nav-link btn btn-text-secondary btn-icon rounded-pill dropdown-toggle hide-arrow"
+          href="javascript:void(0);"
+          data-bs-toggle="dropdown"
+        >
+          <i class="ti ti-layout-grid ti-md"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a
+              class="dropdown-item"
+              href="javascript:void(0);"
+              data-theme="light"
+              ><i class="ti ti-sun ti-md me-3"></i>Light</a
+            >
+          </li>
+          <li>
+            <a
+              class="dropdown-item"
+              href="javascript:void(0);"
+              data-theme="dark"
+              ><i class="ti ti-moon-stars ti-md me-3"></i>Dark</a
+            >
+          </li>
+          <li>
+            <a
+              class="dropdown-item"
+              href="javascript:void(0);"
+              data-theme="system"
+              ><i class="ti ti-device-desktop-analytics ti-md me-3"></i
+              >System</a
+            >
+          </li>
+        </ul>
+      </li>
+
+      <!-- Notification -->
+      <li class="nav-item dropdown navbar-dropdown dropdown-notifications">
+        <a
+          class="nav-link btn btn-text-secondary btn-icon rounded-pill dropdown-toggle hide-arrow"
+          href="javascript:void(0);"
+          data-bs-toggle="dropdown"
+        >
+          <span class="position-relative">
+            <i class="ti ti-bell ti-md"></i>
+            <span
+              class="badge rounded-pill bg-danger badge-dot badge-notifications border"
+            ></span>
+          </span>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end p-0">
+          <li class="dropdown-menu-header border-bottom">
+            <div class="dropdown-header d-flex align-items-center py-3">
+              <h6 class="mb-0 me-auto">Notifications</h6>
+            </div>
+          </li>
+        </ul>
+      </li>
+
+      <!-- User -->
+      <li class="nav-item dropdown navbar-dropdown dropdown-user">
+        <a
+          class="nav-link dropdown-toggle hide-arrow p-0"
+          href="javascript:void(0);"
+          data-bs-toggle="dropdown"
+        >
+          <div class="avatar avatar-online">
+            <img
+              src="../../assets/img/avatars/1.png"
+              alt="User Avatar"
+              class="rounded-circle"
+            />
+          </div>
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li>
+            <a class="dropdown-item mt-0" href="#">
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                  <div class="avatar avatar-online">
+                    <img
+                      src="../../assets/img/avatars/1.png"
+                      alt="User Avatar"
+                      class="rounded-circle"
+                      style="width: 40px; height: 40px"
+                    />
+                  </div>
+                </div>
+                <div class="d-flex flex-column flex-grow-1">
+                  <span
+                    id="headerNombre"
+                    class="fw-semibold"
+                    style="font-size: 1rem"
+                    ><%= user.nombre %></span
+                  >
+                  <span
+                    id="headerApellido"
+                    class="text-muted"
+                    style="font-size: 0.875rem"
+                    ><%= user.apellido %></span
+                  >
+                </div>
+              </div>
+            </a>
+          </li>
+          <li><div class="dropdown-divider my-1 mx-n2"></div></li>
+          <li>
+            <a class="dropdown-item" href="pages-profile-user.html"
+              ><i class="ti ti-user me-3 ti-md"></i>My Profile</a
+            >
+          </li>
+          <li>
+            <a class="dropdown-item" href="pages-account-settings-account.html"
+              ><i class="ti ti-settings me-3 ti-md"></i>Settings</a
+            >
+          </li>
+          <li>
+            <div class="d-grid px-2 pt-2 pb-1">
+              <a class="btn btn-sm btn-danger d-flex" href="/logout">
+                <small>Logout</small>
+                <i class="ti ti-logout ms-2 ti-14px"></i>
+              </a>
+            </div>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>

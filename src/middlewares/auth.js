@@ -1,4 +1,4 @@
-// src/middleware/auth.js
+// src/middlewares/auth.js
 const requireAuth = (req, res, next) => {
   if (!req.session || !req.session.user) {
     // Redirigir al login si no hay sesión

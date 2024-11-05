@@ -6,15 +6,18 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     // 1. Obtener el token
-    const tokenResponse = await fetch("https://turistik-sistema-user.azurewebsites.net/api/v1/auth/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: process.env.API_USERNAME, // Debe estar seguro en variables de entorno
-        password: process.env.API_PASSWORD, // Debe estar seguro en variables de entorno
-        scope: "OC"
-      }),
-    });
+    const tokenResponse = await fetch(
+      "https://turistik-sistema-user.azurewebsites.net/api/v1/auth/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: process.env.API_USERNAME, // Debe estar seguro en variables de entorno
+          password: process.env.API_PASSWORD, // Debe estar seguro en variables de entorno
+          scope: "OC",
+        }),
+      }
+    );
 
     if (!tokenResponse.ok) {
       throw new Error("No se pudo obtener el token");
@@ -24,18 +27,21 @@ export const login = async (req, res) => {
     const token = tokenData.token; // Asegúrate de que el token esté en esta propiedad
 
     // 2. Autenticar al usuario con el token
-    const authResponse = await fetch("https://turistik-sistema-user.azurewebsites.net/api/v1/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    const authResponse = await fetch(
+      "https://turistik-sistema-user.azurewebsites.net/api/v1/auth/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email, password }),
+      }
+    );
 
-    const user = await authResponse.json();
+    const response = await authResponse.json();
 
-    if (!authResponse.ok || !user) {
+    if (!authResponse.ok) {
       return res.render("login", {
         title: "Login",
         error: "Correo o contraseña incorrectos",
@@ -44,16 +50,18 @@ export const login = async (req, res) => {
 
     // Codificación en Base64 para mayor seguridad
     //const encodedUserId = Buffer.from(user.id.toString()).toString("base64");
-
     // Guardado de la sesión
     req.session.user = {
-      id: user.id,
-      nombre: user.nombre,
-      apellido: user.apellido,
-      departamento: user.departamento,
-      correo: user.correo,
-      rol: user.rol || "usuario",
+      id: response.user.id,
+      nombre: response.user.nombre,
+      apellido: response.user.apellido,
+      departamento: response.user.departamento,
+      correo: response.user.correo,
+      activo: response.user.activo,
+      sistemas: response.user.sistemas,
     };
+
+    console.log("SESION DE:", req.session.user);
 
     res.redirect("/dashboard");
   } catch (error) {

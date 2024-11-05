@@ -3,9 +3,10 @@ import express from "express";
 import path from "path";
 import session from "express-session";
 import flash from "express-flash";
+import multer from "multer";
 import routes from "./routes/routes.js";
 import routesLogin from "./routes/routesLogin.js"; // Ruta de login
-import requireAuth from "./middleware/auth.js";
+import requireAuth from "./middlewares/auth.js";
 import dotenv from "dotenv";
 
 dotenv.config(); // Carga las variables de entorno desde el archivo .env
@@ -31,10 +32,28 @@ app.use(
 
 // Inicializa flash para notificaciones rápidas y temporales
 app.use(flash());
+// Middleware para pasar mensajes flash a las vistas
+app.use((req, res, next) => {
+  res.locals.successMessage = req.flash('successMessage');
+  res.locals.errorMessage = req.flash('errorMessage');
+  next();
+});
 
 // Middleware para parsear JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Configuración de Multer para manejar archivos
+const upload = multer({ storage: multer.memoryStorage() });
+// Middleware de carga de archivos en todas las rutas POST donde se incluyan archivos
+app.use((req, res, next) => {
+  upload.any()(req, res, (err) => {
+    if (err) {
+      return res.status(400).send("Error en la carga de archivos.");
+    }
+    next();
+  });
+});
 
 // Servir archivos estáticos desde la carpeta "public"
 app.use(express.static(path.join(process.cwd(), "src", "public")));
@@ -57,8 +76,10 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null; // Guarda el usuario con la sesion iniciada
   next();
 });
-app.use("/", routes);
-
+app.use(routes);
+app.get("*", (req, res) => {
+  res.status(404).render("error/404", { ruta: req.originalUrl });
+});
 // Iniciar el servidor
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
