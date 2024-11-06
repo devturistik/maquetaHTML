@@ -1,6 +1,6 @@
 <!-- src/views/orden/crear.ejs -->
 <%- include('../partials/header', { title: 'Crear Orden de Compra' }) %>
-<%- include('../partials/navbar') %>
+<%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: "' + solicitud.asunto + '"' }) %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
@@ -22,13 +22,6 @@
 
       <form action="/ordenes-crear/<%= solicitud.id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         <div class="row">
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-numero">Número de Orden <span class="text-danger">*</span></label>
-            <input type="text" class="form-control <%= errors && errors.ordenNumero ? 'is-invalid' : '' %>" id="orden-numero" name="ordenNumero" aria-label="Número de la Orden" value="<%= solicitud.codigo || '' %>" required />
-            <% if (errors && errors.ordenNumero) { %>
-              <div class="invalid-feedback"><%= errors.ordenNumero %></div>
-            <% } %>
-          </div>
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-proveedor">Proveedor <span class="text-danger">*</span></label>
             <select id="orden-proveedor" class="form-select select2 <%= errors && errors.ordenProveedor ? 'is-invalid' : '' %>" name="ordenProveedor" required>
@@ -81,9 +74,6 @@
             <label class="form-label" for="orden-centro-costo">Centro de Costo <span class="text-danger">*</span></label>
             <select id="orden-centro-costo" class="form-select select2 <%= errors && errors.ordenCentroCosto ? 'is-invalid' : '' %>" name="ordenCentroCosto" required>
               <option value="">Seleccione un centro de costo</option>
-              <% categorias.forEach(categoria => { %>
-                <option value="<%= categoria.id_categoria %>" <%= solicitud.id_centro_costo === categoria.id_categoria ? 'selected' : '' %>><%= categoria.nombre_categoria %></option>
-              <% }) %>
             </select>
             <% if (errors && errors.ordenCentroCosto) { %>
               <div class="invalid-feedback"><%= errors.ordenCentroCosto %></div>
@@ -114,16 +104,11 @@
             <% } %>
           </div>
           <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-fecha">Fecha <span class="text-danger">*</span></label>
-            <input
-              type="date"
-              class="form-control"
-              id="orden-fecha"
-              name="ordenFecha"
-              required
-            />
+            <label class="form-label">Fecha</label>
+            <span class="form-control-plaintext"><%= fechaActualDisplay %></span>
+            <input type="hidden" id="orden-fecha" name="ordenFecha" value="<%= fechaActual %>" />
           </div>
-          <div class="col-md-9 mb-3">
+          <div class="col-md-12 mb-3">
             <label class="form-label" for="orden-nota">Nota</label>
             <textarea class="form-control" id="orden-nota" name="ordenNota" rows="1" style="resize: vertical;"></textarea>
           </div>
@@ -197,18 +182,6 @@
       width: '100%',
       placeholder: 'Seleccione una opción'
     });
-  });
-
-  document.addEventListener("DOMContentLoaded", function() {
-    const fechaInput = document.getElementById("orden-fecha");
-    if (fechaInput.value === "") {
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const formattedDate = `${yyyy}-${mm}-${dd}`;
-      fechaInput.value = formattedDate;
-    }
   });
 
   const subtotalElement = document.getElementById("subtotal");

@@ -17,7 +17,6 @@ class SolicitudesService {
 
   async createSolicitud(solicitudData) {
     const validationErrors = validateSolicitudData(solicitudData);
-    console.log(validationErrors);
     if (validationErrors) {
       const error = new Error("Validation Error");
       error.validationErrors = validationErrors;

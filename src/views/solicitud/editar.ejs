@@ -19,6 +19,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
         </div>
       <% } %>
+
       <form
         action="/solicitudes-editar/<%= solicitud.id %>"
         method="POST"
@@ -27,9 +28,9 @@
         novalidate
       >
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-          <div class="d-flex flex-column justify-content-center">
+          <div>
             <h4 class="mb-1">Editar Solicitud</h4>
-            <p class="mb-0">Modifica los detalles de la solicitud.</p>
+            <p class="text-muted mb-0">Modifica los detalles de la solicitud.</p>
           </div>
           <div class="d-flex align-content-center flex-wrap gap-2">
             <a href="/solicitudes" class="btn btn-secondary">
@@ -44,14 +45,11 @@
           </div>
         </div>
 
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="card-title mb-0">Información de la Solicitud</h5>
-          </div>
+        <div class="card shadow-sm mb-4">
           <div class="card-body">
             <!-- Campo de Asunto -->
-            <div class="mb-3">
-              <label class="form-label" for="asunto">Asunto <span class="text-danger">*</span></label>
+            <div class="mb-4">
+              <h6 class="fw-bold">Asunto <span class="text-danger">*</span></h6>
               <input
                 type="text"
                 class="form-control <%= errors && errors.asunto ? 'is-invalid' : '' %>"
@@ -66,8 +64,8 @@
             </div>
 
             <!-- Campo de Descripción -->
-            <div class="mb-3">
-              <label class="form-label" for="descripcion">Descripción <span class="text-danger">*</span></label>
+            <div class="mb-4">
+              <h6 class="fw-bold">Descripción <span class="text-danger">*</span></h6>
               <textarea
                 class="form-control <%= errors && errors.descripcion ? 'is-invalid' : '' %>"
                 id="descripcion"
@@ -80,9 +78,9 @@
               <% } %>
             </div>
 
-            <!-- Componente de carga de archivos -->
-            <div class="mb-3">
-              <label class="form-label" for="archivos">Archivos Adjuntos</label>
+            <!-- Archivos Adjuntos Existentes con Opción de Eliminación -->
+            <div class="mb-4">
+              <h6 class="fw-bold">Archivos Adjuntos</h6>
               <% 
                 let archivos = [];
                 try {
@@ -92,17 +90,39 @@
                 }
               %>
               <% if (archivos && archivos.length > 0) { %>
-                <ul>
-                  <% archivos.forEach((archivo) => { %>
-                    <li><a href="/uploads/<%= archivo %>" target="_blank"><%= archivo %></a></li>
+                <ul class="list-group mb-3">
+                  <% archivos.forEach((archivo) => { 
+                    const extension = archivo.split('.').pop().toLowerCase();
+                    let iconClass = 'fas fa-file';
+                    if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf';
+                    else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image';
+                    else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word';
+                    else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel';
+                  %>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <a href="<%= archivo %>" target="_blank" class="text-decoration-none">
+                      <i class="<%= iconClass %> me-2"></i> <%= archivo.split('/').pop() %>
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeExistingFile('<%= archivo %>', this)">
+                      <i class="fas fa-trash-alt"></i> Eliminar
+                    </button>
+                  </li>
                   <% }); %>
                 </ul>
               <% } else { %>
-                <p>No hay archivos adjuntos.</p>
+                <p class="text-muted">No hay archivos adjuntos.</p>
               <% } %>
+              
+              <!-- Lista de archivos a eliminar (campo oculto) -->
+              <input type="hidden" name="deletedFiles" id="deletedFiles" value="[]">
+
+              <!-- Subir Nuevos Archivos -->
+              <label class="form-label mt-3" for="archivos">
+                <span id="uploadLabel"><%= archivos.length > 0 ? 'Subir más archivos' : 'Subir archivos' %></span>
+              </label>
               <input
                 type="file"
-                class="form-control mt-3 <%= errors && errors.archivos ? 'is-invalid' : '' %>"
+                class="form-control <%= errors && errors.archivos ? 'is-invalid' : '' %>"
                 id="archivos"
                 name="archivos"
                 accept=".pdf,.jpg,.jpeg,.png,.docx"
@@ -124,7 +144,6 @@
 </div>
 
 <script>
-  // Validación de formularios Bootstrap
   (function () {
     'use strict';
     var forms = document.querySelectorAll('.needs-validation');
@@ -144,12 +163,14 @@
     if (form) {
       form.reset();
       form.classList.remove('was-validated');
+      document.getElementById("deletedFiles").value = "[]"; // Reset deleted files list
+      document.getElementById("uploadLabel").textContent = "Subir archivos"; // Reset upload label
     }
   }
 
   function validateFiles(input) {
     const maxFiles = 10;
-    const maxSizeTotal = 10 * 1024 * 1024; // 10 MB
+    const maxSizeTotal = 10 * 1024 * 1024;
     const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'docx'];
     const files = input.files;
     let totalSize = 0;
@@ -174,6 +195,15 @@
         return;
       }
     }
+  }
+
+  // Manejo de archivos a eliminar
+  function removeExistingFile(fileUrl, button) {
+    const deletedFilesInput = document.getElementById("deletedFiles");
+    let deletedFiles = JSON.parse(deletedFilesInput.value);
+    deletedFiles.push(fileUrl);
+    deletedFilesInput.value = JSON.stringify(deletedFiles);
+    button.closest("li").remove();
   }
 </script>
 

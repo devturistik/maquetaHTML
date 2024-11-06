@@ -67,13 +67,11 @@ include('partials/content-wrapper-open') %>
                   <td><%= solicitud.asunto %></td>
                   <td><%= solicitud.descripcion %></td>
                   <td>
-                    <% if (solicitud.archivos && solicitud.archivos.length > 0)
-                    { %> <% const archivos = JSON.parse(solicitud.archivos);
-                    archivos.forEach(archivo => { %>
-                    <a href="/uploads/<%= archivo %>" target="_blank"
-                      ><%= archivo %></a
-                    ><br />
-                    <% }) %> <% } else { %> No disponible <% } %>
+                    <% if (solicitud.hasFiles) { %>
+                      <a href="/solicitudes/ver-archivos/<%= solicitud.id %>">Ver archivos</a>
+                    <% } else { %>
+                      Sin archivos
+                    <% } %>
                   </td>
                   <td>
                     <span

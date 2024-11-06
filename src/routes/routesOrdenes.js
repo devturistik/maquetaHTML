@@ -18,12 +18,12 @@ router.get("/ordenes-crear/:id", ordenesController.renderCreateForm);
 router.post("/ordenes-crear/:id", ordenesController.createOrden);
 
 // Ruta para renderizar el formulario para editar una orden
-router.get("/ordenes/editar/:id", ordenesController.renderEditForm);
+router.get("/ordenes-editar/:id", ordenesController.renderEditForm);
 
 // Ruta para procesar la edición de una orden
-router.post("/ordenes/editar/:id", ordenesController.updateOrden);
+router.post("/ordenes-editar/:id", ordenesController.updateOrden);
 
 // Ruta para eliminar una orden
-router.post("/ordenes/eliminar/:id", ordenesController.deleteOrden);
+router.post("/ordenes-eliminar/:id", ordenesController.deleteOrden);
 
 export default router;

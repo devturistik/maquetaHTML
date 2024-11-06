@@ -7,11 +7,9 @@
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud-detalle">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div class="d-flex flex-column justify-content-center">
+        <div>
           <h4 class="mb-1">Detalle de Solicitud</h4>
-          <p class="mb-0">
-            Información detallada de la solicitud seleccionada.
-          </p>
+          <p class="text-muted mb-0">Información detallada de la solicitud seleccionada.</p>
         </div>
         <div>
           <a href="/solicitudes" class="btn btn-secondary">
@@ -20,68 +18,63 @@
         </div>
       </div>
 
-      <div class="card mb-4">
-        <div class="card-header">
-          <h5 class="card-title mb-0">Información de la Solicitud</h5>
-        </div>
+      <div class="card shadow-sm mb-4">
         <div class="card-body">
           <!-- Mostrar Asunto -->
-          <div class="mb-3">
-            <label class="form-label">Asunto</label>
+          <div class="mb-4">
+            <h6 class="fw-bold">Asunto</h6>
             <p class="form-control-plaintext"><%= solicitud.asunto %></p>
           </div>
 
           <!-- Mostrar Descripción -->
-          <div class="mb-3">
-            <label class="form-label">Descripción</label>
-            <p class="form-control-plaintext">
-              <%= solicitud.descripcion %>
-            </p>
+          <div class="mb-4">
+            <h6 class="fw-bold">Descripción</h6>
+            <p class="form-control-plaintext"><%= solicitud.descripcion %></p>
           </div>
 
-          <!-- Mostrar Archivos -->
-          <div class="mb-3">
-            <label class="form-label">Archivos Adjuntos</label>
-            <%
-              let archivos = [];
-              try {
-                archivos = JSON.parse(solicitud.archivos);
-              } catch (e) {
-                console.error("Error al parsear los archivos:", e);
-              }
-            %>
-            <% if (archivos && archivos.length > 0) { %>
-            <ul>
-              <% archivos.forEach((archivo) => { %>
-              <li>
-                <a href="/uploads/<%= archivo %>" target="_blank"><%= archivo %></a>
+          <!-- Mostrar Archivos Adjuntos -->
+          <div class="mb-4">
+            <h6 class="fw-bold">Archivos Adjuntos</h6>
+            <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
+            <ul class="list-group">
+              <% solicitud.archivos.forEach((archivo) => { 
+                const extension = archivo.split('.').pop().toLowerCase();
+                let iconClass = 'fas fa-file';
+                if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf';
+                else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image';
+                else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word';
+                else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel';
+              %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="<%= archivo %>" target="_blank" class="text-decoration-none">
+                  <i class="<%= iconClass %> me-2"></i> <%= archivo.split('/').pop() %>
+                </a>
+                <i class="fas fa-external-link-alt text-muted"></i>
               </li>
               <% }); %>
             </ul>
             <% } else { %>
-            <p>No hay archivos adjuntos.</p>
+            <p class="text-muted">No hay archivos adjuntos.</p>
             <% } %>
           </div>
 
           <!-- Mostrar Estatus -->
-          <div class="mb-3">
-            <label class="form-label">Estatus</label>
+          <div class="mb-4">
+            <h6 class="fw-bold">Estatus</h6>
             <p class="form-control-plaintext"><%= solicitud.estatus %></p>
           </div>
 
           <!-- Mostrar Usuario Solicitante -->
-          <div class="mb-3">
-            <label class="form-label">Solicitante</label>
-            <p class="form-control-plaintext">
-              <%= solicitud.usuario_solicitante %>
-            </p>
+          <div class="mb-4">
+            <h6 class="fw-bold">Solicitante</h6>
+            <p class="form-control-plaintext"><%= solicitud.usuario_solicitante %></p>
           </div>
 
           <!-- Mostrar Correo Solicitante -->
-          <div class="mb-3">
-            <label class="form-label">Correo del Solicitante</label>
+          <div class="mb-4">
+            <h6 class="fw-bold">Correo del Solicitante</h6>
             <p class="form-control-plaintext">
-              <%= solicitud.correo_solicitante %>
+              <a href="mailto:<%= solicitud.correo_solicitante %>" class="text-decoration-none"><%= solicitud.correo_solicitante %></a>
             </p>
           </div>
         </div>

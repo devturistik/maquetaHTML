@@ -28,7 +28,9 @@ class SolicitudesRepository {
       const result = await pool
         .request()
         .input("id", sql.Int, id)
-        .query(`SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante FROM oc.Solicitud s JOIN oc.Estatus e ON s.estatus_id = e.id_estatus WHERE id_solicitud = @id AND eliminado != 1`);
+        .query(
+          `SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado FROM oc.Solicitud s JOIN oc.Estatus e ON s.estatus_id = e.id_estatus WHERE id_solicitud = @id`
+        );
       return result.recordset[0];
     } catch (error) {
       console.error("Error al obtener solicitud:", error.message);

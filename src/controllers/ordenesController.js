@@ -2,6 +2,12 @@
 import OrdenesService from "../application/ordenesService.js";
 import SolicitudesRepository from "../adapters/repository/solicitudesRepository.js";
 import { encodeBase64, decodeBase64 } from "../utils/base64.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class OrdenesController {
   constructor() {
@@ -49,10 +55,12 @@ class OrdenesController {
     try {
       const id_solicitud = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesRepository.getById(id_solicitud);
-
-      if (!solicitud) {
-        req.flash("errorMessage", "Solicitud no encontrada.");
-        return res.redirect("/ordenes");
+      if (solicitud.eliminado) {
+        req.flash(
+          "errorMessage",
+          `La solicitud "${solicitud.asunto}" fue eliminada por el solicitante`
+        );
+        return res.redirect("/solicitudes");
       }
 
       solicitud.id = encodeBase64(solicitud.id_solicitud);
@@ -77,6 +85,11 @@ class OrdenesController {
         this.ordenesService.getProductos(),
       ]);
 
+      const fechaActual = dayjs().tz("America/Santiago").format("YYYY-MM-DD");
+      const fechaActualDisplay = dayjs()
+        .tz("America/Santiago")
+        .format("DD/MM/YYYY");
+
       res.render("orden/crear", {
         solicitud,
         proveedores,
@@ -87,6 +100,8 @@ class OrdenesController {
         monedas,
         categorias,
         productos,
+        fechaActual,
+        fechaActualDisplay,
         errors: {},
       });
     } catch (error) {
@@ -126,7 +141,6 @@ class OrdenesController {
         ? JSON.stringify(archivosPaths)
         : JSON.stringify([]);
 
-      // Extraer totales del formulario (puedes recalcularlos en el servidor si lo prefieres)
       const subtotal = parseFloat(req.body.subtotal) || 0;
       const impuesto = parseFloat(req.body.impuesto) || 0;
       const retencion = parseFloat(req.body.retencion) || 0;
@@ -150,11 +164,11 @@ class OrdenesController {
         id_plazo: ordenPlazo,
         id_empresa: ordenEmpresa,
         id_centro_costo: ordenCentroCosto,
-        nivel_aprobacion: 1, // Nivel inicial de aprobación
-        justificacion_rechazo: null, // Inicialmente null
-        ruta_archivo_pdf: null, // Asumiendo que no se sube en este formulario
-        documentos_cotizacion: archivosJson, // Documentos de cotización
-        total_local: total, // Puedes ajustar esto según tu lógica
+        nivel_aprobacion: 1,
+        justificacion_rechazo: null,
+        ruta_archivo_pdf: null,
+        documentos_cotizacion: archivosJson,
+        total_local: total,
         creado_por: `${nombre} ${apellido}`,
       };
 
@@ -171,7 +185,6 @@ class OrdenesController {
         );
         solicitud.id = encodeBase64(solicitud.id_solicitud);
 
-        // Re-fetch los datos para los dropdowns
         const [
           proveedores,
           bancos,

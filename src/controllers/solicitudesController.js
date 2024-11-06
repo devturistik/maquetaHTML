@@ -1,6 +1,7 @@
 // src/controllers/solicitudesController.js
 import SolicitudesService from "../application/solicitudesService.js";
 import { encodeBase64, decodeBase64 } from "../utils/base64.js";
+import AzureBlobService from "../services/azureBlobService.js";
 
 class SolicitudesController {
   constructor() {
@@ -14,6 +15,8 @@ class SolicitudesController {
         solicitudes: solicitudes.map((solicitud) => ({
           ...solicitud,
           id: encodeBase64(solicitud.id_solicitud),
+          hasFiles:
+            solicitud.archivos && JSON.parse(solicitud.archivos).length > 0,
         })),
         successMessage: req.query.success || null,
       });
@@ -28,6 +31,14 @@ class SolicitudesController {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
       solicitud.id = encodeBase64(solicitud.id_solicitud);
+
+      try {
+        solicitud.archivos = JSON.parse(solicitud.archivos);
+      } catch (e) {
+        console.error("Error al parsear los archivos:", e);
+        solicitud.archivos = [];
+      }
+      
       res.render("solicitud/detalle", { solicitud });
     } catch (error) {
       console.error("Error al obtener solicitud:", error.message);
@@ -48,13 +59,15 @@ class SolicitudesController {
   createSolicitud = async (req, res) => {
     try {
       const { asunto, descripcion } = req.body;
-      const archivos = req.files && req.files.length > 0 ? req.files : [];
+      const archivos = req.files || [];
       const { nombre, apellido, correo } = res.locals.user || {};
 
-      const archivosPaths = archivos.map((file) => file.originalname);
-      const archivosJson = archivosPaths.length
-        ? JSON.stringify(archivosPaths)
-        : JSON.stringify([]);
+      let archivosUrls = [];
+      if (archivos.length > 0) {
+        archivosUrls = await AzureBlobService.uploadFiles(archivos);
+      }
+
+      const archivosJson = JSON.stringify(archivosUrls);
 
       const solicitudData = {
         asunto,
@@ -73,6 +86,13 @@ class SolicitudesController {
         res.render("solicitud/crear", {
           errors: error.validationErrors,
           errorMessage: "Por favor, corrige los errores en el formulario.",
+          asunto: req.body.asunto,
+          descripcion: req.body.descripcion,
+        });
+      } else if (error.message === "Tipo de archivo no permitido") {
+        res.render("solicitud/crear", {
+          errors: { archivos: error.message },
+          errorMessage: error.message,
           asunto: req.body.asunto,
           descripcion: req.body.descripcion,
         });
@@ -195,6 +215,28 @@ class SolicitudesController {
         "errorMessage",
         "Error al eliminar la solicitud: " + error.message
       );
+      res.redirect("/solicitudes");
+    }
+  };
+
+  viewArchivos = async (req, res) => {
+    try {
+      const id = decodeBase64(req.params.id);
+      const solicitud = await this.solicitudesService.getSolicitudById(id);
+
+      if (!solicitud.archivos || JSON.parse(solicitud.archivos).length === 0) {
+        req.flash(
+          "errorMessage",
+          "No hay archivos adjuntos para esta solicitud."
+        );
+        return res.redirect("/solicitudes");
+      }
+
+      const archivos = JSON.parse(solicitud.archivos);
+      res.render("solicitud/archivos", { archivos });
+    } catch (error) {
+      console.error("Error al obtener archivos:", error.message);
+      req.flash("errorMessage", "Error al obtener archivos.");
       res.redirect("/solicitudes");
     }
   };

@@ -1,0 +1,41 @@
+<%- include('../partials/header', { title: 'Archivos Adjuntos' }) %>
+<%- include('../partials/navbar', { navbarText: 'Archivos Adjuntos' }) %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<div class="container">
+    <h4 class="my-4">Archivos Adjuntos</h4>
+    <ul class="list-group">
+        <% archivos.forEach((archivo, index) => {
+            const extension = archivo.split('.').pop().toLowerCase();
+            let iconClass = 'fas fa-file';
+            if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf';
+            else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image';
+            else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word';
+            else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel';
+        %>
+        <li class="list-group-item">
+            <a href="<%= archivo %>" target="_blank" onclick="openFilePreview(event, '<%= archivo %>')">
+                <i class="<%= iconClass %>"></i> <%= archivo.split('/').pop() %>
+            </a>
+        </li>
+        <% }) %>
+    </ul>
+    <div class="mt-4">
+        <a href="/solicitudes" class="btn btn-secondary">Regresar</a>
+    </div>
+</div>
+
+<script>
+  function openFilePreview(event, url) {
+    event.preventDefault();
+    const filePreviewWindow = window.open(url, '_blank');
+    if (!filePreviewWindow) {
+      alert('Por favor, permita ventanas emergentes para visualizar el archivo.');
+    }
+  }
+</script>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>
