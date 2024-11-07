@@ -59,6 +59,7 @@ export const login = async (req, res) => {
       correo: response.user.correo,
       activo: response.user.activo,
       sistemas: response.user.sistemas,
+      roles: response.user.roles,
     };
 
     console.log("SESION DE:", req.session.user);

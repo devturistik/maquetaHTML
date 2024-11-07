@@ -1,32 +1,23 @@
+<!-- views/solicitud/crear.ejs -->
 <%- include('../partials/header', { title: 'Crear Solicitud' }) %>
-<%- include('../partials/navbar', { navbarText: 'Creando Solicitud' }) %>
+<%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud">
-      <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= successMessage %>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Cerrar"
-        ></button>
-      </div>
+      <% if (successMessage && successMessage.length > 0) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= successMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
       <% } %>
-      <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= errorMessage %>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Cerrar"
-        ></button>
-      </div>
+      <% if (errorMessage && errorMessage.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= errorMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
       <% } %>
 
       <form
@@ -58,7 +49,7 @@
             required
           />
           <% if (errors.asunto) { %>
-          <div class="invalid-feedback"><%= errors.asunto %></div>
+            <div class="invalid-feedback"><%= errors.asunto %></div>
           <% } %>
         </div>
 
@@ -74,7 +65,7 @@
             required
           ><%= typeof descripcion !== 'undefined' ? descripcion : '' %></textarea>
           <% if (errors.descripcion) { %>
-          <div class="invalid-feedback"><%= errors.descripcion %></div>
+            <div class="invalid-feedback"><%= errors.descripcion %></div>
           <% } %>
         </div>
 
@@ -93,14 +84,15 @@
             style="display: none;"
           />
           <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('archivos').click()">
-            Seleccionar archivos
+            <i class="fas fa-upload me-1"></i> Seleccionar archivos
           </button>
           <small class="form-text text-muted">
             Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
           </small>
           <% if (errors.archivos) { %>
-          <div class="invalid-feedback"><%= errors.archivos %></div>
+            <div class="invalid-feedback"><%= errors.archivos %></div>
           <% } %>
+          <!-- Lista de nuevos archivos a subir -->
           <ul id="file-list" class="list-group mt-2"></ul>
         </div>
 
@@ -161,6 +153,7 @@
 
     if (files.length + selectedFiles.length > maxFiles) {
       alert(`Puedes subir un máximo de ${maxFiles} archivos.`);
+      input.value = "";
       return;
     }
 
@@ -168,11 +161,13 @@
     for (const file of files) {
       if (!allowedExtensions.includes(file.name.split('.').pop().toLowerCase())) {
         alert(`El archivo "${file.name}" tiene una extensión no permitida.`);
+        input.value = "";
         return;
       }
       totalSize += file.size;
       if (totalSize > maxSizeTotal) {
         alert("El tamaño total de los archivos no puede superar los 10 MB.");
+        input.value = "";
         return;
       }
       selectedFiles.push(file);
@@ -206,6 +201,7 @@
     updateFileList();
   }
 
+  // Antes de enviar el formulario, asignar los nuevos archivos seleccionados al input de archivos
   document.querySelector("form").addEventListener("submit", function(event) {
     const dataTransfer = new DataTransfer();
     selectedFiles.forEach(file => dataTransfer.items.add(file));

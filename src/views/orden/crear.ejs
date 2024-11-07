@@ -84,7 +84,7 @@
             <select id="orden-tipo" class="form-select select2 <%= errors && errors.ordenTipo ? 'is-invalid' : '' %>" name="ordenTipo" required>
               <option value="">Seleccione un tipo de orden</option>
               <% tipoOrdenes.forEach(tipo => { %>
-                <option value="<%= tipo.id_tipo %>" <%= solicitud.id_tipo_orden === tipo.id_tipo ? 'selected' : '' %>><%= tipo.tipo %></option>
+                <option value="<%= tipo.id_tipo %>" <%= solicitud.id_tipo_orden === tipo.id_tipo ? 'selected' : '' %>><%= tipo.nombre %></option>
               <% }) %>
             </select>
             <% if (errors && errors.ordenTipo) { %>
@@ -108,13 +108,41 @@
             <span class="form-control-plaintext"><%= fechaActualDisplay %></span>
             <input type="hidden" id="orden-fecha" name="ordenFecha" value="<%= fechaActual %>" />
           </div>
-          <div class="col-md-12 mb-3">
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="orden-archivos">Archivos</label>
+            <input type="file" class="form-control" id="orden-archivos" name="ordenArchivos[]" multiple title="Agregar Archivos a la Orden">
+
+            <%
+              let archivosArray;
+              try {
+                archivosArray = JSON.parse(solicitud.archivos);
+              } catch (error) {
+                archivosArray = [];
+              }
+            %>
+
+            <% if (Array.isArray(archivosArray) && archivosArray.length > 0) { %>
+              <div class="mt-2">
+                <ul class="list-group">
+                  <% archivosArray.forEach((url, index) => { %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <a href="<%= url %>" target="_blank"><%= url.split('/').pop() %></a>
+                      <button type="button" class="btn btn-sm btn-danger remove-archivo" data-url="<%= url %>">Eliminar</button>
+                      <input type="hidden" name="archivosExistentes[]" value="<%= url %>">
+                    </li>
+                  <% }) %>
+                </ul>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="col-md-6 mb-3">
             <label class="form-label" for="orden-nota">Nota</label>
-            <textarea class="form-control" id="orden-nota" name="ordenNota" rows="1" style="resize: vertical;"></textarea>
+            <textarea class="form-control" id="orden-nota" name="ordenNota" rows="2" style="resize: vertical;" placeholder="Escribe una nota aquí..."></textarea>
           </div>
         </div>
 
-        <!-- Sección de Detalle de Productos (Sin Cambios) -->
+        <!-- Sección de Detalle de Productos -->
         <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
           <div class="card-body p-2">
             <h6 class="mb-0" style="color: #fff;">DETALLE</h6>
@@ -181,6 +209,22 @@
     $('.select2').select2({
       width: '100%',
       placeholder: 'Seleccione una opción'
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".remove-archivo").forEach(button => {
+      button.addEventListener("click", function() {
+        const url = this.getAttribute("data-url");
+
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = "archivosEliminar[]";
+        input.value = url;
+        document.querySelector("form").appendChild(input);
+
+        this.parentElement.remove();
+      });
     });
   });
 

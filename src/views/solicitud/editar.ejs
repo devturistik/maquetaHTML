@@ -1,3 +1,4 @@
+<!-- views/solicitud/editar.ejs -->
 <%- include('../partials/header', { title: 'Editar Solicitud' }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
@@ -27,24 +28,14 @@
         class="needs-validation"
         novalidate
       >
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-          <div>
-            <h4 class="mb-1">Editar Solicitud</h4>
-            <p class="text-muted mb-0">Modifica los detalles de la solicitud.</p>
-          </div>
-          <div class="d-flex align-content-center flex-wrap gap-2">
-            <a href="/solicitudes" class="btn btn-secondary">
-              <i class="fas fa-arrow-left me-1"></i> Regresar
-            </a>
-            <button type="button" class="btn btn-warning" onclick="clearForm(this)">
-              <i class="fas fa-eraser me-1"></i> Cancelar
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-save me-1"></i> Guardar Cambios
-            </button>
-          </div>
+        <!-- Parte Superior: Botón Regresar -->
+        <div class="d-flex flex-column align-items-start mb-4">
+          <a href="/solicitudes" class="btn btn-secondary mb-3">
+            <i class="fas fa-arrow-left me-1"></i> Regresar
+          </a>
         </div>
 
+        <!-- Contenido del Formulario -->
         <div class="card shadow-sm mb-4">
           <div class="card-body">
             <!-- Campo de Asunto -->
@@ -80,46 +71,49 @@
 
             <!-- Archivos Adjuntos Existentes con Opción de Eliminación -->
             <div class="mb-4">
-              <h6 class="fw-bold">Archivos Adjuntos</h6>
+              <h6 class="fw-bold">Archivos Adjuntos Existentes</h6>
               <% 
                 let archivos = [];
                 try {
-                  archivos = JSON.parse(solicitud.archivos);
+                  archivos = JSON.parse(solicitud.archivos).filter(archivo => archivo.eliminado === 0);
                 } catch (e) {
                   console.error("Error al parsear los archivos:", e);
+                  archivos = [];
                 }
               %>
               <% if (archivos && archivos.length > 0) { %>
                 <ul class="list-group mb-3">
-                  <% archivos.forEach((archivo) => { 
-                    const extension = archivo.split('.').pop().toLowerCase();
+                  <% archivos.forEach((archivo) => {
+                    const extension = archivo.url.split('.').pop().toLowerCase();
                     let iconClass = 'fas fa-file';
                     if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf';
                     else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image';
                     else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word';
                     else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel';
                   %>
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="<%= archivo %>" target="_blank" class="text-decoration-none">
-                      <i class="<%= iconClass %> me-2"></i> <%= archivo.split('/').pop() %>
-                    </a>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removeExistingFile('<%= archivo %>', this)">
-                      <i class="fas fa-trash-alt"></i> Eliminar
-                    </button>
-                  </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <a href="<%= archivo.url %>" target="_blank" class="text-decoration-none">
+                        <i class="<%= iconClass %> me-2"></i> <%= archivo.url.split('/').pop() %>
+                      </a>
+                      <button type="button" class="btn btn-danger btn-sm" onclick="removeExistingFile('<%= archivo.url %>', this)">
+                        <i class="fas fa-trash-alt"></i> Eliminar
+                      </button>
+                    </li>
                   <% }); %>
                 </ul>
               <% } else { %>
-                <p class="text-muted">No hay archivos adjuntos.</p>
+                <p class="text-muted">No hay archivos adjuntos existentes.</p>
               <% } %>
-              
               <!-- Lista de archivos a eliminar (campo oculto) -->
               <input type="hidden" name="deletedFiles" id="deletedFiles" value="[]">
+            </div>
 
-              <!-- Subir Nuevos Archivos -->
-              <label class="form-label mt-3" for="archivos">
-                <span id="uploadLabel"><%= archivos.length > 0 ? 'Subir más archivos' : 'Subir archivos' %></span>
-              </label>
+            <!-- Subir Nuevos Archivos con Lista de Archivos a Subir -->
+            <div class="mb-4">
+              <h6 class="fw-bold">Subir Nuevos Archivos</h6>
+              <button type="button" class="btn btn-outline-secondary mb-2" onclick="document.getElementById('archivos').click()">
+                <i class="fas fa-upload me-1"></i> Seleccionar archivos
+              </button>
               <input
                 type="file"
                 class="form-control <%= errors && errors.archivos ? 'is-invalid' : '' %>"
@@ -127,7 +121,8 @@
                 name="archivos"
                 accept=".pdf,.jpg,.jpeg,.png,.docx"
                 multiple
-                onchange="validateFiles(this)"
+                onchange="handleFileSelect(this)"
+                style="display: none;"
               />
               <small class="form-text text-muted">
                 Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
@@ -135,12 +130,29 @@
               <% if (errors && errors.archivos) { %>
                 <div class="invalid-feedback"><%= errors.archivos %></div>
               <% } %>
+              <!-- Lista de nuevos archivos a subir -->
+              <ul id="new-file-list" class="list-group mt-2"></ul>
             </div>
           </div>
+        </div>
+
+        <!-- Parte Inferior: Botones de Acción -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button
+            type="button"
+            class="btn btn-warning"
+            onclick="clearForm(this)"
+          >
+            <i class="fas fa-eraser me-1"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i> Guardar Cambios
+          </button>
         </div>
       </form>
     </div>
   </div>
+  <div class="content-backdrop fade"></div>
 </div>
 
 <script>
@@ -158,32 +170,31 @@
     });
   })();
 
-  function clearForm(button) {
-    const form = button.closest('form');
-    if (form) {
-      form.reset();
-      form.classList.remove('was-validated');
-      document.getElementById("deletedFiles").value = "[]"; // Reset deleted files list
-      document.getElementById("uploadLabel").textContent = "Subir archivos"; // Reset upload label
-    }
-  }
+  // Array para almacenar los nuevos archivos seleccionados
+  let selectedFiles = [];
 
-  function validateFiles(input) {
+  // Función para manejar la selección de archivos
+  function handleFileSelect(input) {
+    const files = Array.from(input.files);
     const maxFiles = 10;
-    const maxSizeTotal = 10 * 1024 * 1024;
+    const maxSizeTotal = 10 * 1024 * 1024; // 10 MB
     const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'docx'];
-    const files = input.files;
-    let totalSize = 0;
 
-    if (files.length > maxFiles) {
-      alert(`Puedes subir un máximo de ${maxFiles} archivos.`);
+    // Obtener el número de archivos existentes
+    const existingFilesCount = archivos.length;
+
+    // Validar número total de archivos (existentes + nuevos)
+    if (files.length + selectedFiles.length + existingFilesCount > maxFiles) {
+      alert(`Puedes subir un máximo de ${maxFiles} archivos en total.`);
       input.value = '';
       return;
     }
 
+    // Calcular el tamaño total
+    let totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
     for (const file of files) {
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      if (!allowedExtensions.includes(fileExtension)) {
+      const extension = file.name.split('.').pop().toLowerCase();
+      if (!allowedExtensions.includes(extension)) {
         alert(`El archivo "${file.name}" tiene una extensión no permitida.`);
         input.value = '';
         return;
@@ -194,17 +205,67 @@
         input.value = '';
         return;
       }
+      selectedFiles.push(file);
     }
+
+    updateNewFileList();
+    input.value = '';
   }
 
-  // Manejo de archivos a eliminar
+  // Función para actualizar la lista de nuevos archivos a subir
+  function updateNewFileList() {
+    const newFileList = document.getElementById('new-file-list');
+    newFileList.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+      const listItem = document.createElement('li');
+      listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+      listItem.textContent = file.name;
+
+      const removeButton = document.createElement('button');
+      removeButton.className = 'btn btn-sm btn-danger';
+      removeButton.textContent = 'Eliminar';
+      removeButton.onclick = () => removeNewFile(index);
+
+      listItem.appendChild(removeButton);
+      newFileList.appendChild(listItem);
+    });
+  }
+
+  // Función para eliminar un archivo de la lista de nuevos archivos
+  function removeNewFile(index) {
+    selectedFiles.splice(index, 1);
+    updateNewFileList();
+  }
+
+  // Función para manejar la eliminación de archivos existentes
   function removeExistingFile(fileUrl, button) {
     const deletedFilesInput = document.getElementById("deletedFiles");
     let deletedFiles = JSON.parse(deletedFilesInput.value);
     deletedFiles.push(fileUrl);
     deletedFilesInput.value = JSON.stringify(deletedFiles);
     button.closest("li").remove();
+    // Opcional: Puedes mostrar un mensaje de confirmación adicional aquí
   }
+
+  // Función para limpiar el formulario
+  function clearForm(button) {
+    const form = button.closest('form');
+    if (form) {
+      form.reset();
+      form.classList.remove('was-validated');
+      document.getElementById("deletedFiles").value = "[]";
+      selectedFiles = [];
+      updateNewFileList();
+    }
+  }
+
+  // Antes de enviar el formulario, asignar los nuevos archivos seleccionados al input de archivos
+  document.querySelector("form").addEventListener("submit", function(event) {
+    const dataTransfer = new DataTransfer();
+    selectedFiles.forEach(file => dataTransfer.items.add(file));
+    document.getElementById("archivos").files = dataTransfer.files;
+  });
 </script>
 
 <%- include('../partials/footer-text') %>

@@ -3,11 +3,12 @@ import sql from "mssql";
 import config from "../../config/database.js";
 
 class SolicitudesRepository {
+  // Obtener todas las solicitudes no eliminadas
   async getAll() {
     try {
       const pool = await sql.connect(config);
       const result = await pool.request().query(`
-        SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, s.usuario_solicitante, s.correo_solicitante, e.nombre AS estatus
+        SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, s.usuario_solicitante, s.correo_solicitante, s.created_at, e.nombre AS estatus
         FROM oc.Solicitud s
         JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
         WHERE s.eliminado = 0
@@ -22,6 +23,7 @@ class SolicitudesRepository {
     }
   }
 
+  // Obtener una solicitud por ID
   async getById(id) {
     try {
       const pool = await sql.connect(config);
@@ -29,7 +31,10 @@ class SolicitudesRepository {
         .request()
         .input("id", sql.Int, id)
         .query(
-          `SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado FROM oc.Solicitud s JOIN oc.Estatus e ON s.estatus_id = e.id_estatus WHERE id_solicitud = @id`
+          `SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado
+            FROM oc.Solicitud s
+            JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
+            WHERE s.id_solicitud = @id`
         );
       return result.recordset[0];
     } catch (error) {
@@ -38,6 +43,7 @@ class SolicitudesRepository {
     }
   }
 
+  // Guardar una nueva solicitud
   async saveSolicitud(solicitud) {
     try {
       const pool = await sql.connect(config);
@@ -58,7 +64,7 @@ class SolicitudesRepository {
         .input("estatus_id", sql.TinyInt, defaultStatus).query(`
           INSERT INTO oc.Solicitud (asunto, descripcion, archivos, usuario_solicitante, correo_solicitante, estatus_id)
           VALUES (@asunto, @descripcion, @archivos, @usuarioSolicitante, @correoSolicitante, @estatus_id);
-          SELECT SCOPE_IDENTITY() AS id;
+          SELECT SCOPE_IDENTITY() AS id_solicitud;
         `);
       return result.recordset;
     } catch (error) {
@@ -70,6 +76,7 @@ class SolicitudesRepository {
     }
   }
 
+  // Actualizar una solicitud existente
   async updateSolicitud(id, { asunto, descripcion, archivos }) {
     try {
       const pool = await sql.connect(config);
@@ -92,6 +99,29 @@ class SolicitudesRepository {
     }
   }
 
+  // Actualizar el campo archivos de una solicitud
+  async updateArchivos(id, archivosJson) {
+    try {
+      const pool = await sql.connect(config);
+      await pool
+        .request()
+        .input("id", sql.Int, id)
+        .input("archivos", sql.NVarChar, archivosJson).query(`
+          UPDATE oc.Solicitud
+          SET archivos = @archivos,
+              updated_at = GETDATE()
+          WHERE id_solicitud = @id
+        `);
+    } catch (error) {
+      console.error(
+        "Error al actualizar archivos de la solicitud:",
+        error.message
+      );
+      throw new Error("Error al actualizar archivos de la solicitud");
+    }
+  }
+
+  // Eliminar una solicitud (marcar como eliminado)
   async deleteSolicitud(id, justificacion) {
     try {
       const pool = await sql.connect(config);
@@ -100,7 +130,7 @@ class SolicitudesRepository {
         .input("id", sql.Int, id)
         .input("justificacion", sql.NVarChar, justificacion).query(`
           UPDATE oc.Solicitud
-          SET eliminado = 1, justificacion_eliminacion = @justificacion
+          SET eliminado = 1, justificacion_eliminacion = @justificacion, updated_at = GETDATE()
           WHERE id_solicitud = @id
         `);
     } catch (error) {

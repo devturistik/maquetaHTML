@@ -6,6 +6,7 @@ import multer from "multer";
 const router = express.Router();
 const solicitudesController = new SolicitudesController();
 
+// Configuración de Multer para manejar archivos en memoria
 const storage = multer.memoryStorage();
 const upload = multer({
   storage: storage,
@@ -59,5 +60,11 @@ router.get("/solicitudes-eliminar/:id", solicitudesController.renderDeleteForm);
 
 // Ruta para eliminar una solicitud
 router.post("/solicitudes-eliminar/:id", solicitudesController.deleteSolicitud);
+
+// Ruta para eliminar un archivo de una solicitud
+router.post(
+  "/solicitudes/eliminar-archivo/:id",
+  solicitudesController.eliminarArchivo
+);
 
 export default router;

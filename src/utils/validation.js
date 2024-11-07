@@ -1,32 +1,37 @@
 // src/utils/validation.js
-export const validateSolicitudData = ({ asunto, descripcion, archivos }) => {
+
+export const validateSolicitudData = (data) => {
   const errors = {};
 
-  // Validar el asunto
-  if (!asunto || asunto.trim() === "") {
+  // Validar Asunto
+  if (!data.asunto || data.asunto.trim() === "") {
     errors.asunto = "El asunto es requerido.";
-  } else if (asunto.length < 3) {
-    errors.asunto = "El asunto debe tener al menos 3 caracteres.";
+  } else if (data.asunto.length > 255) {
+    errors.asunto = "El asunto no puede exceder 255 caracteres.";
   }
 
-  // Validar la descripción
-  if (!descripcion || descripcion.trim() === "") {
+  // Validar Descripción
+  if (!data.descripcion || data.descripcion.trim() === "") {
     errors.descripcion = "La descripción es requerida.";
-  } else if (descripcion.length < 5) {
-    errors.descripcion = "La descripción debe tener al menos 5 caracteres.";
   }
 
-  // Validar los archivos
-  if (Array.isArray(archivos) && archivos.length > 10) {
-    errors.archivos = "No puedes subir más de 10 archivos.";
-  }
-
-  const totalSize = Array.isArray(archivos)
-    ? archivos.reduce((acc, file) => acc + (file.size || 0), 0)
-    : 0;
-  if (totalSize > 10 * 1024 * 1024) {
-    errors.archivos =
-      "El tamaño total de los archivos no puede superar los 10 MB.";
+  // Validar Archivos (opcional)
+  if (data.archivos) {
+    try {
+      const archivos = JSON.parse(data.archivos);
+      if (!Array.isArray(archivos)) {
+        errors.archivos = "Formato de archivos inválido.";
+      } else {
+        for (const archivo of archivos) {
+          if (!archivo.url || typeof archivo.eliminado !== "number") {
+            errors.archivos = "Datos de archivos incompletos.";
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      errors.archivos = "Formato de archivos inválido.";
+    }
   }
 
   return Object.keys(errors).length > 0 ? errors : null;

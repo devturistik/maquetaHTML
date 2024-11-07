@@ -155,7 +155,7 @@ class OrdenesRepository {
     try {
       const pool = await sql.connect(config);
       const result = await pool.request().query(`
-        SELECT id_proveedor, nombre FROM oc.Proveedor WHERE eliminado = 0 AND estatus = 1
+        SELECT ID_PROVEEDOR, NOMBRE_PROVEEDOR FROM oc.Proveedor WHERE ELIMINADO = 0 AND ESTATUS_PROVEEDOR = 1
       `);
       return result.recordset;
     } catch (error) {
@@ -207,7 +207,7 @@ class OrdenesRepository {
     try {
       const pool = await sql.connect(config);
       const result = await pool.request().query(`
-        SELECT id_tipo, tipo FROM oc.TipoOrden
+        SELECT id_tipo, nombre FROM oc.TipoOrden
       `);
       return result.recordset;
     } catch (error) {
