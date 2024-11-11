@@ -96,7 +96,7 @@ class SolicitudesController {
       if (archivos.length > 0) {
         const fechaActual = dayjs().format("DDMMYYYY");
         const archivosParaSubir = archivos.map((file) => ({
-          blobName: `${idsolicitudencodeado}-${fechaActual}-${file.originalname}`,
+          blobName: `${fechaActual}-${file.originalname}`,
           file,
         }));
 
