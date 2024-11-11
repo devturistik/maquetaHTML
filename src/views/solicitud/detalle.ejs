@@ -7,85 +7,69 @@
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud-detalle">
-      <!-- Parte Superior: Botón Regresar -->
-      <div class="d-flex flex-column align-items-start mb-4">
-        <a href="/solicitudes" class="btn btn-secondary mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Detalle de la Solicitud</h4>
+        <a href="/solicitudes" class="btn btn-secondary">
           <i class="fas fa-arrow-left me-1"></i> Regresar
         </a>
       </div>
 
-      <!-- Detalle de la Solicitud -->
       <div class="card shadow-sm mb-4">
         <div class="card-body">
-          <!-- Mostrar Asunto -->
           <div class="mb-4">
-            <h6 class="fw-bold">Asunto</h6>
-            <p class="form-control-plaintext"><%= solicitud.asunto %></p>
+            <h6 class="fw-bold text-primary">Asunto</h6>
+            <p class="mb-0"><%= solicitud.asunto %></p>
           </div>
 
-          <!-- Mostrar Descripción -->
           <div class="mb-4">
-            <h6 class="fw-bold">Descripción</h6>
-            <p class="form-control-plaintext"><%= solicitud.descripcion %></p>
+            <h6 class="fw-bold text-primary">Descripción</h6>
+            <p class="mb-0"><%= solicitud.descripcion %></p>
           </div>
 
-          <!-- Mostrar Archivos Adjuntos -->
           <div class="mb-4">
-            <h6 class="fw-bold">Archivos Adjuntos</h6>
+            <h6 class="fw-bold text-primary">Archivos Adjuntos</h6>
             <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
-              <ul class="list-group">
-                <% solicitud.archivos.forEach((archivo) => { 
-                  const extension = archivo.url.split('.').pop().toLowerCase();
+              <ul class="list-group list-group-flush">
+                <% solicitud.archivos.forEach((archivo) => {
+                  const blobName = archivo.url.split('/').pop();
+                  const parts = blobName.split('-');
+                  const originalFileName = parts.slice(2).join('-');
+                  const extension = originalFileName.split('.').pop().toLowerCase();
                   let iconClass = 'fas fa-file';
-                  if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf';
-                  else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image';
-                  else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word';
-                  else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel';
+                  if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf text-danger';
+                  else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image text-info';
+                  else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word text-primary';
+                  else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel text-success';
                 %>
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <li class="list-group-item">
                     <a href="<%= archivo.url %>" target="_blank" class="text-decoration-none">
-                      <i class="<%= iconClass %> me-2"></i> <%= archivo.url.split('/').pop() %>
+                      <i class="<%= iconClass %> me-2"></i> <%= originalFileName %>
                     </a>
-                    <i class="fas fa-external-link-alt text-muted"></i>
                   </li>
-                <% }) %>
+                <% }); %>
               </ul>
             <% } else { %>
               <p class="text-muted">No hay archivos adjuntos.</p>
             <% } %>
           </div>
 
-          <!-- Mostrar Estatus -->
-          <div class="mb-4">
-            <h6 class="fw-bold">Estatus</h6>
-            <p class="form-control-plaintext"><%= solicitud.estatus %></p>
-          </div>
-
-          <!-- Mostrar Usuario Solicitante -->
-          <div class="mb-4">
-            <h6 class="fw-bold">Solicitante</h6>
-            <p class="form-control-plaintext"><%= solicitud.usuario_solicitante %></p>
-          </div>
-
-          <!-- Mostrar Correo Solicitante -->
-          <div class="mb-4">
-            <h6 class="fw-bold">Correo del Solicitante</h6>
-            <p class="form-control-plaintext">
-              <a href="mailto:<%= solicitud.correo_solicitante %>" class="text-decoration-none"><%= solicitud.correo_solicitante %></a>
-            </p>
+          <div class="row">
+            <div class="col-md-4">
+              <h6 class="fw-bold text-primary">Estatus</h6>
+              <p class="mb-0"><%= solicitud.estatus %></p>
+            </div>
+            <div class="col-md-4">
+              <h6 class="fw-bold text-primary">Solicitante</h6>
+              <p class="mb-0"><%= solicitud.usuario_solicitante %></p>
+            </div>
+            <div class="col-md-4">
+              <h6 class="fw-bold text-primary">Correo del Solicitante</h6>
+              <p class="mb-0">
+                <a href="mailto:<%= solicitud.correo_solicitante %>" class="text-decoration-none"><%= solicitud.correo_solicitante %></a>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- Parte Inferior: Botones de Acción -->
-      <div class="d-flex justify-content-end gap-2 mt-4">
-        <a href="/solicitudes-editar/<%= solicitud.id %>" class="btn btn-primary">
-          <i class="fas fa-edit me-1"></i> Editar Solicitud
-        </a>
-        <!-- Opcional: Botón para eliminar la solicitud -->
-        <a href="/solicitudes-eliminar/<%= solicitud.id %>" class="btn btn-danger">
-          <i class="fas fa-trash-alt me-1"></i> Eliminar Solicitud
-        </a>
       </div>
     </div>
   </div>

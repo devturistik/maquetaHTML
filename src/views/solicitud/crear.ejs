@@ -35,7 +35,6 @@
           </a>
         </div>
 
-        <!-- Campo de Asunto -->
         <div class="mb-3">
           <label class="form-label" for="asunto">Asunto <span class="text-danger">*</span></label>
           <input
@@ -53,7 +52,6 @@
           <% } %>
         </div>
 
-        <!-- Campo de Descripción -->
         <div class="mb-3">
           <label class="form-label" for="descripcion">Descripción <span class="text-danger">*</span></label>
           <textarea
@@ -69,19 +67,17 @@
           <% } %>
         </div>
 
-        <!-- Campo de Archivos -->
         <div class="mb-3">
           <label class="form-label" for="archivos">Subir Archivos</label>
           <input
             type="file"
-            class="form-control <%= errors.archivos ? 'is-invalid' : '' %>"
+            class="form-control d-none"
             id="archivos"
             name="archivos"
             accept=".pdf,.jpg,.jpeg,.png,.docx"
             multiple
             aria-label="Subir Archivos"
             onchange="handleFileSelect(this)"
-            style="display: none;"
           />
           <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('archivos').click()">
             <i class="fas fa-upload me-1"></i> Seleccionar archivos
@@ -92,20 +88,12 @@
           <% if (errors.archivos) { %>
             <div class="invalid-feedback"><%= errors.archivos %></div>
           <% } %>
-          <!-- Lista de nuevos archivos a subir -->
           <ul id="file-list" class="list-group mt-2"></ul>
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button
-            type="button"
-            class="btn btn-warning"
-            onclick="clearForm(this)"
-          >
-            <i class="fas fa-eraser me-1"></i> Cancelar
-          </button>
           <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-1"></i> Guardar
+            <i class="fas fa-save me-1"></i> Crear
           </button>
         </div>
       </form>
@@ -132,16 +120,6 @@
       );
     });
   })();
-
-  function clearForm(button) {
-    const form = button.closest("form");
-    if (form) {
-      form.reset();
-      form.classList.remove("was-validated");
-      selectedFiles = [];
-      updateFileList();
-    }
-  }
 
   let selectedFiles = [];
 
@@ -188,7 +166,7 @@
 
       const removeButton = document.createElement("button");
       removeButton.className = "btn btn-sm btn-danger";
-      removeButton.textContent = "Eliminar";
+      removeButton.innerHTML = '<i class="fas fa-times"></i>';
       removeButton.onclick = () => removeFile(index);
 
       listItem.appendChild(removeButton);

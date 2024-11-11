@@ -1,40 +1,35 @@
 <!-- views/solicitud/archivos.ejs -->
 <%- include('../partials/header', { title: 'Archivos Adjuntos' }) %>
-<%- include('../partials/navbar', { navbarText: 'Archivos Adjuntos' }) %>
+<%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud-archivos">
-      <!-- Parte Superior: Botón Regresar -->
-      <div class="d-flex flex-column align-items-start mb-4">
-        <a href="/solicitudes" class="btn btn-secondary mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0">Archivos Adjuntos</h4>
+        <a href="/solicitudes" class="btn btn-secondary">
           <i class="fas fa-arrow-left me-1"></i> Regresar
         </a>
       </div>
 
-      <!-- Lista de Archivos Adjuntos -->
-      <div class="card shadow-sm mb-4">
-        <div class="card-header">
-          <h5 class="card-title mb-0">Archivos Adjuntos</h5>
-        </div>
+      <div class="card shadow-sm">
         <div class="card-body">
           <% if (archivos && archivos.length > 0) { %>
-            <ul class="list-group">
-              <% archivos.forEach((archivo, index) => {
+            <ul class="list-group list-group-flush">
+              <% archivos.forEach((archivo) => {
                 const extension = archivo.url.split('.').pop().toLowerCase();
                 let iconClass = 'fas fa-file';
-                if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf';
-                else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image';
-                else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word';
-                else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel';
+                if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf text-danger';
+                else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image text-info';
+                else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word text-primary';
+                else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel text-success';
               %>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                  <a href="<%= archivo.url %>" target="_blank" onclick="openFilePreview(event, '<%= archivo.url %>')" class="text-decoration-none">
+                <li class="list-group-item">
+                  <a href="<%= archivo.url %>" target="_blank" class="text-decoration-none">
                     <i class="<%= iconClass %> me-2"></i> <%= archivo.url.split('/').pop() %>
                   </a>
-                  <i class="fas fa-external-link-alt text-muted"></i>
                 </li>
               <% }) %>
             </ul>
@@ -43,27 +38,9 @@
           <% } %>
         </div>
       </div>
-
-      <!-- Parte Inferior: Botones de Acción -->
-      <div class="d-flex justify-content-end gap-2 mt-4">
-        <a href="/solicitudes" class="btn btn-secondary">
-          <i class="fas fa-arrow-left me-1"></i> Regresar
-        </a>
-        <!-- Opcional: Otros botones de acción pueden añadirse aquí -->
-      </div>
     </div>
   </div>
 </div>
-
-<script>
-  function openFilePreview(event, url) {
-    event.preventDefault();
-    const filePreviewWindow = window.open(url, '_blank');
-    if (!filePreviewWindow) {
-      alert('Por favor, permita ventanas emergentes para visualizar el archivo.');
-    }
-  }
-</script>
 
 <%- include('../partials/footer-text') %>
 <%- include('../partials/footer') %>

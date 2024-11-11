@@ -1,10 +1,21 @@
 // src/application/solicitudesService.js
 import SolicitudesRepository from "../adapters/repository/solicitudesRepository.js";
-import { validateSolicitudData } from "../utils/validation.js";
 
 class SolicitudesService {
   constructor() {
     this.solicitudesRepository = new SolicitudesRepository();
+  }
+
+  // Validar datos de solicitud
+  validateSolicitudData(solicitudData) {
+    const errors = {};
+    if (!solicitudData.asunto || solicitudData.asunto.trim() === "") {
+      errors.asunto = "El asunto es requerido.";
+    }
+    if (!solicitudData.descripcion || solicitudData.descripcion.trim() === "") {
+      errors.descripcion = "La descripción es requerida.";
+    }
+    return Object.keys(errors).length > 0 ? errors : null;
   }
 
   // Obtener todas las solicitudes
@@ -19,47 +30,21 @@ class SolicitudesService {
 
   // Crear una nueva solicitud
   async createSolicitud(solicitudData) {
-    const validationErrors = validateSolicitudData(solicitudData);
-    if (validationErrors) {
-      const error = new Error("Validation Error");
-      error.validationErrors = validationErrors;
-      throw error;
-    }
-
     return await this.solicitudesRepository.saveSolicitud(solicitudData);
   }
 
   // Actualizar una solicitud existente
   async updateSolicitud(id, solicitudData) {
-    const validationErrors = validateSolicitudData(solicitudData);
-    if (validationErrors) {
-      const error = new Error("Validation Error");
-      error.validationErrors = validationErrors;
-      throw error;
-    }
-
     return await this.solicitudesRepository.updateSolicitud(id, solicitudData);
+  }
+
+  async updateEstatus(id, nuevoEstatus) {
+    return await this.solicitudesRepository.updateEstatus(id, nuevoEstatus);
   }
 
   // Eliminar una solicitud
   async deleteSolicitud(id, justificacion) {
     return await this.solicitudesRepository.deleteSolicitud(id, justificacion);
-  }
-
-  // Marcar un archivo como eliminado
-  async marcarArchivoComoEliminado(idSolicitud, urlArchivo) {
-    const solicitud = await this.solicitudesRepository.getById(idSolicitud);
-    let archivos = JSON.parse(solicitud.archivos);
-
-    archivos = archivos.map((archivo) => {
-      if (archivo.url === urlArchivo) {
-        return { ...archivo, eliminado: 1 };
-      }
-      return archivo;
-    });
-
-    const archivosJson = JSON.stringify(archivos);
-    await this.solicitudesRepository.updateArchivos(idSolicitud, archivosJson);
   }
 }
 

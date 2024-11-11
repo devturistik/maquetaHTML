@@ -3,11 +3,6 @@ import SolicitudesService from "../application/solicitudesService.js";
 import { encodeBase64, decodeBase64 } from "../utils/base64.js";
 import AzureBlobService from "../services/azureBlobService.js";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
-import timezone from "dayjs/plugin/timezone.js";
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 class SolicitudesController {
   constructor() {
@@ -18,24 +13,20 @@ class SolicitudesController {
   getAllSolicitudes = async (req, res) => {
     try {
       const solicitudes = await this.solicitudesService.getAllSolicitudes();
-      const estatusList = [
-        ...new Set(solicitudes.map((s) => s.estatus)),
-      ].sort();
       res.render("solicitudes", {
         solicitudes: solicitudes.map((solicitud) => ({
           ...solicitud,
           id: encodeBase64(solicitud.id_solicitud),
           hasFiles:
             solicitud.archivos &&
-            JSON.parse(solicitud.archivos).filter((a) => a.eliminado === 0)
-              .length > 0,
+            JSON.parse(solicitud.archivos).some((a) => a.eliminado === 0),
+          created_at: dayjs(solicitud.created_at).format("DD/MM/YYYY"),
         })),
-        estatusList,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
       });
     } catch (error) {
-      console.error("Error al obtener solicitudes:", error.message);
+      console.error("Error al obtener solicitudes:", error);
       req.flash("errorMessage", "Error al obtener solicitudes.");
       res.redirect("/");
     }
@@ -46,20 +37,23 @@ class SolicitudesController {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
-      solicitud.id = encodeBase64(solicitud.id_solicitud);
-
-      try {
-        solicitud.archivos = JSON.parse(solicitud.archivos).filter(
-          (archivo) => archivo.eliminado === 0
-        );
-      } catch (e) {
-        console.error("Error al parsear los archivos:", e);
-        solicitud.archivos = [];
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes");
       }
 
-      res.render("solicitud/detalle", { solicitud });
+      solicitud.id = encodeBase64(solicitud.id_solicitud);
+      solicitud.archivos = JSON.parse(solicitud.archivos || "[]").filter(
+        (archivo) => archivo.eliminado === 0
+      );
+
+      res.render("solicitud/detalle", {
+        solicitud,
+        successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
+      });
     } catch (error) {
-      console.error("Error al obtener solicitud:", error.message);
+      console.error("Error al obtener solicitud:", error);
       req.flash("errorMessage", "Error al obtener solicitud.");
       res.redirect("/solicitudes");
     }
@@ -69,10 +63,10 @@ class SolicitudesController {
   renderCreateForm = (req, res) => {
     res.render("solicitud/crear", {
       errors: {},
-      errorMessage: req.flash("errorMessage"),
-      successMessage: req.flash("successMessage"),
       asunto: "",
       descripcion: "",
+      successMessage: req.flash("successMessage"),
+      errorMessage: req.flash("errorMessage"),
     });
   };
 
@@ -83,21 +77,22 @@ class SolicitudesController {
       const archivos = req.files || [];
       const { nombre, apellido, correo } = res.locals.user || {};
 
-      const solicitudDataInitial = {
+      const solicitudData = {
         asunto,
         descripcion,
-        archivos: JSON.stringify([]),
+        archivos: [],
         usuarioSolicitante: `${nombre} ${apellido}`,
         correoSolicitante: correo,
       };
 
-      const insertedSolicitud = await this.solicitudesService.createSolicitud(
-        solicitudDataInitial
-      );
-      const idSolicitud = insertedSolicitud[0].id_solicitud;
-      const idsolicitudencodeado = encodeBase64(idSolicitud);
+      // Validación de datos de entrada
+      const validationErrors =
+        this.solicitudesService.validateSolicitudData(solicitudData);
+      if (validationErrors) {
+        throw { validationErrors };
+      }
 
-      let archivosAdjuntos = [];
+      // Subir archivos a Azure Blob Storage
       if (archivos.length > 0) {
         const fechaActual = dayjs().format("DDMMYYYY");
         const archivosParaSubir = archivos.map((file) => ({
@@ -108,50 +103,29 @@ class SolicitudesController {
         const archivosUrls = await AzureBlobService.uploadFilesWithNames(
           archivosParaSubir
         );
-        archivosAdjuntos = archivosUrls.map((url) => ({
+        solicitudData.archivos = archivosUrls.map((url) => ({
           url,
           eliminado: 0,
         }));
       }
 
-      const archivosJson = JSON.stringify(archivosAdjuntos);
+      // Crear la solicitud en la base de datos
+      await this.solicitudesService.createSolicitud(solicitudData);
 
-      const solicitudDataUpdate = {
-        asunto,
-        descripcion,
-        archivos: archivosJson,
-      };
-
-      await this.solicitudesService.updateSolicitud(
-        idSolicitud,
-        solicitudDataUpdate
-      );
-
-      req.flash("successMessage", "Solicitud creada con éxito");
+      req.flash("successMessage", "Solicitud creada con éxito.");
       res.redirect("/solicitudes");
     } catch (error) {
-      console.error("Error al crear solicitud:", error.message);
+      console.error("Error al crear solicitud:", error);
       if (error.validationErrors) {
         res.render("solicitud/crear", {
           errors: error.validationErrors,
+          asunto: req.body.asunto,
+          descripcion: req.body.descripcion,
+          successMessage: "",
           errorMessage: "Por favor, corrige los errores en el formulario.",
-          successMessage: "",
-          asunto: req.body.asunto,
-          descripcion: req.body.descripcion,
-        });
-      } else if (error.message === "Tipo de archivo no permitido") {
-        res.render("solicitud/crear", {
-          errors: { archivos: error.message },
-          errorMessage: error.message,
-          successMessage: "",
-          asunto: req.body.asunto,
-          descripcion: req.body.descripcion,
         });
       } else {
-        req.flash(
-          "errorMessage",
-          "Error al crear la solicitud: " + error.message
-        );
+        req.flash("errorMessage", "Error al crear la solicitud.");
         res.redirect("/solicitudes");
       }
     }
@@ -162,16 +136,29 @@ class SolicitudesController {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes");
+      }
+
+      // Verificar si la solicitud está en estado 'Abierta' antes de cambiar a 'Editando'
+      if (solicitud.estatus.toLowerCase() === "abierta") {
+        await this.solicitudesService.updateEstatus(id, "editando");
+        solicitud.estatus = "Editando"; // Actualizar el estatus en el objeto solicitud
+      }
+
+      solicitud.archivos = JSON.parse(solicitud.archivos || "[]");
       solicitud.id = encodeBase64(solicitud.id_solicitud);
+
       res.render("solicitud/editar", {
         solicitud,
         errors: {},
-        errorMessage: req.flash("errorMessage"),
         successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
       });
     } catch (error) {
-      console.error("Error al obtener solicitud para editar:", error.message);
-      req.flash("errorMessage", "Error al obtener solicitud para editar.");
+      console.error("Error al cargar el formulario de edición:", error);
+      req.flash("errorMessage", "Error al cargar el formulario de edición.");
       res.redirect("/solicitudes");
     }
   };
@@ -184,41 +171,39 @@ class SolicitudesController {
       const archivosNuevos = req.files || [];
 
       // Obtener la solicitud existente
-      const solicitud = await this.solicitudesService.getSolicitudById(id);
-      let archivosExistentes = [];
-      try {
-        archivosExistentes = JSON.parse(solicitud.archivos);
-      } catch (e) {
-        console.error("Error al parsear los archivos existentes:", e);
-        archivosExistentes = [];
+      const solicitudExistente = await this.solicitudesService.getSolicitudById(
+        id
+      );
+      if (!solicitudExistente) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes");
       }
 
+      let archivosActuales = JSON.parse(solicitudExistente.archivos || "[]");
+
       // Marcar archivos eliminados
-      let archivosActualizados = archivosExistentes.map((archivo) => {
-        if (deletedFiles && JSON.parse(deletedFiles).includes(archivo.url)) {
-          return { ...archivo, eliminado: 1 };
-        }
-        return archivo;
-      });
+      if (deletedFiles) {
+        const filesToDelete = JSON.parse(deletedFiles);
+        archivosActuales = archivosActuales.map((archivo) => {
+          if (filesToDelete.includes(archivo.url)) {
+            return { ...archivo, eliminado: 1 };
+          }
+          return archivo;
+        });
 
-      const archivosParaEliminar = archivosExistentes.filter(
-        (archivo) =>
-          deletedFiles && JSON.parse(deletedFiles).includes(archivo.url)
-      );
+        // Eliminar archivos de Azure Blob Storage
+        // const deletePromises = archivosActuales
+        //   .filter((archivo) => archivo.eliminado === 1)
+        //   .map((archivo) =>
+        //     AzureBlobService.deleteBlob(archivo.url).catch((err) => {
+        //       console.error(`Error al eliminar archivo ${archivo.url}:`, err);
+        //     })
+        //   );
 
-      const deletePromises = archivosParaEliminar.map((archivo) =>
-        AzureBlobService.deleteBlob(archivo.url).catch((error) => {
-          console.error(
-            `Error al eliminar el archivo ${archivo.url}:`,
-            error.message
-          );
-        })
-      );
-
-      await Promise.all(deletePromises);
+        // await Promise.all(deletePromises);
+      }
 
       // Subir nuevos archivos
-      let nuevosArchivosAdjuntos = [];
       if (archivosNuevos.length > 0) {
         const fechaActual = dayjs().format("DDMMYYYY");
         const archivosParaSubir = archivosNuevos.map((file) => ({
@@ -229,63 +214,62 @@ class SolicitudesController {
         const archivosUrls = await AzureBlobService.uploadFilesWithNames(
           archivosParaSubir
         );
-        nuevosArchivosAdjuntos = archivosUrls.map((url) => ({
+        const nuevosArchivos = archivosUrls.map((url) => ({
           url,
           eliminado: 0,
         }));
+
+        archivosActuales = [...archivosActuales, ...nuevosArchivos];
       }
-
-      // Combinar archivos existentes (no eliminados) con nuevos archivos
-      const archivosFinales = [
-        ...archivosActualizados.filter((archivo) => archivo.eliminado === 0),
-        ...nuevosArchivosAdjuntos,
-      ];
-
-      const archivosJson = JSON.stringify(archivosFinales);
 
       // Actualizar la solicitud
       const solicitudData = {
         asunto,
         descripcion,
-        archivos: archivosJson,
+        archivos: archivosActuales,
       };
 
-      await this.solicitudesService.updateSolicitud(id, solicitudData);
+      // Validación de datos de entrada
+      const validationErrors =
+        this.solicitudesService.validateSolicitudData(solicitudData);
+      if (validationErrors) {
+        throw { validationErrors };
+      }
 
-      req.flash("successMessage", "Solicitud actualizada con éxito");
+      await this.solicitudesService.updateSolicitud(id, solicitudData);
+      await this.solicitudesService.updateEstatus(id, "abierta");
+
+      req.flash("successMessage", "Solicitud actualizada con éxito.");
       res.redirect("/solicitudes");
     } catch (error) {
-      console.error("Error al actualizar la solicitud:", error.message);
+      console.error("Error al actualizar la solicitud:", error);
       if (error.validationErrors) {
-        const id = decodeBase64(req.params.id);
-        const solicitud = await this.solicitudesService.getSolicitudById(id);
-        solicitud.id = encodeBase64(solicitud.id_solicitud);
-        solicitud.asunto = req.body.asunto;
-        solicitud.descripcion = req.body.descripcion;
-        solicitud.archivos = req.body.archivos || "[]";
-        res.render("solicitud/editar", {
-          solicitud,
-          errors: error.validationErrors,
-          errorMessage: "Por favor, corrige los errores en el formulario.",
-          successMessage: "",
-        });
-      } else if (error.message === "Tipo de archivo no permitido") {
         res.render("solicitud/editar", {
           solicitud: {
             ...req.body,
             id: req.params.id,
           },
-          errors: { archivos: error.message },
-          errorMessage: error.message,
+          errors: error.validationErrors,
           successMessage: "",
+          errorMessage: "Por favor, corrige los errores en el formulario.",
         });
       } else {
-        req.flash(
-          "errorMessage",
-          "Error al actualizar la solicitud: " + error.message
-        );
+        req.flash("errorMessage", "Error al actualizar la solicitud.");
         res.redirect("/solicitudes");
       }
+    }
+  };
+
+  cancelarEdicion = async (req, res) => {
+    try {
+      const id = decodeBase64(req.params.id);
+      await this.solicitudesService.updateEstatus(id, 'abierta');
+      req.flash("successMessage", "Edición cancelada.");
+      res.redirect("/solicitudes");
+    } catch (error) {
+      console.error("Error al cancelar la edición:", error);
+      req.flash("errorMessage", "Error al cancelar la edición.");
+      res.redirect("/solicitudes");
     }
   };
 
@@ -294,16 +278,22 @@ class SolicitudesController {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes");
+      }
+
       solicitud.id = encodeBase64(solicitud.id_solicitud);
+
       res.render("solicitud/eliminar", {
         solicitud,
         errors: {},
-        errorMessage: req.flash("errorMessage"),
-        successMessage: req.flash("successMessage"),
         justificacion: "",
+        successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
       });
     } catch (error) {
-      console.error("Error al obtener solicitud para eliminar:", error.message);
+      console.error("Error al cargar el formulario de eliminación:", error);
       req.flash(
         "errorMessage",
         "Error al cargar el formulario de eliminación."
@@ -321,77 +311,24 @@ class SolicitudesController {
       if (!justificacion || justificacion.trim() === "") {
         const solicitud = await this.solicitudesService.getSolicitudById(id);
         solicitud.id = encodeBase64(solicitud.id_solicitud);
-        res.render("solicitud/eliminar", {
+        return res.render("solicitud/eliminar", {
           solicitud,
           errors: { justificacion: "La justificación es requerida." },
+          justificacion,
+          successMessage: "",
           errorMessage:
             "Debe proporcionar una justificación para eliminar la solicitud.",
-          justificacion,
         });
-        return;
-      }
-
-      const solicitud = await this.solicitudesService.getSolicitudById(id);
-      let archivos = [];
-      try {
-        archivos = JSON.parse(solicitud.archivos).filter(
-          (archivo) => archivo.eliminado === 0
-        );
-      } catch (e) {
-        console.error("Error al parsear los archivos:", e);
-        archivos = [];
-      }
-
-      const deletePromises = archivos.map((archivo) =>
-        AzureBlobService.deleteBlob(archivo.url)
-          .then(() => ({ status: "fulfilled", archivo }))
-          .catch((error) => ({ status: "rejected", archivo, error }))
-      );
-
-      const results = await Promise.all(deletePromises);
-
-      const failedDeletes = results.filter(
-        (result) => result.status === "rejected"
-      );
-
-      if (failedDeletes.length > 0) {
-        const successfulDeletes = results.filter(
-          (result) => result.status === "fulfilled"
-        );
-
-        const rollbackPromises = successfulDeletes.map((result) =>
-          AzureBlobService.uploadFile({
-            originalname: result.archivo.url.split("/").pop(),
-            buffer: Buffer.from([]),
-          }).catch((error) => {
-            console.error(
-              `Error al intentar rollback del blob ${result.archivo.url}:`,
-              error.message
-            );
-          })
-        );
-
-        await Promise.all(rollbackPromises);
-
-        req.flash(
-          "errorMessage",
-          `Error al eliminar algunos archivos: ${failedDeletes
-            .map((fd) => fd.archivo.url)
-            .join(", ")}. La solicitud no fue eliminada.`
-        );
-        return res.redirect("/solicitudes");
       }
 
       await this.solicitudesService.deleteSolicitud(id, justificacion);
+      await this.solicitudesService.updateEstatus(id, "eliminada");
 
-      req.flash("successMessage", "Solicitud eliminada con éxito");
+      req.flash("successMessage", "Solicitud eliminada con éxito.");
       res.redirect("/solicitudes");
     } catch (error) {
-      console.error("Error al eliminar la solicitud:", error.message);
-      req.flash(
-        "errorMessage",
-        "Error al eliminar la solicitud: " + error.message
-      );
+      console.error("Error al eliminar la solicitud:", error);
+      req.flash("errorMessage", "Error al eliminar la solicitud.");
       res.redirect("/solicitudes");
     }
   };
@@ -401,57 +338,24 @@ class SolicitudesController {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
-
-      if (!solicitud.archivos) {
-        req.flash(
-          "errorMessage",
-          "No hay archivos adjuntos para esta solicitud."
-        );
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
       }
 
-      let archivos = [];
-      try {
-        archivos = JSON.parse(solicitud.archivos).filter(
-          (archivo) => archivo.eliminado === 0
-        );
-      } catch (e) {
-        console.error("Error al parsear los archivos:", e);
-        archivos = [];
-      }
-
-      res.render("solicitud/archivos", { archivos });
-    } catch (error) {
-      console.error("Error al obtener archivos:", error.message);
-      req.flash("errorMessage", "Error al obtener archivos.");
-      res.redirect("/solicitudes");
-    }
-  };
-
-  // Eliminar un archivo de una solicitud
-  eliminarArchivo = async (req, res) => {
-    try {
-      const idSolicitud = decodeBase64(req.params.id);
-      const { urlArchivo } = req.body;
-
-      if (!urlArchivo) {
-        req.flash("errorMessage", "URL del archivo no proporcionada.");
-        return res.redirect(`/solicitudes/${req.params.id}`);
-      }
-
-      await AzureBlobService.deleteBlob(urlArchivo);
-
-      await this.solicitudesService.marcarArchivoComoEliminado(
-        idSolicitud,
-        urlArchivo
+      let archivos = JSON.parse(solicitud.archivos || "[]").filter(
+        (archivo) => archivo.eliminado === 0
       );
 
-      req.flash("successMessage", "Archivo eliminado con éxito.");
-      res.redirect(`/solicitudes/${req.params.id}`);
+      res.render("solicitud/archivos", {
+        archivos,
+        successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
+      });
     } catch (error) {
-      console.error("Error al eliminar archivo:", error.message);
-      req.flash("errorMessage", "Error al eliminar el archivo.");
-      res.redirect(`/solicitudes/${req.params.id}`);
+      console.error("Error al obtener archivos:", error);
+      req.flash("errorMessage", "Error al obtener archivos.");
+      res.redirect("/solicitudes");
     }
   };
 }

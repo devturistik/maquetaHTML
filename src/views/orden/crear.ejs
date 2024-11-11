@@ -1,4 +1,4 @@
-<!-- src/views/orden/crear.ejs -->
+<!-- views/orden/crear.ejs -->
 <%- include('../partials/header', { title: 'Crear Orden de Compra' }) %>
 <%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: "' + solicitud.asunto + '"' }) %>
 <%- include('../partials/sidebar') %>
@@ -22,140 +22,174 @@
 
       <form action="/ordenes-crear/<%= solicitud.id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         <div class="row">
+          <!-- Proveedor -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-proveedor">Proveedor <span class="text-danger">*</span></label>
-            <select id="orden-proveedor" class="form-select select2 <%= errors && errors.ordenProveedor ? 'is-invalid' : '' %>" name="ordenProveedor" required>
+            <select id="orden-proveedor" class="form-select select2" name="ordenProveedor" required>
               <option value="">Seleccione un proveedor</option>
               <% proveedores.forEach(proveedor => { %>
-                <option value="<%= proveedor.id_proveedor %>" <%= solicitud.id_proveedor === proveedor.id_proveedor ? 'selected' : '' %>><%= proveedor.nombre %></option>
+                <option value="<%= proveedor.ID_PROVEEDOR %>"><%= proveedor.NOMBRE_PROVEEDOR %></option>
               <% }) %>
             </select>
-            <% if (errors && errors.ordenProveedor) { %>
-              <div class="invalid-feedback"><%= errors.ordenProveedor %></div>
-            <% } %>
           </div>
+
+          <!-- Banco -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-banco">Banco <span class="text-danger">*</span></label>
-            <select id="orden-banco" class="form-select select2 <%= errors && errors.ordenBanco ? 'is-invalid' : '' %>" name="ordenBanco" required>
+            <select id="orden-banco" class="form-select select2 <%= errors && errors.ordenBanco ? 'is-invalid' : '' %>" name="ordenBanco" required disabled>
               <option value="">Seleccione un banco</option>
-              <% bancos.forEach(banco => { %>
-                <option value="<%= banco.id_banco %>" <%= solicitud.id_banco === banco.id_banco ? 'selected' : '' %>><%= banco.nombre_banco %></option>
-              <% }) %>
             </select>
             <% if (errors && errors.ordenBanco) { %>
               <div class="invalid-feedback"><%= errors.ordenBanco %></div>
             <% } %>
           </div>
+
+          <!-- Plazo de Pago -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-plazo">Plazo de Pago <span class="text-danger">*</span></label>
             <select id="orden-plazo" class="form-select select2 <%= errors && errors.ordenPlazo ? 'is-invalid' : '' %>" name="ordenPlazo" required>
               <option value="">Seleccione plazo de pago</option>
               <% plazoPagos.forEach(plazo => { %>
-                <option value="<%= plazo.id_plazo %>" <%= solicitud.id_plazo === plazo.id_plazo ? 'selected' : '' %>><%= plazo.descripcion %> (<%= plazo.dias %> días)</option>
+                <option value="<%= plazo.ID_FORMA_PAGO %>"><%= plazo.NOMBRE %></option>
               <% }) %>
             </select>
             <% if (errors && errors.ordenPlazo) { %>
               <div class="invalid-feedback"><%= errors.ordenPlazo %></div>
             <% } %>
           </div>
+
+          <!-- Empresa -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-empresa">Empresa <span class="text-danger">*</span></label>
             <select id="orden-empresa" class="form-select select2 <%= errors && errors.ordenEmpresa ? 'is-invalid' : '' %>" name="ordenEmpresa" required>
               <option value="">Seleccione una empresa</option>
               <% empresas.forEach(empresa => { %>
-                <option value="<%= empresa.id_empresa %>" <%= solicitud.id_empresa === empresa.id_empresa ? 'selected' : '' %>><%= empresa.nombre %></option>
+                <option value="<%= empresa.ID_EMPRESA %>"><%= empresa.NOMBRE %></option>
               <% }) %>
             </select>
             <% if (errors && errors.ordenEmpresa) { %>
               <div class="invalid-feedback"><%= errors.ordenEmpresa %></div>
             <% } %>
           </div>
+
+          <!-- Centro de Costo -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-centro-costo">Centro de Costo <span class="text-danger">*</span></label>
             <select id="orden-centro-costo" class="form-select select2 <%= errors && errors.ordenCentroCosto ? 'is-invalid' : '' %>" name="ordenCentroCosto" required>
               <option value="">Seleccione un centro de costo</option>
+              <% centroCostos.forEach(centro => { %>
+                <option value="<%= centro.ID_CENTRO_COSTO %>"><%= centro.NOMBRE %></option>
+              <% }) %>
             </select>
             <% if (errors && errors.ordenCentroCosto) { %>
               <div class="invalid-feedback"><%= errors.ordenCentroCosto %></div>
             <% } %>
           </div>
+
+          <!-- Tipo de Orden -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-tipo">Tipo de Orden <span class="text-danger">*</span></label>
             <select id="orden-tipo" class="form-select select2 <%= errors && errors.ordenTipo ? 'is-invalid' : '' %>" name="ordenTipo" required>
               <option value="">Seleccione un tipo de orden</option>
               <% tipoOrdenes.forEach(tipo => { %>
-                <option value="<%= tipo.id_tipo %>" <%= solicitud.id_tipo_orden === tipo.id_tipo ? 'selected' : '' %>><%= tipo.nombre %></option>
+                <option value="<%= tipo.id_tipo %>"><%= tipo.nombre %></option>
               <% }) %>
             </select>
             <% if (errors && errors.ordenTipo) { %>
               <div class="invalid-feedback"><%= errors.ordenTipo %></div>
             <% } %>
           </div>
+
+          <!-- Moneda -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-moneda">Moneda <span class="text-danger">*</span></label>
-            <select id="orden-moneda" class="form-select select2 <%= errors && errors.ordenMoneda ? 'is-invalid' : '' %>" name="ordenMoneda" required>
-              <option value="">Seleccione una moneda</option>
-              <% monedas.forEach(moneda => { %>
-                <option value="<%= moneda.id_moneda %>" <%= solicitud.id_moneda === moneda.id_moneda ? 'selected' : '' %>><%= moneda.nombre_moneda %> (<%= moneda.codigo_moneda %>)</option>
-              <% }) %>
-            </select>
+            <div class="input-group">
+              <select id="orden-moneda" class="form-select select2 <%= errors && errors.ordenMoneda ? 'is-invalid' : '' %>" name="ordenMoneda" required>
+                <option value="">Seleccione una moneda</option>
+                <% monedas.forEach(moneda => { %>
+                  <option value="<%= moneda.ID_MONEDA %>" data-symbol="<%= moneda.ABREV %>" data-cambio="<%= moneda.CAMBIO %>"><%= moneda.NOMBRE %> (<%= moneda.ABREV %>)</option>
+                <% }) %>
+              </select>
+            </div>
             <% if (errors && errors.ordenMoneda) { %>
               <div class="invalid-feedback"><%= errors.ordenMoneda %></div>
             <% } %>
           </div>
+
+          <!-- Fecha Oculta -->
+          <input type="hidden" id="orden-fecha" name="ordenFecha" value="<%= fechaActual %>" />
+
+          <!-- Cuenta Contable -->
           <div class="col-md-3 mb-3">
-            <label class="form-label">Fecha</label>
-            <span class="form-control-plaintext"><%= fechaActualDisplay %></span>
-            <input type="hidden" id="orden-fecha" name="ordenFecha" value="<%= fechaActual %>" />
+            <label class="form-label" for="orden-cuenta-contable">Cuenta Contable <span class="text-danger">*</span></label>
+            <select id="orden-cuenta-contable" class="form-select select2 <%= errors && errors.ordenCuentaContable ? 'is-invalid' : '' %>" name="ordenCuentaContable" required>
+              <option value="">Seleccione una cuenta contable</option>
+              <% cuentasContable.forEach(cuenta => { %>
+                <option value="<%= cuenta.nombre %>"><%= cuenta.nombre %></option>
+              <% }) %>
+            </select>
+            <% if (errors && errors.ordenCuentaContable) { %>
+              <div class="invalid-feedback"><%= errors.ordenCuentaContable %></div>
+            <% } %>
           </div>
+
+          <!-- Archivos -->
           <div class="col-md-6 mb-3">
             <label class="form-label" for="orden-archivos">Archivos</label>
-            <input type="file" class="form-control" id="orden-archivos" name="ordenArchivos[]" multiple title="Agregar Archivos a la Orden">
+            <input
+              type="file"
+              class="form-control d-none"
+              id="orden-archivos"
+              name="ordenArchivos[]"
+              accept=".pdf,.jpg,.jpeg,.png,.docx"
+              multiple
+              aria-label="Subir Archivos"
+              onchange="handleFileSelect(this)"
+            />
+            <div class="mb-2">
+              <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('orden-archivos').click()">
+                <i class="fas fa-upload me-1"></i> Seleccionar archivos
+              </button>
+            </div>
+            <div class="mb-2">
+              <small class="form-text text-muted">
+                Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
+              </small>
+            </div>
+            <% if (errors && errors.ordenArchivos) { %>
+              <div class="invalid-feedback d-block"><%= errors.ordenArchivos %></div>
+            <% } %>
+            <ul id="file-list" class="list-group mt-2"></ul>
 
-            <%
-              let archivosArray;
-              try {
-                archivosArray = JSON.parse(solicitud.archivos);
-              } catch (error) {
-                archivosArray = [];
-              }
-            %>
-
-            <% if (Array.isArray(archivosArray) && archivosArray.length > 0) { %>
+            <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
               <div class="mt-2">
-                <ul class="list-group">
-                  <% archivosArray.forEach((url, index) => { %>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <a href="<%= url %>" target="_blank"><%= url.split('/').pop() %></a>
-                      <button type="button" class="btn btn-sm btn-danger remove-archivo" data-url="<%= url %>">Eliminar</button>
-                      <input type="hidden" name="archivosExistentes[]" value="<%= url %>">
-                    </li>
-                  <% }) %>
-                </ul>
+                <a href="/solicitudes/ver-archivos/<%= solicitud.id %>" target="_blank">Ver archivos de la solicitud</a>
               </div>
             <% } %>
           </div>
 
+          <!-- Nota -->
           <div class="col-md-6 mb-3">
             <label class="form-label" for="orden-nota">Nota</label>
-            <textarea class="form-control" id="orden-nota" name="ordenNota" rows="2" style="resize: vertical;" placeholder="Escribe una nota aquí..."></textarea>
+            <textarea class="form-control" id="orden-nota" name="ordenNota" rows="2" style="resize: vertical;" placeholder="Escribe una nota aquí..."><%= solicitud.descripcion || '' %></textarea>
           </div>
         </div>
 
-        <!-- Sección de Detalle de Productos -->
+        <!-- Sección DETALLE -->
         <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
           <div class="card-body p-2">
             <h6 class="mb-0" style="color: #fff;">DETALLE</h6>
           </div>
         </div>
 
+        <!-- Sección de Productos -->
         <div class="row mb-4">
           <div class="col-md-9">
             <label class="form-label" for="producto">Producto</label>
-            <select id="producto" class="form-select select2">
+            <select id="producto" class="form-select select2" name="productoSelect">
               <option value="">Seleccione un producto</option>
               <% productos.forEach(producto => { %>
-                <option value="<%= producto.id_producto %>" data-price="<%= producto.precio_unitario %>"><%= producto.nombre %> - $<%= producto.precio_unitario %></option>
+                <option value="<%= producto.ID_PRODUCTO %>"><%= producto.DESCRIPCION %></option>
               <% }) %>
             </select>
           </div>
@@ -164,8 +198,15 @@
           </div>
         </div>
 
+        <!-- Tabla de Productos -->
         <div class="table-responsive mb-4">
           <table class="table table-bordered">
+            <colgroup>
+              <col style="width: 50%;">
+              <col style="width: 10%;">
+              <col style="width: 20%;">
+              <col style="width: 20%;">
+            </colgroup>
             <thead>
               <tr>
                 <th>Producto</th>
@@ -174,24 +215,42 @@
                 <th>Valor Total</th>
               </tr>
             </thead>
-            <tbody id="boleta-table-body"></tbody>
+            <tbody id="boleta-table-body">
+            </tbody>
           </table>
         </div>
 
+        <!-- Totales -->
         <div class="row">
           <div class="col-md-6 offset-md-6">
             <table class="table table-sm">
               <tbody>
-                <tr><td>Sub-total:</td><td id="subtotal">$0.00</td></tr>
-                <tr><td>Impuesto:</td><td id="impuesto">$0.00</td></tr>
-                <tr><td>Retención:</td><td id="retencion">$0.00</td></tr>
-                <tr><td>Propina:</td><td id="propina">$0.00</td></tr>
-                <tr><th>Total:</th><th id="total">$0.00</th></tr>
+                <tr>
+                  <td>Sub-total <span class="moneda-symbol"></span>:</td>
+                  <td id="subtotal">0.00</td>
+                </tr>
+                <tr class="impuesto-row hide">
+                  <td>Impuesto <span class="moneda-symbol"></span>:</td>
+                  <td id="impuesto">0.00</td>
+                </tr>
+                <tr class="retencion-row hide">
+                  <td>Retención <span class="moneda-symbol"></span>:</td>
+                  <td id="retencion">0.00</td>
+                </tr>
+                <tr class="propina-row hide">
+                  <td>Propina <span class="moneda-symbol"></span>:</td>
+                  <td id="propina">0.00</td>
+                </tr>
+                <tr class="total-row">
+                  <th>Total <span class="moneda-symbol"></span>:</th>
+                  <th id="total" style="font-size: 1.5em;">0.00</th>
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
 
+        <!-- Botones de Acción -->
         <div class="d-flex justify-content-end gap-4">
           <a href="/ordenes" class="btn btn-secondary">Regresar</a>
           <button type="submit" class="btn btn-primary" id="submit-btn">Crear Orden</button>
@@ -204,100 +263,381 @@
 <div class="content-backdrop fade"></div>
 </div>
 
+<!-- Incluir Font Awesome para los íconos -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+<style>
+  .total-row th {
+    font-size: 1.5em;
+    background-color: #f8f9fa;
+    color: #212529;
+    padding-top: 1em;
+    padding-bottom: 1em;
+  }
+
+  .impuesto-row td,
+  .retencion-row td,
+  .propina-row td {
+    font-weight: 500;
+  }
+
+  .table-sm td, .table-sm th {
+    vertical-align: middle;
+  }
+
+  .impuesto-row, .retencion-row, .propina-row {
+    transition: all 0.3s ease-in-out;
+  }
+
+  .impuesto-row.hide,
+  .retencion-row.hide,
+  .propina-row.hide {
+    display: none;
+  }
+
+  .impuesto-row.show,
+  .retencion-row.show,
+  .propina-row.show {
+    display: table-row;
+  }
+</style>
+
 <script>
+  const detalleTipoOrden = <%- JSON.stringify(detalleTipoOrden) %>;
+
+  function handleFileSelect(input) {
+    const fileList = document.getElementById('file-list');
+    fileList.innerHTML = '';
+
+    for (let i = 0; i < input.files.length; i++) {
+      const file = input.files[i];
+
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.textContent = file.name;
+
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'btn btn-sm btn-danger';
+      removeButton.textContent = 'Eliminar';
+      removeButton.onclick = function() {
+        const dt = new DataTransfer();
+        for (let j = 0; j < input.files.length; j++) {
+          if (j !== i) dt.items.add(input.files[j]);
+        }
+        input.files = dt.files;
+        li.remove();
+      };
+
+      li.appendChild(removeButton);
+      fileList.appendChild(li);
+    }
+  }
+
   $(document).ready(function () {
     $('.select2').select2({
       width: '100%',
-      placeholder: 'Seleccione una opción'
+      placeholder: 'Seleccione una opción',
+      allowClear: true
     });
-  });
 
-  document.addEventListener("DOMContentLoaded", function() {
-    document.querySelectorAll(".remove-archivo").forEach(button => {
-      button.addEventListener("click", function() {
-        const url = this.getAttribute("data-url");
+    // Cambiar el placeholder del campo de búsqueda a "Buscar..." cuando el dropdown se abre
+    $('.select2').on('select2:open', function () {
+      setTimeout(function() {
+        const searchField = $('.select2-search__field');
+        searchField.attr('placeholder', 'Buscar...');
+      }, 100);
+    });
 
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "archivosEliminar[]";
-        input.value = url;
-        document.querySelector("form").appendChild(input);
+    $('#orden-banco').prop('disabled', true);
 
-        this.parentElement.remove();
+    let currentSymbol = '';
+
+    function updateCurrencySymbol(symbol) {
+      currentSymbol = symbol;
+      $('.moneda-symbol').text(symbol);
+      
+      $('#boleta-table-body tr').each(function() {
+        const precioUnitarioInput = $(this).find('input[name="precio_unitario_editable[]"]');
+        const precioUnitario = parseFloat(precioUnitarioInput.val()) || 0;
+        const cantidad = parseInt($(this).find('.cantidad-input').val()) || 1;
+        const valorTotal = precioUnitario * cantidad;
+
+        $(this).find('td:nth-child(3)').html(`
+          <input type="hidden" name="precio_unitario[]" value="${precioUnitario.toFixed(2)}">
+          <input type="number" 
+                 name="precio_unitario_editable[]"
+                 value="${precioUnitario.toFixed(2)}" 
+                 min="0" 
+                 step="0.01" 
+                 class="form-control precio-unitario-input" 
+                 required 
+                 style="width: 100px;" />
+        `);
+
+        $(this).find('.valor-total').html(`
+          ${currentSymbol} ${valorTotal.toFixed(2)} 
+          <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
+        `);
       });
-    });
-  });
 
-  const subtotalElement = document.getElementById("subtotal");
-  const impuestoElement = document.getElementById("impuesto");
-  const retencionElement = document.getElementById("retencion");
-  const propinaElement = document.getElementById("propina");
-  const totalElement = document.getElementById("total");
-
-  document.getElementById("add-producto").addEventListener("click", () => {
-    const productoSelect = document.getElementById("producto");
-    const selectedOption = productoSelect.options[productoSelect.selectedIndex];
-    const productoId = selectedOption.value;
-    const productoText = selectedOption.textContent;
-    const valorUnitario = parseFloat(selectedOption.getAttribute("data-price"));
-    const cantidad = 1;
-    const valorTotal = cantidad * valorUnitario;
-
-    if (!productoId) {
-      alert("Por favor seleccione un producto.");
-      return;
+      actualizarTotales();
     }
 
-    const newRow = document.createElement("tr");
-    newRow.innerHTML = `
-      <td>${productoText}</td>
-      <td><input type="number" value="${cantidad}" min="1" class="form-control cantidad-input" name="cantidad[]" required /></td>
-      <td>$${valorUnitario.toFixed(2)}</td>
-      <td class="valor-total">$${valorTotal.toFixed(2)}
-        <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
-      </td>
-    `;
+    function gestionarTotalesPorTipo(tipoOrdenId) {
+      const detalles = detalleTipoOrden.filter(detalle => detalle.id_tipo_orden == tipoOrdenId && detalle.activo);
 
-    document.getElementById("boleta-table-body").appendChild(newRow);
+      $('.impuesto-row').removeClass('show').addClass('hide');
+      $('.retencion-row').removeClass('show').addClass('hide');
+      $('.propina-row').removeClass('show').addClass('hide');
 
-    actualizarTotales();
+      detalles.forEach(detalle => {
+        const nombreDetalle = detalle.nombre_detalle.trim().toLowerCase();
 
-    productoSelect.value = "";
-    $('.select2').trigger('change');
+        if (nombreDetalle === 'impuesto') {
+          $('.impuesto-row').removeClass('hide').addClass('show');
+        }
+        if (nombreDetalle === 'retencion') {
+          $('.retencion-row').removeClass('hide').addClass('show');
+        }
+        if (nombreDetalle === 'propina') {
+          $('.propina-row').removeClass('hide').addClass('show');
+        }
+      });
 
-    newRow.querySelector(".cantidad-input").addEventListener("input", function () {
-      const nuevaCantidad = parseInt(this.value);
-      if (nuevaCantidad < 1 || isNaN(nuevaCantidad)) {
-        this.value = 1;
+      actualizarTotales();
+    }
+
+    function actualizarTotales() {
+      let subtotal = 0;
+      $('#boleta-table-body tr').each(function() {
+        const valorTotalText = $(this).find(".valor-total").text();
+        const valorTotal = parseFloat(valorTotalText.replace(/[^\d.-]/g, '')) || 0;
+        subtotal += valorTotal;
+      });
+
+
+      let impuesto = 0;
+      let retencion = 0;
+      let propina = 0;
+
+      const tipoOrdenId = $('#orden-tipo').val();
+
+      if (tipoOrdenId) {
+        const detalles = detalleTipoOrden.filter(detalle => detalle.id_tipo_orden == tipoOrdenId && detalle.activo);
+
+        detalles.forEach(detalle => {
+          const nombreDetalle = detalle.nombre_detalle.trim().toLowerCase();
+          const cantidad = parseFloat(detalle.cantidad) || 0;
+          const tipoDetalle = detalle.tipo_detalle.trim().toLowerCase();
+
+
+          if (nombreDetalle === 'impuesto') {
+            if (tipoDetalle === 'porcentaje' || tipoDetalle === '%') {
+              impuesto += subtotal * (cantidad / 100);
+            } else {
+              impuesto += cantidad;
+            }
+          }
+          if (nombreDetalle === 'retencion') {
+            if (tipoDetalle === 'porcentaje' || tipoDetalle === '%') {
+              retencion += subtotal * (cantidad / 100);
+            } else {
+              retencion += cantidad;
+            }
+          }
+          if (nombreDetalle === 'propina') {
+            if (tipoDetalle === 'porcentaje' || tipoDetalle === '%') {
+              propina += subtotal * (cantidad / 100);
+            } else {
+              propina += cantidad;
+            }
+          }
+        });
+      }
+
+      let total = subtotal + impuesto - retencion + propina;
+
+      $('#subtotal').text(`${subtotal.toFixed(2)}`);
+      $('#impuesto').text(`${impuesto.toFixed(2)}`);
+      $('#retencion').text(`${retencion.toFixed(2)}`);
+      $('#propina').text(`${propina.toFixed(2)}`);
+      $('#total').text(`${total.toFixed(2)}`);
+    }
+
+    // Manejar el cambio en el select de Proveedor
+    $('#orden-proveedor').on('change', function() {
+      const id_proveedor = $(this).val();
+
+      if (id_proveedor) {
+        $('#orden-banco').prop('disabled', false);
+
+        $.ajax({
+          url: '/api/bancos',
+          method: 'GET',
+          data: { id_proveedor },
+          success: function(bancos) {
+            $('#orden-banco').empty().append('<option value="">Seleccione un banco</option>');
+
+            bancos.forEach(banco => {
+              $('#orden-banco').append(`<option value="${banco.ID_BANCO}">${banco.NOMBRE_BANCO}</option>`);
+            });
+
+            $('#orden-banco').trigger('change');
+          },
+          error: function(err) {
+            console.error("Error al obtener bancos:", err);
+            alert("Error al cargar los bancos asociados al proveedor seleccionado.");
+          }
+        });
+      } else {
+        $('#orden-banco').prop('disabled', true).empty().append('<option value="">Seleccione un banco</option>').trigger('change');
+      }
+    });
+
+    // Manejar el cambio en el select de Tipo de Orden
+    $('#orden-tipo').on('change', function() {
+      const tipoOrdenId = $(this).val();
+
+      if (tipoOrdenId) {
+        gestionarTotalesPorTipo(tipoOrdenId);
+      } else {
+        $('.impuesto-row').removeClass('show').addClass('hide');
+        $('.retencion-row').removeClass('show').addClass('hide');
+        $('.propina-row').removeClass('show').addClass('hide');
+        actualizarTotales();
+      }
+    });
+
+    // Manejar el cambio en el select de Moneda
+    $('#orden-moneda').on('change', function() {
+      const selectedOption = $(this).find('option:selected');
+      const symbol = selectedOption.data('symbol') || '$';
+      const cambio = parseFloat(selectedOption.data('cambio')) || 1;
+
+      updateCurrencySymbol(symbol);
+    });
+
+    // Agregar Producto
+    $('#add-producto').on('click', async function() {
+      const productoSelect = $('#producto');
+      const productoId = productoSelect.val();
+      const productoText = productoSelect.find('option:selected').text();
+
+      if (!productoId) {
+        alert("Por favor seleccione un producto.");
         return;
       }
-      const nuevoValorTotal = nuevaCantidad * valorUnitario;
-      newRow.querySelector(".valor-total").innerText = `$${nuevoValorTotal.toFixed(2)}`;
+
+      let existe = false;
+      $('#boleta-table-body tr').each(function() {
+        const id_producto = $(this).find('input[name="producto[]"]').val();
+        if (id_producto == productoId) {
+          existe = true;
+          return false;
+        }
+      });
+
+      if (existe) {
+        alert("El producto ya ha sido agregado.");
+        return;
+      }
+
+      try {
+        const response = await $.ajax({
+          url: '/api/producto-detalle',
+          method: 'GET',
+          data: { id_producto: productoId },
+        });
+
+        const precioUnitarioOriginal = parseFloat(response.PRECIO_UNITARIO) || 0;
+        const cambio = parseFloat($('#orden-moneda').find('option:selected').data('cambio')) || 1;
+        const precioUnitario = precioUnitarioOriginal * cambio;
+        const cantidad = 1;
+        const valorTotal = precioUnitario * cantidad;
+
+        const newRow = $(`
+          <tr>
+            <td>
+              <input type="hidden" name="producto[]" value="${productoId}">
+              ${productoText}
+            </td>
+            <td>
+              <input type="number" name="cantidad[]" value="${cantidad}" min="1" class="form-control cantidad-input" required />
+            </td>
+            <td>
+              <input type="hidden" name="precio_unitario[]" value="${precioUnitario.toFixed(2)}">
+              <input type="number" 
+                     name="precio_unitario_editable[]" 
+                     value="${precioUnitario.toFixed(2)}" 
+                     min="0" 
+                     step="0.01" 
+                     class="form-control precio-unitario-input" 
+                     required 
+                     style="width: 100px;" />
+            </td>
+            <td class="valor-total">${currentSymbol} ${valorTotal.toFixed(2)}
+              <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
+            </td>
+          </tr>
+        `);
+
+        $('#boleta-table-body').append(newRow);
+        actualizarTotales();
+
+        productoSelect.val('').trigger('change');
+      } catch (error) {
+        console.error("Error al obtener detalles del producto:", error);
+        alert("Error al obtener detalles del producto seleccionado.");
+      }
+    });
+
+    // Remover Producto sin Confirmación
+    $('#boleta-table-body').on('click', '.remove-producto', function() {
+      $(this).closest('tr').remove();
       actualizarTotales();
     });
 
-    newRow.querySelector(".remove-producto").addEventListener("click", function () {
-      newRow.remove();
+    // Actualizar Totales al Cambiar Valor Unitario
+    $('#boleta-table-body').on('input', '.precio-unitario-input', function() {
+      const precioUnitario = parseFloat($(this).val()) || 0;
+      const row = $(this).closest('tr');
+      const cantidad = parseInt(row.find('.cantidad-input').val()) || 1;
+
+      const precioUnitarioInputHidden = row.find('input[name="precio_unitario[]"]');
+      precioUnitarioInputHidden.val(precioUnitario.toFixed(2));
+
+      const nuevoValorTotal = precioUnitario * cantidad;
+      row.find('.valor-total').html(`
+        ${currentSymbol} ${nuevoValorTotal.toFixed(2)} 
+        <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
+      `);
       actualizarTotales();
     });
+
+    // Actualizar Totales al Cambiar Cantidad
+    $('#boleta-table-body').on('input', '.cantidad-input', function() {
+      const cantidad = parseInt($(this).val()) || 1;
+      const row = $(this).closest('tr');
+      const precioUnitario = parseFloat(row.find('input[name="precio_unitario_editable[]"]').val()) || 0;
+      
+      const precioUnitarioInputHidden = row.find('input[name="precio_unitario[]"]');
+      precioUnitarioInputHidden.val(precioUnitario.toFixed(2));
+
+      const nuevoValorTotal = precioUnitario * cantidad;
+      row.find('.valor-total').html(`
+        ${currentSymbol} ${nuevoValorTotal.toFixed(2)} 
+        <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
+      `);
+      actualizarTotales();
+    });
+
+    // Inicializar Totales con el Cambio Inicial
+    const initialSymbol = $('#orden-moneda').find('option:selected').data('symbol') || '';
+    currentSymbol = initialSymbol;
+    $('.moneda-symbol').text(currentSymbol);
+    actualizarTotales();
   });
-
-  function actualizarTotales() {
-    let subtotal = 0;
-    document.querySelectorAll("#boleta-table-body tr").forEach(row => {
-      const valorTotal = parseFloat(row.querySelector(".valor-total").innerText.slice(1));
-      subtotal += valorTotal;
-    });
-    let impuesto = subtotal * 0.16;
-    let retencion = subtotal * 0.05;
-    let propina = subtotal * 0.02;
-    let total = subtotal + impuesto + retencion + propina;
-    subtotalElement.innerText = `$${subtotal.toFixed(2)}`;
-    impuestoElement.innerText = `$${impuesto.toFixed(2)}`;
-    retencionElement.innerText = `$${retencion.toFixed(2)}`;
-    propinaElement.innerText = `$${propina.toFixed(2)}`;
-    totalElement.innerText = `$${total.toFixed(2)}`;
-  }
 </script>
 
 <%- include('../partials/footer-text') %>

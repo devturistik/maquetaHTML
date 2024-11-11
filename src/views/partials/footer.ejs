@@ -1,95 +1,34 @@
 </div> <!-- End of layout-container -->
 </div> <!-- End of layout-wrapper -->
 
-<!-- Core JS -->
-<script src="/assets/vendor/libs/jquery/jquery.js"></script>
-<script src="/assets/vendor/libs/popper/popper.js"></script>
+<!-- Bootstrap JS -->
 <script src="/assets/vendor/js/bootstrap.js"></script>
+
+<!-- Node Waves JS -->
 <script src="/assets/vendor/libs/node-waves/node-waves.js"></script>
+
+<!-- Perfect Scrollbar JS -->
 <script src="/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
+
+<!-- Typeahead JS -->
 <script src="/assets/vendor/libs/typeahead-js/typeahead.js"></script>
+
+<!-- Menu JS -->
 <script src="/assets/vendor/js/menu.js"></script>
 
-<!-- DataTables Core JS -->
-<script src="/assets/vendor/libs/datatables/jquery.dataTables.min.js"></script>
-<script src="/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
-<!-- Additional JS Plugins -->
-<script src="/assets/vendor/libs/select2/select2.js"></script>
-<script src="/assets/vendor/libs/tagify/tagify.js"></script>
-<script src="/assets/vendor/libs/flatpickr/flatpickr.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- Tagify JS -->
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
-
-
-<script>
-  $(document).ready(function () {
-    $('.select2').select2({
-      width: '100%',
-      placeholder: 'Seleccione una opción'
-    });
-
-    const subtotalElement = document.getElementById("subtotal");
-    const impuestoElement = document.getElementById("impuesto");
-    const retencionElement = document.getElementById("retencion");
-    const propinaElement = document.getElementById("propina");
-    const totalElement = document.getElementById("total");
-
-    document.getElementById("add-producto").addEventListener("click", () => {
-      const productoSelect = document.getElementById("producto");
-      const selectedOption = productoSelect.options[productoSelect.selectedIndex];
-      const productoText = selectedOption.textContent;
-      const valorUnitario = parseFloat(selectedOption.getAttribute("data-price"));
-      const cantidad = 1;
-      const valorTotal = cantidad * valorUnitario;
-
-      if (!productoSelect.value) {
-        Swal.fire("Error", "Por favor seleccione un producto.", "error");
-        return;
-      }
-
-      const newRow = document.createElement("tr");
-      newRow.innerHTML = `
-        <td>${productoText}</td>
-        <td><input type="number" value="${cantidad}" min="1" class="form-control cantidad-input" /></td>
-        <td>$${valorUnitario.toFixed(2)}</td>
-        <td class="valor-total">$${valorTotal.toFixed(2)}</td>
-      `;
-
-      document.getElementById("boleta-table-body").appendChild(newRow);
-
-      actualizarTotales();
-
-      productoSelect.value = "";
-      $('.select2').select2();
-
-      newRow.querySelector(".cantidad-input").addEventListener("input", function () {
-        const nuevaCantidad = parseInt(this.value);
-        const nuevoValorTotal = nuevaCantidad * valorUnitario;
-        newRow.querySelector(".valor-total").innerText = `$${nuevoValorTotal.toFixed(2)}`;
-        actualizarTotales();
-      });
-    });
-
-    function actualizarTotales() {
-      let subtotal = 0;
-
-      document.querySelectorAll("#boleta-table-body tr").forEach(row => {
-        const valorTotal = parseFloat(row.querySelector(".valor-total").innerText.slice(1));
-        subtotal += valorTotal;
-      });
-
-      let impuesto = subtotal * 0.16;
-      let retencion = subtotal * 0.05;
-      let propina = subtotal * 0.02;
-      let total = subtotal + impuesto + retencion + propina;
-
-      subtotalElement.innerText = `$${subtotal.toFixed(2)}`;
-      impuestoElement.innerText = `$${impuesto.toFixed(2)}`;
-      retencionElement.innerText = `$${retencion.toFixed(2)}`;
-      propinaElement.innerText = `$${propina.toFixed(2)}`;
-      totalElement.innerText = `$${total.toFixed(2)}`;
-    }
-  });
-</script>
 </body>
 </html>

@@ -7,7 +7,6 @@
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud-eliminar">
-      <!-- Mensajes de éxito y error -->
       <% if (successMessage && successMessage.length > 0) { %>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
           <%= successMessage %>
@@ -21,28 +20,24 @@
         </div>
       <% } %>
 
-      <!-- Parte Superior: Botón Regresar -->
-      <div class="d-flex flex-column align-items-start mb-4">
-        <a href="/solicitudes" class="btn btn-secondary mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 text-danger">Eliminar Solicitud</h4>
+        <a href="/solicitudes" class="btn btn-secondary">
           <i class="fas fa-arrow-left me-1"></i> Regresar
         </a>
       </div>
 
-      <!-- Formulario de Eliminación -->
       <div class="card mb-4">
-        <div class="card-header">
-          <h5 class="card-title mb-0">Eliminar Solicitud</h5>
-        </div>
         <div class="card-body">
           <p>Estás a punto de eliminar la siguiente solicitud:</p>
-          <ul>
-            <li><strong>Asunto:</strong> <%= solicitud.asunto %></li>
-            <li><strong>Descripción:</strong> <%= solicitud.descripcion %></li>
+          <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>Asunto:</strong> <%= solicitud.asunto %></li>
+            <li class="list-group-item"><strong>Descripción:</strong> <%= solicitud.descripcion %></li>
           </ul>
           <p>Por favor, proporciona una justificación para esta acción:</p>
           <form action="/solicitudes-eliminar/<%= solicitud.id %>" method="POST" class="needs-validation" novalidate>
             <div class="mb-3">
-              <label for="justificacion" class="form-label">Justificación de eliminación <span class="text-danger">*</span></label>
+              <label for="justificacion" class="form-label fw-bold">Justificación de eliminación <span class="text-danger">*</span></label>
               <textarea
                 class="form-control <%= errors && errors.justificacion ? 'is-invalid' : '' %>"
                 id="justificacion"
@@ -54,11 +49,7 @@
                 <div class="invalid-feedback"><%= errors.justificacion %></div>
               <% } %>
             </div>
-            <!-- Parte Inferior: Botones de Acción -->
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Cancelar
-              </button>
+            <div class="d-flex justify-content-end gap-2">
               <button type="submit" class="btn btn-danger">
                 <i class="fas fa-trash-alt me-1"></i> Confirmar Eliminación
               </button>

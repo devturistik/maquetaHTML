@@ -5,10 +5,8 @@
 <%- include('partials/content-wrapper-open') %>
 
 <div class="content-wrapper">
-  <!-- Content -->
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitudes-lista">
-      <!-- Mensajes de éxito y error -->
       <% if (successMessage && successMessage.length > 0) { %>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <%= successMessage %>
@@ -32,7 +30,6 @@
       </div>
       <% } %>
 
-      <!-- Título y Botón Crear Nueva Solicitud -->
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
         <div>
           <h4 class="mb-1">Lista de Solicitudes</h4>
@@ -45,36 +42,27 @@
         </div>
       </div>
 
-      <!-- Sección de Filtros y Buscador -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <form id="filters-form" class="row g-3">
-            <!-- Filtro por Estatus -->
-            <div class="col-md-3">
-              <label for="estatus-filter" class="form-label">Filtrar por Estatus</label>
-              <select id="estatus-filter" class="form-select">
-                <option value="">Todos</option>
-                <% estatusList.forEach(estatus => { %>
-                  <option value="<%= estatus %>"><%= estatus %></option>
-                <% }) %>
-              </select>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-              <button type="button" id="clear-filters" class="btn btn-secondary w-100">
-                <i class="fas fa-times me-1"></i> Limpiar Filtros
-              </button>
-            </div>
-
-            <!-- Buscador por Palabras Clave -->
-            <div class="col-md-6">
-              <label for="search-box" class="form-label">Buscar</label>
-              <input type="text" id="search-box" class="form-control" placeholder="Buscar en Asunto, Descripción, Usuario Solicitante, Correo Solicitante">
-            </div>
-          </form>
-        </div>
+      <div style="display: none;">
+        <select id="estatus-filter" class="form-select" style="width: 200px;">
+          <option value="">Todos</option>
+          <% 
+            const estatusSet = new Set();
+            solicitudes.forEach(solicitud => {
+              let estatusDisplayOption = solicitud.estatus;
+              if (solicitud.estatus.toLowerCase() === 'editando') {
+                estatusDisplayOption = 'Editando...';
+              }
+              if (estatusDisplayOption !== 'Editando...') {
+                estatusSet.add(estatusDisplayOption);
+              }
+            });
+            const estatusList = Array.from(estatusSet);
+            estatusList.forEach(estatus => { %>
+              <option value="<%= estatus %>"><%= estatus %></option>
+          <% }); %>
+        </select>
       </div>
 
-      <!-- Tabla de solicitudes -->
       <div class="card">
         <div class="card-body">
           <div class="table-responsive">
@@ -85,18 +73,32 @@
                   <th>Asunto</th>
                   <th>Descripción</th>
                   <th>Archivos</th>
+                  <th>Creador</th>
                   <th>Estatus</th>
-                  <th>Usuario Solicitante</th>
-                  <th>Correo Solicitante</th>
-                  <th>Acciones</th>
-                  <th>Orden de Compra</th>
+                  <th>Fecha Creación</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
                 <% if (solicitudes.length > 0) { %>
                   <% solicitudes.forEach(solicitud => { %>
+                  <%
+                    let estatusLower = solicitud.estatus.toLowerCase();
+                    let estatusClass = '';
+                    let estatusDisplay = solicitud.estatus;
+                    if (estatusLower === 'abierta') {
+                      estatusClass = 'bg-warning';
+                    } else if (estatusLower === 'procesada') {
+                      estatusClass = 'bg-success';
+                    } else if (estatusLower === 'editando') {
+                      estatusClass = 'bg-info';
+                      estatusDisplay = 'Editando...';
+                    } else if (estatusLower === 'eliminada') {
+                      estatusClass = 'bg-danger';
+                    }
+                  %>
                   <tr>
-                    <td><%= solicitud.id %></td>
+                    <td><%= solicitud.id_solicitud %></td>
                     <td><%= solicitud.asunto %></td>
                     <td><%= solicitud.descripcion %></td>
                     <td>
@@ -106,15 +108,15 @@
                         Sin archivos
                       <% } %>
                     </td>
-                    <td>
-                      <span
-                        class="badge <% if (solicitud.estatus.toLowerCase() === 'pendiente') { %> bg-warning <% } else if (solicitud.estatus.toLowerCase() === 'aprobado') { %> bg-success <% } else if (solicitud.estatus.toLowerCase() === 'rechazado') { %> bg-danger <% } else { %> bg-secondary <% } %>"
-                      >
-                        <%= solicitud.estatus %>
-                      </span>
+                    <td><%= solicitud.usuario_solicitante ? solicitud.usuario_solicitante : '' %></td>
+                    <td data-filter="<%= estatusDisplay %>">
+                      <% if (estatusClass) { %>
+                        <span class="badge <%= estatusClass %> text-white">
+                          <%= estatusDisplay %>
+                        </span>
+                      <% } %>
                     </td>
-                    <td><%= solicitud.usuario_solicitante %></td>
-                    <td><%= solicitud.correo_solicitante %></td>
+                    <td><%= solicitud.created_at ? solicitud.created_at : '' %></td>
                     <td>
                       <div class="btn-group" role="group">
                         <a
@@ -125,33 +127,55 @@
                           <i class="fas fa-eye"></i>
                         </a>
                         <a
-                          href="/solicitudes-editar/<%= solicitud.id %>"
-                          class="btn btn-sm btn-outline-secondary"
-                          title="Editar"
+                          <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %>
+                            class="btn btn-sm btn-outline-secondary disabled"
+                            title="Editar"
+                          <% } else { %>
+                            href="/solicitudes-editar/<%= solicitud.id %>"
+                            class="btn btn-sm btn-outline-secondary"
+                            title="Editar"
+                          <% } %>
                         >
                           <i class="fas fa-edit"></i>
                         </a>
                         <a
-                          href="/solicitudes-eliminar/<%= solicitud.id %>"
-                          class="btn btn-sm btn-outline-danger"
-                          title="Eliminar"
+                          <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %>
+                            class="btn btn-sm btn-outline-danger disabled"
+                            title="Eliminar"
+                          <% } else { %>
+                            href="/solicitudes-eliminar/<%= solicitud.id %>"
+                            class="btn btn-sm btn-outline-danger"
+                            title="Eliminar"
+                          <% } %>
                         >
                           <i class="fas fa-trash-alt"></i>
                         </a>
+                        <% if (estatusLower === 'abierta') { %>
+                          <a
+                            href="/ordenes-crear/<%= solicitud.id %>"
+                            class="btn btn-sm btn-primary"
+                            title="Crear Orden de Compra"
+                            style="white-space: nowrap;"
+                          >
+                            Crear Orden
+                          </a>
+                        <% } else if (estatusLower === 'procesada') { %>
+                          <a
+                            href="/ordenes-crear/<%= solicitud.id %>"
+                            class="btn btn-sm btn-primary"
+                            title="Reanudar Orden de Compra"
+                            style="white-space: nowrap;"
+                          >
+                            Reanudar Orden
+                          </a>
+                        <% } %>
                       </div>
                     </td>
-                    <td>
-                      <a
-                        href="/ordenes-crear/<%= solicitud.id %>"
-                        class="btn btn-sm btn-primary"
-                        >Crear Orden de Compra</a
-                      >
-                    </td>
                   </tr>
-                  <% }) %>
+                  <% }); %>
                 <% } else { %>
                 <tr>
-                  <td colspan="9" class="text-center">
+                  <td colspan="8" class="text-center">
                     No hay solicitudes disponibles.
                   </td>
                 </tr>
@@ -167,51 +191,60 @@
   <div class="content-backdrop fade"></div>
 </div>
 
-<!-- Inicialización de DataTables con Filtros Personalizados -->
-<script>
-  $(document).ready(function () {
-    // Inicializar DataTable
-    var table = $("#table-solicitudes").DataTable({
-      responsive: true,
-      language: {
-        url: "//cdn.datatables.net/plug-ins/1.11.3/i18n/es_es.json",
-      },
-      // Opcional: Ajusta el número de registros por página
-      pageLength: 10,
-      lengthChange: false,
-      // Orden inicial (puedes cambiarlo según tu preferencia)
-      order: [[0, "desc"]], // Ordenar por ID descendente
-    });
-
-    // Filtro por Estatus
-    $('#estatus-filter').on('change', function () {
-      var estatus = $(this).val();
-      if (estatus) {
-        // Filtrar por la columna de Estatus (índice 4)
-        table.column(4).search('^' + estatus + '$', true, false).draw();
-      } else {
-        // Si no hay filtro, limpiar la búsqueda en Estatus
-        table.column(4).search('').draw();
-      }
-    });
-
-    // Limpiar filtros
-    $('#clear-filters').on('click', function () {
-      $('#estatus-filter').val('');
-      $('#search-box').val('');
-      table.column(4).search('').draw();
-      table.search('').draw();
-    });
-
-    // Buscador por Palabras Clave
-    $('#search-box').on('keyup change', function () {
-      table.search(this.value).draw();
-    });
-
-    // Asegurar que la tabla se expanda al máximo
-    $('.table-responsive').css('overflow-x', 'auto');
-  });
-</script>
 <%- include('partials/footer-text') %>
 <%- include('partials/footer') %>
 <%- include('partials/content-wrapper-close') %>
+
+<script>
+  $(document).ready(function () {
+    var table = $("#table-solicitudes").DataTable({
+      responsive: true,
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+        search: ""
+      },
+      pageLength: 10,
+      lengthChange: false,
+      order: [[6, "desc"], [0, "desc"]],
+      columnDefs: [
+        {
+          targets: 5,
+          render: function (data, type, row, meta) {
+            var cell = $('<div>').html(data);
+            var estatus = cell.data('filter') || cell.text();
+            if (type === 'filter' || type === 'sort') {
+              return estatus;
+            }
+            return data;
+          }
+        },
+        {
+          targets: 7,
+          orderable: false
+        }
+      ],
+      initComplete: function () {
+        var estatusFilter = $('#estatus-filter').detach();
+        var dataTableFilter = $('#table-solicitudes_filter');
+        var searchInput = dataTableFilter.find('input').detach();
+        dataTableFilter.empty();
+
+        var searchInputGroup = $('<div class="input-group" style="margin-right:10px;"></div>');
+        var searchIcon = $('<span class="input-group-text"><i class="fas fa-search"></i></span>');
+        searchInput.addClass('form-control').attr('placeholder', 'Buscar...').css('width', 'auto');
+        searchInputGroup.append(searchIcon).append(searchInput);
+
+        dataTableFilter.append($('<div class="d-flex align-items-center"></div>')
+          .append(searchInputGroup)
+          .append(estatusFilter.css('margin-left', '10px'))
+        );
+        dataTableFilter.css('float', 'left');
+      }
+    });
+
+    $('#estatus-filter').on('change', function () {
+      var estatus = $(this).val();
+      table.column(5).search(estatus).draw();
+    });
+  });
+</script>

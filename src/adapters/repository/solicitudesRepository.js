@@ -12,14 +12,12 @@ class SolicitudesRepository {
         FROM oc.Solicitud s
         JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
         WHERE s.eliminado = 0
+        ORDER BY s.created_at DESC
       `);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error al obtener solicitudes de la base de datos:",
-        error.message
-      );
-      throw new Error("Error al obtener solicitudes");
+      console.error("Error al obtener solicitudes de la base de datos:", error);
+      throw error;
     }
   }
 
@@ -27,19 +25,16 @@ class SolicitudesRepository {
   async getById(id) {
     try {
       const pool = await sql.connect(config);
-      const result = await pool
-        .request()
-        .input("id", sql.Int, id)
-        .query(
-          `SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado
-            FROM oc.Solicitud s
-            JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
-            WHERE s.id_solicitud = @id`
-        );
+      const result = await pool.request().input("id", sql.Int, id).query(`
+          SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado
+          FROM oc.Solicitud s
+          JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
+          WHERE s.id_solicitud = @id
+        `);
       return result.recordset[0];
     } catch (error) {
-      console.error("Error al obtener solicitud:", error.message);
-      throw new Error("Error al obtener solicitud");
+      console.error("Error al obtener solicitud:", error);
+      throw error;
     }
   }
 
@@ -48,17 +43,17 @@ class SolicitudesRepository {
     try {
       const pool = await sql.connect(config);
 
-      const defaultStatus = (
-        await pool
-          .request()
-          .query(`SELECT id_estatus FROM oc.Estatus WHERE nombre = 'pendiente'`)
-      ).recordset[0].id_estatus;
+      const defaultStatusResult = await pool
+        .request()
+        .query(`SELECT id_estatus FROM oc.Estatus WHERE nombre = 'abierta'`);
+
+      const defaultStatus = defaultStatusResult.recordset[0].id_estatus;
 
       const result = await pool
         .request()
         .input("asunto", sql.NVarChar, solicitud.asunto)
         .input("descripcion", sql.NVarChar, solicitud.descripcion)
-        .input("archivos", sql.NVarChar, solicitud.archivos)
+        .input("archivos", sql.NVarChar, JSON.stringify(solicitud.archivos))
         .input("usuarioSolicitante", sql.NVarChar, solicitud.usuarioSolicitante)
         .input("correoSolicitante", sql.NVarChar, solicitud.correoSolicitante)
         .input("estatus_id", sql.TinyInt, defaultStatus).query(`
@@ -66,26 +61,27 @@ class SolicitudesRepository {
           VALUES (@asunto, @descripcion, @archivos, @usuarioSolicitante, @correoSolicitante, @estatus_id);
           SELECT SCOPE_IDENTITY() AS id_solicitud;
         `);
-      return result.recordset;
+      return result.recordset[0];
     } catch (error) {
       console.error(
         "Error al guardar la solicitud en la base de datos:",
-        error.message
+        error
       );
-      throw new Error("Error al guardar la solicitud");
+      throw error;
     }
   }
 
   // Actualizar una solicitud existente
-  async updateSolicitud(id, { asunto, descripcion, archivos }) {
+  async updateSolicitud(id, solicitudData) {
     try {
       const pool = await sql.connect(config);
       await pool
         .request()
         .input("id", sql.Int, id)
-        .input("asunto", sql.NVarChar, asunto)
-        .input("descripcion", sql.NVarChar, descripcion)
-        .input("archivos", sql.NVarChar, archivos).query(`
+        .input("asunto", sql.NVarChar, solicitudData.asunto)
+        .input("descripcion", sql.NVarChar, solicitudData.descripcion)
+        .input("archivos", sql.NVarChar, JSON.stringify(solicitudData.archivos))
+        .query(`
           UPDATE oc.Solicitud
           SET asunto = @asunto,
               descripcion = @descripcion,
@@ -94,30 +90,39 @@ class SolicitudesRepository {
           WHERE id_solicitud = @id
         `);
     } catch (error) {
-      console.error("Error al actualizar la solicitud:", error.message);
-      throw new Error("Error al actualizar la solicitud");
+      console.error("Error al actualizar la solicitud:", error);
+      throw error;
     }
   }
 
-  // Actualizar el campo archivos de una solicitud
-  async updateArchivos(id, archivosJson) {
+  async updateEstatus(id, nuevoEstatus) {
     try {
       const pool = await sql.connect(config);
+      const estatusResult = await pool
+        .request()
+        .input("nombre", sql.NVarChar, nuevoEstatus)
+        .query(
+          `SELECT id_estatus FROM oc.Estatus WHERE LOWER(nombre) = LOWER(@nombre)`
+        );
+
+      if (estatusResult.recordset.length === 0) {
+        throw new Error(`Estatus '${nuevoEstatus}' no encontrado`);
+      }
+
+      const estatusId = estatusResult.recordset[0].id_estatus;
+
       await pool
         .request()
         .input("id", sql.Int, id)
-        .input("archivos", sql.NVarChar, archivosJson).query(`
-          UPDATE oc.Solicitud
-          SET archivos = @archivos,
-              updated_at = GETDATE()
-          WHERE id_solicitud = @id
-        `);
+        .input("estatus_id", sql.TinyInt, estatusId).query(`
+        UPDATE oc.Solicitud
+        SET estatus_id = @estatus_id,
+            updated_at = GETDATE()
+        WHERE id_solicitud = @id
+      `);
     } catch (error) {
-      console.error(
-        "Error al actualizar archivos de la solicitud:",
-        error.message
-      );
-      throw new Error("Error al actualizar archivos de la solicitud");
+      console.error("Error al actualizar el estatus de la solicitud:", error);
+      throw error;
     }
   }
 
@@ -130,12 +135,14 @@ class SolicitudesRepository {
         .input("id", sql.Int, id)
         .input("justificacion", sql.NVarChar, justificacion).query(`
           UPDATE oc.Solicitud
-          SET eliminado = 1, justificacion_eliminacion = @justificacion, updated_at = GETDATE()
+          SET eliminado = 1,
+              justificacion_eliminacion = @justificacion,
+              updated_at = GETDATE()
           WHERE id_solicitud = @id
         `);
     } catch (error) {
-      console.error("Error al eliminar la solicitud:", error.message);
-      throw new Error("Error al eliminar la solicitud");
+      console.error("Error al eliminar la solicitud:", error);
+      throw error;
     }
   }
 }
