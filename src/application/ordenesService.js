@@ -23,79 +23,21 @@ class OrdenesService {
     }
   }
 
-  async createOrden(ordenData) {
+  async createOrden(ordenData, detalles, archivos) {
     const pool = await sql.connect(config);
     const transaction = new sql.Transaction(pool);
 
     try {
       await transaction.begin();
-      const request = new sql.Request(transaction);
 
-      // Insertar OrdenCompra
-      const result = await request
-        .input("codigo", sql.NVarChar, ordenData.codigo)
-        .input("subtotal", sql.Decimal(18, 2), ordenData.subtotal)
-        .input("total", sql.Decimal(18, 2), ordenData.total)
-        .input("impuesto", sql.Decimal(18, 2), ordenData.impuesto)
-        .input("retencion", sql.Decimal(18, 2), ordenData.retencion)
-        .input("nota_creador", sql.NVarChar, ordenData.nota_creador)
-        .input(
-          "documentos_cotizacion",
-          sql.NVarChar,
-          ordenData.documentos_cotizacion
-        )
-        .input("usuario_creador", sql.NVarChar, ordenData.usuario_creador)
-        .input("correo_creador", sql.NVarChar, ordenData.correo_creador)
-        .input("id_moneda", sql.Int, ordenData.id_moneda)
-        .input("id_solicitud", sql.Int, ordenData.id_solicitud)
-        .input("id_proveedor", sql.Int, ordenData.id_proveedor)
-        .input("id_tipo_orden", sql.Int, ordenData.id_tipo_orden)
-        .input("id_plazo", sql.Int, ordenData.id_plazo)
-        .input("nivel_aprobacion", sql.TinyInt, ordenData.nivel_aprobacion)
-        .input(
-          "justificacion_rechazo",
-          sql.NVarChar,
-          ordenData.justificacion_rechazo
-        )
-        .input("ruta_archivo_pdf", sql.NVarChar, ordenData.ruta_archivo_pdf)
-        .input("total_local", sql.Decimal(18, 2), ordenData.total_local)
-        .input("creado_por", sql.NVarChar, ordenData.creado_por)
-        .input("fecha_vencimiento", sql.Date, ordenData.fecha_vencimiento)
-        .query(`
-          INSERT INTO oc.OrdenCompra 
-            (codigo, subtotal, total, impuesto, retencion, nota_creador, documentos_cotizacion, usuario_creador,
-             correo_creador, id_moneda, id_solicitud, id_proveedor, id_tipo_orden, id_plazo, nivel_aprobacion,
-             justificacion_rechazo, ruta_archivo_pdf, total_local, creado_por, fecha_vencimiento, created_at)
-          VALUES
-            (@codigo, @subtotal, @total, @impuesto, @retencion, @nota_creador, @documentos_cotizacion, @usuario_creador,
-             @correo_creador, @id_moneda, @id_solicitud, @id_proveedor, @id_tipo_orden, @id_plazo, @nivel_aprobacion,
-             @justificacion_rechazo, @ruta_archivo_pdf, @total_local, @creado_por, @fecha_vencimiento, GETDATE())
-          SELECT SCOPE_IDENTITY() AS id_orden
-        `);
+      const repo = this.ordenesRepository;
 
-      const id_orden = result.recordset[0].id_orden;
+      const orden = await repo.saveOrden(ordenData, transaction);
+      const id_orden = orden.id_orden;
 
-      // Insertar Detalles de OrdenCompra
-      for (const producto of ordenData.productos) {
-        await request
-          .input("id_solicitud", sql.Int, ordenData.id_solicitud)
-          .input("id_orden_compra", sql.Int, id_orden)
-          .input("id_producto", sql.Int, producto.id_producto)
-          .input(
-            "precio_unitario",
-            sql.Decimal(18, 2),
-            producto.precio_unitario
-          )
-          .input("cantidad", sql.Int, producto.cantidad)
-          .input("total_detalle", sql.Decimal(18, 2), producto.total_detalle)
-          .input("cant_x_recibir", sql.Int, producto.cant_x_recibir).query(`
-            INSERT INTO oc.DetalleOrdenCompra 
-              (ID_SOLICITUD, ID_ORDEN_COMPRA, ID_PRODUCTO, PRECIO, CANTIDAD, FECHA_CREACION, FECHA_ACTUALIZACION,
-               TOTAL_DETALLE, CANT_X_RECIBIR)
-            VALUES
-              (@id_solicitud, @id_orden_compra, @id_producto, @precio_unitario, @cantidad, GETDATE(), GETDATE(),
-               @total_detalle, @cant_x_recibir)
-          `);
+      for (const detalle of detalles) {
+        detalle.id_orden_compra = id_orden;
+        await repo.saveDetalleOrdenCompra(detalle, transaction);
       }
 
       await transaction.commit();

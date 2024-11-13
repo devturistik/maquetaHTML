@@ -5,9 +5,10 @@ import { encodeBase64, decodeBase64 } from "../utils/base64.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
-import path from "path";
-import fs from "fs";
-import PDFDocument from "pdfkit";
+import {
+  generateCodigoOrden,
+  calculateFechaVencimiento,
+} from "../utils/helpers.js";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -117,15 +118,15 @@ class OrdenesController {
         centroCostos,
         productos,
         cuentasContable: [
-          { nombre: 'Caja' },
-          { nombre: 'Banco' },
-          { nombre: 'Clientes' },
-          { nombre: 'Proveedores' },
-          { nombre: 'Inventario' },
-          { nombre: 'Capital' },
-          { nombre: 'Ventas' },
-          { nombre: 'Compras' }
-      ],
+          { nombre: "Caja" },
+          { nombre: "Banco" },
+          { nombre: "Clientes" },
+          { nombre: "Proveedores" },
+          { nombre: "Inventario" },
+          { nombre: "Capital" },
+          { nombre: "Ventas" },
+          { nombre: "Compras" },
+        ],
         fechaActual,
         fechaActualDisplay,
         errors: {},
@@ -147,6 +148,47 @@ class OrdenesController {
     try {
       const encodedId = req.params.id;
       const id_solicitud = decodeBase64(encodedId);
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        // Eliminar archivos subidos si hay errores de validación
+        if (req.files && req.files.length > 0) {
+          req.files.forEach(file => {
+            fs.unlink(file.path, (err) => {
+              if (err) console.error("Error al eliminar archivo:", err.message);
+            });
+          });
+        }
+
+        // Renderizar el formulario nuevamente con los errores y los datos ingresados
+        const solicitud = await this.solicitudesService.getSolicitudById(id_solicitud);
+        const proveedores = await this.ordenesService.getProveedores();
+        const plazoPagos = await this.ordenesService.getPlazoPagos();
+        const empresas = await this.ordenesService.getEmpresas();
+        const centroCostos = await this.ordenesService.getCentroCostos();
+        const tipoOrdenes = await this.ordenesService.getTipoOrdenes();
+        const monedas = await this.ordenesService.getMonedas();
+        const productos = await this.ordenesService.getProductos();
+        const detalleTipoOrden = await this.ordenesService.getDetalleTipoOrden();
+        const cuentasContable = await this.ordenesService.getCuentasContable();
+
+        return res.status(400).render("ordenes/crear", {
+          solicitud,
+          proveedores,
+          plazoPagos,
+          empresas,
+          centroCostos,
+          tipoOrdenes,
+          monedas,
+          productos,
+          detalleTipoOrden,
+          cuentasContable,
+          fechaActual: dayjs().tz("America/Santiago").format("YYYY-MM-DD"),
+          errors: errors.mapped(),
+          errorMessage: "Por favor corrige los errores en el formulario."
+        });
+      }
+
       const {
         ordenProveedor,
         ordenBanco,
@@ -155,94 +197,204 @@ class OrdenesController {
         ordenCentroCosto,
         ordenTipo,
         ordenMoneda,
-        ordenFecha,
-        ordenNota,
+        ordenNota
       } = req.body;
-      const cotizacion = req.files && req.files.length > 0 ? req.files : [];
-      const { nombre, apellido, correo } = res.locals.user || {};
 
-      // Generar el código de la orden
-      const codigo = generateCodigoOrden();
+      const productosSeleccionados = Array.isArray(req.body.producto) ? req.body.producto : [req.body.producto];
+      const cantidades = Array.isArray(req.body.cantidad) ? req.body.cantidad : [req.body.cantidad];
+      const preciosUnitarios = Array.isArray(req.body.precio_unitario) ? req.body.precio_unitario : [req.body.precio_unitario];
 
-      // Manejar la subida de archivos
-      const archivosPaths = cotizacion.map(
-        (file) => `/uploads/${file.filename}`
-      );
-      const archivosJson = archivosPaths.length
-        ? JSON.stringify(archivosPaths)
-        : JSON.stringify([]);
+      if (productosSeleccionados.length === 0 || !productosSeleccionados[0]) {
+        req.flash("errorMessage", "Debe agregar al menos un producto a la orden.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
 
-      const subtotal = parseFloat(req.body.subtotal) || 0;
-      const impuesto = parseFloat(req.body.impuesto) || 0;
-      const retencion = parseFloat(req.body.retencion) || 0;
-      const propina = parseFloat(req.body.propina) || 0;
-      const total = parseFloat(req.body.total) || 0;
+      let ruta_archivo_pdf = null;
+      let documentos_cotizacion = null;
+      if (req.files && req.files.length > 0) {
+        ruta_archivo_pdf = req.files[0].path;
+        if (req.files.length > 1) {
+          documentos_cotizacion = req.files.slice(1).map(file => file.path).join(';');
+        }
+      }
 
-      const productos = req.body.producto ? req.body.producto : [];
-      const cantidades = req.body.cantidad ? req.body.cantidad : [];
-      const precios_unitarios = req.body.precio_unitario
-        ? req.body.precio_unitario
-        : [];
+      const detalleTipoOrden = await this.ordenesService.getDetalleTipoOrden();
 
-      const productosOrden = productos.map((id_producto, index) => ({
-        id_producto: parseInt(id_producto),
-        cantidad: parseInt(cantidades[index]),
-        precio_unitario: parseFloat(precios_unitarios[index]),
-        total_detalle:
-          parseFloat(cantidades[index]) * parseFloat(precios_unitarios[index]),
-        cant_x_recibir: parseInt(cantidades[index]),
-      }));
+      let subtotal = 0;
+      const detalles = [];
+      for (let i = 0; i < productosSeleccionados.length; i++) {
+        const id_producto = parseInt(productosSeleccionados[i]);
+        const cantidad = parseFloat(cantidades[i]);
+        const precio_unitario = parseFloat(preciosUnitarios[i]);
 
-      const moneda = await this.ordenesService.getMonedaById(
-        parseInt(ordenMoneda)
-      );
-      const tipo_cambio = moneda ? parseFloat(moneda.CAMBIO) : 1;
+        if (isNaN(id_producto) || isNaN(cantidad) || isNaN(precio_unitario)) {
+          req.flash("errorMessage", "Datos de productos inválidos.");
+          return res.redirect(`/ordenes-crear/${req.params.id}`);
+        }
 
-      // Calcular fecha de vencimiento basada en plazo de pago
-      const fechaVencimientoCalculada = calculateFechaVencimiento(
-        parseInt(ordenPlazo)
-      );
+        const valor_total = cantidad * precio_unitario;
+        subtotal += valor_total;
+
+        detalles.push({
+          id_solicitud,
+          id_producto,
+          precio_unitario,
+          cantidad,
+          valor_total,
+          unidad: 'Unidad'
+        });
+      }
+
+      let impuesto = 0;
+      let retencion = 0;
+      let propina = 0;
+
+      const detallesFiltrados = detalleTipoOrden.filter(detalle => detalle.id_tipo_orden == ordenTipo && detalle.activo);
+
+      detallesFiltrados.forEach(detalle => {
+        const nombre_detalle = detalle.nombre_detalle.trim().toLowerCase();
+        const cantidad = parseFloat(detalle.cantidad);
+        const tipo_detalle = detalle.tipo_detalle.trim().toLowerCase();
+
+        if (nombre_detalle === 'impuesto') {
+          if (tipo_detalle === 'porcentaje' || tipo_detalle === '%') {
+            impuesto += subtotal * (cantidad / 100);
+          } else {
+            impuesto += cantidad;
+          }
+        }
+
+        if (nombre_detalle === 'retencion') {
+          if (tipo_detalle === 'porcentaje' || tipo_detalle === '%') {
+            retencion += subtotal * (cantidad / 100);
+          } else {
+            retencion += cantidad;
+          }
+        }
+
+        if (nombre_detalle === 'propina') {
+          if (tipo_detalle === 'porcentaje' || tipo_detalle === '%') {
+            propina += subtotal * (cantidad / 100);
+          } else {
+            propina += cantidad;
+          }
+        }
+      });
+
+      const total = subtotal + impuesto - retencion + propina;
+      const total_local = total;
+
+      const codigoOrden = generateCodigoOrden();
+
+      const fecha_vencimiento = calculateFechaVencimiento(parseInt(ordenPlazo));
 
       const ordenData = {
-        codigo: codigo,
-        subtotal: subtotal * tipo_cambio,
-        total: total * tipo_cambio,
-        impuesto: impuesto * tipo_cambio,
-        retencion: retencion * tipo_cambio,
-        nota_creador: ordenNota,
-        documentos_cotizacion: archivosJson,
-        usuario_creador: `${nombre} ${apellido}`,
-        correo_creador: correo,
+        codigo: codigoOrden,
+        subtotal: subtotal.toFixed(2),
+        total: total.toFixed(2),
+        impuesto: impuesto.toFixed(2),
+        retencion: retencion.toFixed(2),
+        usuario_creador: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
+        correo_creador: res.locals.user.correo,
+        nota_creador: ordenNota || null,
+        ruta_archivo_pdf: ruta_archivo_pdf || null,
+        documentos_cotizacion: documentos_cotizacion || null,
+        nivel_aprobacion: 1, // Ajusta según tu lógica
+        total_local: total_local.toFixed(2),
         id_moneda: parseInt(ordenMoneda),
+        id_empresa: ordenEmpresa ? parseInt(ordenEmpresa) : null,
         id_solicitud: id_solicitud,
         id_proveedor: parseInt(ordenProveedor),
         id_tipo_orden: parseInt(ordenTipo),
         id_plazo: parseInt(ordenPlazo),
-        nivel_aprobacion: 1, // Ajusta según tu lógica
-        justificacion_rechazo: null,
-        ruta_archivo_pdf: null, // Será actualizado después de generar el PDF
-        total_local: total * tipo_cambio,
-        creado_por: `${nombre} ${apellido}`,
-        fecha_vencimiento: fechaVencimientoCalculada,
-        productos: productosOrden,
+        creado_por: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
+        fecha_vencimiento: fecha_vencimiento
       };
 
-      const id_orden = await this.ordenesService.createOrden(ordenData);
+      const id_orden = await this.ordenesService.createOrden(ordenData, detalles, req.files);
 
-      const encodedOrdenId = encodeBase64(id_orden);
+      const ordenCreada = await this.ordenesService.getOrdenById(id_orden);
 
-      req.flash("successMessage", "Orden creada con éxito");
-      res.redirect(`/ordenes/${encodedOrdenId}/pdf`);
+      const [
+        Empresa,
+        CentroCosto,
+        Proveedor,
+        Banco,
+        PlazoPago,
+        productosOrden
+      ] = await Promise.all([
+        this.ordenesService.getEmpresaById(ordenCreada.id_empresa),
+        this.ordenesService.getCentroCostoById(ordenCreada.id_centro_costo),
+        this.ordenesService.getProveedorById(ordenCreada.id_proveedor),
+        this.ordenesService.getBancoById(ordenCreada.id_banco),
+        this.ordenesService.getPlazoPagoById(ordenCreada.id_plazo),
+        this.ordenesService.getProductosByOrden(id_orden),
+      ]);
+
+      const data = {
+        Empresa,
+        CentroCosto,
+        Proveedor,
+        Banco,
+        PlazoPago,
+        direccionDespacho: 'AV EL CERRO 751, Providencia, Región Metropolitana de Santiago',
+        contacto: 'KATHERINNE PEÑA, KPENA@TURISTIK.COM',
+        OrdenNota: ordenCreada.nota_creador,
+        ordenFecha: dayjs(ordenCreada.created_at).format("DD/MM/YYYY"),
+        ordenID: ordenCreada.codigo,
+        productos: productosOrden.map(producto => ({
+          codigo: producto.codigo || 'N/A',
+          descripcion: producto.descripcion,
+          cantidad: producto.cantidad,
+          unidad: producto.unidad,
+          precio_unitario: parseFloat(producto.precio_unitario),
+          valor_total: parseFloat(producto.valor_total)
+        })),
+        subtotal: parseFloat(ordenCreada.subtotal),
+        descuento: 0.00,
+        cargos: 0.00,
+        impuesto: parseFloat(ordenCreada.impuesto),
+        retencion: parseFloat(ordenCreada.retencion),
+        total: parseFloat(ordenCreada.total),
+        monedaSymbol: "US$"
+      };
+
+      res.render("orden/templates/pdfTemplate.ejs", data);
     } catch (error) {
+      console.error("Error al crear orden:", error.message);
+
+      // Manejo de errores de validación específicos
       if (error.validationErrors) {
-        // Manejar errores de validación específicos
-        res.render("orden/crear", {
-          ...req.body,
-          errorMessage: error.message,
+        const encodedId = req.params.id;
+        const id_solicitud = decodeBase64(encodedId);
+        const solicitud = await this.solicitudesService.getSolicitudById(id_solicitud);
+        const proveedores = await this.ordenesService.getProveedores();
+        const plazoPagos = await this.ordenesService.getPlazoPagos();
+        const empresas = await this.ordenesService.getEmpresas();
+        const centroCostos = await this.ordenesService.getCentroCostos();
+        const tipoOrdenes = await this.ordenesService.getTipoOrdenes();
+        const monedas = await this.ordenesService.getMonedas();
+        const productos = await this.ordenesService.getProductos();
+        const detalleTipoOrden = await this.ordenesService.getDetalleTipoOrden();
+        const cuentasContable = await this.ordenesService.getCuentasContable();
+
+        res.render("ordenes/crear", {
+          solicitud,
+          proveedores,
+          plazoPagos,
+          empresas,
+          centroCostos,
+          tipoOrdenes,
+          monedas,
+          productos,
+          detalleTipoOrden,
+          cuentasContable,
+          fechaActual: dayjs().tz("America/Santiago").format("YYYY-MM-DD"),
+          fechaActualDisplay: dayjs().tz("America/Santiago").format("DD/MM/YYYY"),
           errors: error.validationErrors,
+          errorMessage: "Por favor corrige los errores en el formulario."
         });
       } else {
-        console.error("Error al crear orden:", error.message);
         req.flash("errorMessage", "Error al crear la orden: " + error.message);
         res.redirect(`/ordenes-crear/${req.params.id}`);
       }
@@ -313,122 +465,6 @@ class OrdenesController {
     } catch (error) {
       console.error("Error en getProductoDetalle:", error.message);
       res.status(500).json({ error: "Error interno del servidor." });
-    }
-  };
-
-  generatePdfOrden = async (req, res) => {
-    try {
-      const encodedId = req.params.id;
-      const id_orden = decodeBase64(encodedId);
-      const orden = await this.ordenesService.getOrdenById(id_orden);
-
-      if (!orden) {
-        req.flash("errorMessage", "Orden de compra no encontrada.");
-        return res.redirect("/ordenes");
-      }
-
-      const proveedor = await this.ordenesService.getProveedorById(
-        orden.id_proveedor
-      );
-
-      const bancos = await this.ordenesService.getBancosByProveedor(
-        orden.id_proveedor
-      );
-      const banco = bancos.length > 0 ? bancos[0] : null;
-
-      const moneda = await this.ordenesService.getMonedaById(orden.id_moneda);
-      const productos = await this.ordenesService.getProductosByOrden(id_orden);
-
-      const doc = new PDFDocument();
-
-      const pdfDir = path.join(process.cwd(), "public", "pdfs");
-      if (!fs.existsSync(pdfDir)) {
-        fs.mkdirSync(pdfDir, { recursive: true });
-      }
-      const pdfPath = path.join(pdfDir, `OrdenCompra_${orden.id_orden}.pdf`);
-
-      const writeStream = fs.createWriteStream(pdfPath);
-      doc.pipe(writeStream);
-
-      doc.fontSize(20).text("Orden de Compra", { align: "center" });
-      doc.moveDown();
-
-      doc.fontSize(12).text(`Código: ${orden.codigo}`);
-      doc.text(
-        `Fecha de Creación: ${dayjs(orden.created_at).format("DD/MM/YYYY")}`
-      );
-      doc.text(
-        `Fecha de Vencimiento: ${dayjs(orden.fecha_vencimiento).format(
-          "DD/MM/YYYY"
-        )}`
-      );
-      doc.moveDown();
-
-      doc.text(`Proveedor: ${proveedor.NOMBRE_PROVEEDOR}`);
-      doc.text(`Documento: ${proveedor.DOCUMENTO_PROVEEDOR}`);
-      doc.text(`Teléfono: ${proveedor.TELEFONO_PRINCIAL}`);
-      doc.text(`Correo: ${proveedor.CORREO_PRINCIPAL}`);
-      doc.moveDown();
-
-      if (banco) {
-        doc.text(`Banco: ${banco.NOMBRE_BANCO}`);
-        doc.text(`Número de Cuenta: ${banco.NUMERO_CUENTA}`);
-        doc.text(`Tipo de Cuenta: ${banco.TIPO_CUENTA}`);
-        doc.text(`SWIFT: ${banco.SWIFT_CUENTA || "N/A"}`);
-        doc.text(`ABA: ${banco.ABA_CUENTA || "N/A"}`);
-        doc.text(`IBAN: ${banco.IBAN_CUENTA || "N/A"}`);
-        doc.text(`Correo del Banco: ${banco.CORREO_BANCO || "N/A"}`);
-      }
-      doc.moveDown();
-
-      doc.fontSize(14).text("Productos:", { underline: true });
-      doc.fontSize(12);
-      productos.forEach((producto, index) => {
-        doc.text(
-          `${index + 1}. ${producto.DESCRIPCION} - Cantidad: ${
-            producto.cantidad
-          } - Precio Unitario: $${producto.precio_unitario.toFixed(
-            2
-          )} - Total: $${(producto.cantidad * producto.precio_unitario).toFixed(
-            2
-          )}`
-        );
-      });
-      doc.moveDown();
-
-      doc.text(`Subtotal: $${orden.subtotal.toFixed(2)}`);
-      doc.text(`Impuesto (16%): $${orden.impuesto.toFixed(2)}`);
-      doc.text(`Retención (5%): $${orden.retencion.toFixed(2)}`);
-      doc.text(`Propina (2%): $${orden.propina.toFixed(2)}`);
-      doc
-        .fontSize(14)
-        .text(`Total: $${orden.total.toFixed(2)}`, { underline: true });
-      doc.moveDown();
-
-      if (orden.nota_creador) {
-        doc.text(`Nota: ${orden.nota_creador}`);
-        doc.moveDown();
-      }
-
-      doc.end();
-
-      writeStream.on("finish", async () => {
-        await this.ordenesService.updateOrden(id_orden, {
-          ruta_archivo_pdf: `/pdfs/OrdenCompra_${orden.id_orden}.pdf`,
-        });
-
-        res.redirect(`/pdfs/OrdenCompra_${orden.id_orden}.pdf`);
-      });
-
-      writeStream.on("error", (err) => {
-        console.error("Error al generar PDF:", err);
-        req.flash("errorMessage", "Error al generar el PDF de la orden.");
-        res.redirect(`/ordenes/${encodedId}`);
-      });
-    } catch (error) {
-      console.error("Error al generar PDF de la orden:", error.message);
-      req.flash("errorMessage", "Error al generar el PDF de la orden.");
-      res.redirect(`/ordenes`);
     }
   };
 
@@ -519,9 +555,9 @@ class OrdenesController {
         correo_creador: correo,
         nota_creador: nota_creador,
         documentos_cotizacion: documentosCotizacion,
-        nivel_aprobacion: 1, // Ajusta según tu lógica
+        nivel_aprobacion: 1,
         justificacion_rechazo: null,
-        ruta_archivo_pdf: null, // Opcional: si deseas actualizarlo
+        ruta_archivo_pdf: null,
         total_local: total_local,
         id_moneda: parseInt(ordenMoneda),
         id_solicitud: parseInt(ordenSolicitud),
@@ -558,17 +594,6 @@ class OrdenesController {
       res.redirect("/ordenes");
     }
   };
-}
-
-function generateCodigoOrden() {
-  const date = dayjs().format("YYYYMMDD");
-  const randomNum = Math.floor(100000 + Math.random() * 900000);
-  return `OC-${date}-${randomNum}`;
-}
-
-function calculateFechaVencimiento(plazoDias) {
-  const fecha = dayjs().tz("America/Santiago").add(plazoDias, "day");
-  return fecha.format("YYYY-MM-DD");
 }
 
 export default OrdenesController;

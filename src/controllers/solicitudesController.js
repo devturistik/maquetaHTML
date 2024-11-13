@@ -85,32 +85,41 @@ class SolicitudesController {
         correoSolicitante: correo,
       };
 
-      // Validación de datos de entrada
       const validationErrors =
         this.solicitudesService.validateSolicitudData(solicitudData);
       if (validationErrors) {
         throw { validationErrors };
       }
 
-      // Subir archivos a Azure Blob Storage
+      const solicitudCreada = await this.solicitudesService.createSolicitud(
+        solicitudData
+      );
+      const solicitudId = solicitudCreada.id_solicitud;
+
+      const solicitudIdBase64 = encodeBase64(solicitudId.toString());
+
+      let archivosUrls = [];
       if (archivos.length > 0) {
         const fechaActual = dayjs().format("DDMMYYYY");
         const archivosParaSubir = archivos.map((file) => ({
-          blobName: `${fechaActual}-${file.originalname}`,
+          blobName: `${solicitudIdBase64}-${fechaActual}-${file.originalname}`,
           file,
         }));
 
-        const archivosUrls = await AzureBlobService.uploadFilesWithNames(
+        archivosUrls = await AzureBlobService.uploadFilesWithNames(
           archivosParaSubir
         );
-        solicitudData.archivos = archivosUrls.map((url) => ({
+      }
+
+      if (archivosUrls.length > 0) {
+        const archivosData = archivosUrls.map((url) => ({
           url,
           eliminado: 0,
         }));
+        await this.solicitudesService.updateArchivosSolicitud(solicitudId, {
+          archivos: archivosData,
+        });
       }
-
-      // Crear la solicitud en la base de datos
-      await this.solicitudesService.createSolicitud(solicitudData);
 
       req.flash("successMessage", "Solicitud creada con éxito.");
       res.redirect("/solicitudes");
@@ -134,18 +143,27 @@ class SolicitudesController {
   // Renderizar el formulario de edición
   renderEditForm = async (req, res) => {
     try {
-      const id = decodeBase64(req.params.id);
+      const encodedId = req.params.id;
+      const id = decodeBase64(encodedId);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
+
       if (!solicitud) {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
       }
 
-      // Verificar si la solicitud está en estado 'Abierta' antes de cambiar a 'Editando'
-      if (solicitud.estatus.toLowerCase() === "abierta") {
-        await this.solicitudesService.updateEstatus(id, "editando");
-        solicitud.estatus = "Editando"; // Actualizar el estatus en el objeto solicitud
+      if (solicitud.estatus.toLowerCase() === "editando") {
+        req.flash(
+          "errorMessage",
+          "La solicitud está siendo editada por otro usuario."
+        );
+        return res.redirect("/solicitudes");
       }
+
+      await this.solicitudesService.updateEstatus(id, "editando");
+
+      solicitud.estatus = "editando";
+      solicitud.locked_at = dayjs().format();
 
       solicitud.archivos = JSON.parse(solicitud.archivos || "[]");
       solicitud.id = encodeBase64(solicitud.id_solicitud);
@@ -263,13 +281,27 @@ class SolicitudesController {
   cancelarEdicion = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
-      await this.solicitudesService.updateEstatus(id, 'abierta');
+      await this.solicitudesService.updateEstatus(id, "abierta");
       req.flash("successMessage", "Edición cancelada.");
       res.redirect("/solicitudes");
     } catch (error) {
       console.error("Error al cancelar la edición:", error);
       req.flash("errorMessage", "Error al cancelar la edición.");
       res.redirect("/solicitudes");
+    }
+  };
+
+  liberarEdicion = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id = decodeBase64(encodedId);
+      await this.solicitudesService.releaseLock(id);
+      res.status(200).json({ message: "Bloqueo liberado." });
+    } catch (error) {
+      console.error("Error al liberar el bloqueo de edición:", error);
+      res
+        .status(500)
+        .json({ message: "Error al liberar el bloqueo de edición." });
     }
   };
 
@@ -348,6 +380,7 @@ class SolicitudesController {
       );
 
       res.render("solicitud/archivos", {
+        solicitudId: encodeBase64(solicitud.id_solicitud),
         archivos,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
@@ -356,6 +389,60 @@ class SolicitudesController {
       console.error("Error al obtener archivos:", error);
       req.flash("errorMessage", "Error al obtener archivos.");
       res.redirect("/solicitudes");
+    }
+  };
+
+  downloadArchivo = async (req, res) => {
+    try {
+      const solicitudId = decodeBase64(req.params.id);
+      const filenameEncoded = req.params.filename;
+      const filename = decodeURIComponent(filenameEncoded);
+      const blobName = filename;
+
+      const usuarioActual = res.locals.user;
+      if (!usuarioActual) {
+        req.flash(
+          "errorMessage",
+          "Debes estar autenticado para descargar archivos."
+        );
+        return res.status(401).redirect("back");
+      }
+
+      const solicitud = await this.solicitudesService.getSolicitudById(
+        solicitudId
+      );
+
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.status(404).redirect("back");
+      }
+
+      const blobParts = blobName.split("-");
+      if (blobParts.length < 3) {
+        req.flash("errorMessage", "Nombre de archivo inválido.");
+        return res.status(400).redirect("back");
+      }
+      const originalFilename = blobParts.slice(2).join("-");
+
+      const sasUrl = AzureBlobService.generateSasUrl(
+        blobName,
+        originalFilename
+      );
+
+      if (!sasUrl) {
+        req.flash(
+          "errorMessage",
+          "No se pudo generar la descarga del archivo."
+        );
+        return res.redirect("back");
+      }
+
+      // Redirigir al usuario a la URL SAS para iniciar la descarga
+      res.redirect(sasUrl);
+    } catch (error) {
+      console.error("Error al descargar el archivo:", error);
+      req.flash("errorMessage", "Error al descargar el archivo.");
+      res.redirect("back");
     }
   };
 }

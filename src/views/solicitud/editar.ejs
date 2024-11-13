@@ -4,6 +4,46 @@
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
+<style>
+  .img-fluid {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  iframe {
+    width: 100%;
+    height: 800px;
+    border: none;
+  }
+
+  .preview-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  @media (max-width: 768px) {
+    iframe {
+      height: 600px;
+    }
+  }
+
+  .text-word {
+    color: #2B579A !important;
+  }
+
+  .btn-toggle-preview {
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-toggle-preview i {
+    margin-right: 5px;
+  }
+</style>
+
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud-editar">
@@ -66,7 +106,7 @@
               %>
               <% if (archivos && archivos.length > 0) { %>
                 <ul class="list-group list-group-flush mb-3">
-                  <% archivos.forEach((archivo) => {
+                  <% archivos.forEach((archivo) => { 
                     const blobName = archivo.url.split('/').pop();
                     const parts = blobName.split('-');
                     const originalFileName = parts.slice(2).join('-');
@@ -74,11 +114,11 @@
                     let iconClass = 'fas fa-file';
                     if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf text-danger';
                     else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image text-info';
-                    else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word text-primary';
+                    else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word text-word';
                     else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel text-success';
                   %>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                      <a href="<%= archivo.url %>" target="_blank" class="text-decoration-none">
+                      <a href="/solicitudes/<%= solicitud.id %>/descargar/<%= encodeURIComponent(blobName) %>" class="text-decoration-none">
                         <i class="<%= iconClass %> me-2"></i> <%= originalFileName %>
                       </a>
                       <button type="button" class="btn btn-sm btn-danger" onclick="removeExistingFile('<%= archivo.url %>', this)">
@@ -100,7 +140,7 @@
                 class="form-control d-none"
                 id="archivos"
                 name="archivos"
-                accept=".pdf,.jpg,.jpeg,.png,.docx"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx,.xls"
                 multiple
                 aria-label="Subir Archivos"
                 onchange="handleFileSelect(this)"
@@ -109,7 +149,7 @@
                 <i class="fas fa-upload me-1"></i> Seleccionar archivos
               </button>
               <small class="form-text text-muted">
-                Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
+                Formatos permitidos: PDF, DOC, DOCX, XLSX, XLS, JPG, JPEG, PNG (máximo 10 archivos y 10 MB en total)
               </small>
               <% if (errors && errors.archivos) { %>
                 <div class="invalid-feedback"><%= errors.archivos %></div>
@@ -152,7 +192,7 @@
     const files = Array.from(input.files);
     const maxFiles = 10;
     const maxSizeTotal = 10 * 1024 * 1024;
-    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'docx'];
+    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xlsx', 'xls'];
     const existingFilesCount = archivos.length;
 
     if (files.length + selectedFiles.length + existingFilesCount > maxFiles) {
@@ -219,6 +259,19 @@
     selectedFiles.forEach(file => dataTransfer.items.add(file));
     document.getElementById("archivos").files = dataTransfer.files;
   });
+
+  // Script para liberar el bloqueo cuando se cierra la página
+  (function () {
+    function liberarBloqueo() {
+      const encodedId = "<%= solicitud.id %>";
+      const url = `/solicitudes-liberar-edicion/${encodedId}`;
+
+      navigator.sendBeacon(url);
+    }
+
+    window.addEventListener("beforeunload", liberarBloqueo);
+    window.addEventListener("unload", liberarBloqueo);
+  })();
 </script>
 
 <%- include('../partials/footer-text') %>

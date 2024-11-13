@@ -22,11 +22,10 @@ class OrdenesRepository {
     }
   }
 
-  async getById(id) {
+  async getById(id, transaction = null) {
     try {
-      const pool = await sql.connect(config);
-      const result = await pool
-        .request()
+      const request = transaction ? transaction.request() : new sql.Request();
+      const result = await request
         .input("id_orden", sql.Int, id)
         .query(`SELECT * FROM oc.OrdenCompra WHERE id_orden = @id_orden`);
       return result.recordset[0];
@@ -36,49 +35,56 @@ class OrdenesRepository {
     }
   }
 
-  async saveOrden(orden) {
+  async saveOrden(orden, transaction = null) {
     try {
-      const pool = await sql.connect(config);
-      const result = await pool
-        .request()
-        .input("codigo", sql.NVarChar, orden.codigo)
-        .input("subtotal", sql.Decimal(18, 2), orden.subtotal)
-        .input("total", sql.Decimal(18, 2), orden.total)
-        .input("impuesto", sql.Decimal(18, 2), orden.impuesto)
-        .input("retencion", sql.Decimal(18, 2), orden.retencion)
-        .input("nota_creador", sql.NVarChar, orden.nota_creador)
-        .input(
-          "documentos_cotizacion",
-          sql.NVarChar,
-          orden.documentos_cotizacion
-        )
-        .input("usuario_creador", sql.NVarChar, orden.usuario_creador)
-        .input("correo_creador", sql.NVarChar, orden.correo_creador)
-        .input("id_moneda", sql.Int, orden.id_moneda)
-        .input("id_solicitud", sql.Int, orden.id_solicitud)
-        .input("id_proveedor", sql.Int, orden.id_proveedor)
-        .input("id_tipo_orden", sql.Int, orden.id_tipo_orden)
-        .input("id_plazo", sql.Int, orden.id_plazo)
-        .input("nivel_aprobacion", sql.TinyInt, orden.nivel_aprobacion)
-        .input(
-          "justificacion_rechazo",
-          sql.NVarChar,
-          orden.justificacion_rechazo
-        )
-        .input("ruta_archivo_pdf", sql.NVarChar, orden.ruta_archivo_pdf)
-        .input("total_local", sql.Decimal(18, 2), orden.total_local)
-        .input("creado_por", sql.NVarChar, orden.creado_por)
-        .input("fecha_vencimiento", sql.Date, orden.fecha_vencimiento).query(`
-          INSERT INTO oc.OrdenCompra 
-            (codigo, subtotal, total, impuesto, retencion, nota_creador, documentos_cotizacion, usuario_creador,
-             correo_creador, id_moneda, id_solicitud, id_proveedor, id_tipo_orden, id_plazo, nivel_aprobacion,
-             justificacion_rechazo, ruta_archivo_pdf, total_local, creado_por, fecha_vencimiento, created_at)
-          VALUES
-            (@codigo, @subtotal, @total, @impuesto, @retencion, @nota_creador, @documentos_cotizacion, @usuario_creador,
-             @correo_creador, @id_moneda, @id_solicitud, @id_proveedor, @id_tipo_orden, @id_plazo, @nivel_aprobacion,
-             @justificacion_rechazo, @ruta_archivo_pdf, @total_local, @creado_por, @fecha_vencimiento, GETDATE())
-          SELECT SCOPE_IDENTITY() AS id_orden
-        `);
+      const request = transaction ? transaction.request() : new sql.Request();
+      // Configurar inputs
+      request.input("codigo", sql.NVarChar(255), orden.codigo);
+      request.input("subtotal", sql.Decimal(10, 2), orden.subtotal);
+      request.input("total", sql.Decimal(10, 2), orden.total);
+      request.input("impuesto", sql.Decimal(10, 2), orden.impuesto);
+      request.input("retencion", sql.Decimal(10, 2), orden.retencion);
+      request.input(
+        "usuario_creador",
+        sql.NVarChar(255),
+        orden.usuario_creador
+      );
+      request.input("correo_creador", sql.NVarChar(255), orden.correo_creador);
+      request.input("nota_creador", sql.NVarChar(255), orden.nota_creador);
+      request.input(
+        "ruta_archivo_pdf",
+        sql.NVarChar(255),
+        orden.ruta_archivo_pdf
+      );
+      request.input(
+        "documentos_cotizacion",
+        sql.NVarChar(255),
+        orden.documentos_cotizacion
+      );
+      request.input("nivel_aprobacion", sql.TinyInt, orden.nivel_aprobacion);
+      request.input("total_local", sql.Decimal(10, 2), orden.total_local);
+      request.input("id_moneda", sql.Int, orden.id_moneda);
+      request.input("id_empresa", sql.Int, orden.id_empresa);
+      request.input("id_solicitud", sql.Int, orden.id_solicitud);
+      request.input("id_proveedor", sql.Int, orden.id_proveedor);
+      request.input("id_tipo_orden", sql.Int, orden.id_tipo_orden);
+      request.input("id_plazo", sql.Int, orden.id_plazo);
+      request.input("creado_por", sql.NVarChar(100), orden.creado_por);
+      request.input("fecha_vencimiento", sql.Date, orden.fecha_vencimiento);
+
+      const query = `
+        INSERT INTO oc.OrdenCompra 
+          (codigo, subtotal, total, impuesto, retencion, nota_creador, documentos_cotizacion, usuario_creador,
+           correo_creador, id_moneda, id_empresa, id_solicitud, id_proveedor, id_tipo_orden, id_plazo, nivel_aprobacion,
+           justificacion_rechazo, ruta_archivo_pdf, total_local, creado_por, fecha_vencimiento, created_at)
+        VALUES
+          (@codigo, @subtotal, @total, @impuesto, @retencion, @nota_creador, @documentos_cotizacion, @usuario_creador,
+           @correo_creador, @id_moneda, @id_empresa, @id_solicitud, @id_proveedor, @id_tipo_orden, @id_plazo, @nivel_aprobacion,
+           @justificacion_rechazo, @ruta_archivo_pdf, @total_local, @creado_por, @fecha_vencimiento, GETDATE())
+        SELECT SCOPE_IDENTITY() AS id_orden
+      `;
+
+      const result = await request.query(query);
       return result.recordset[0];
     } catch (error) {
       console.error("Error en OrdenesRepository.saveOrden:", error.message);
@@ -86,34 +92,44 @@ class OrdenesRepository {
     }
   }
 
-  async saveDetalleOrdenCompra(detalleOrdenCompra) {
+  async saveDetalleOrdenCompra(detalleOrdenCompra, transaction = null) {
     try {
-      const pool = await sql.connect(config);
-      await pool
-        .request()
-        .input("id_solicitud", sql.Int, detalleOrdenCompra.id_solicitud)
-        .input("id_orden_compra", sql.Int, detalleOrdenCompra.id_orden_compra)
-        .input("id_producto", sql.Int, detalleOrdenCompra.id_producto)
-        .input(
-          "precio_unitario",
-          sql.Decimal(18, 2),
-          detalleOrdenCompra.precio_unitario
-        )
-        .input("cantidad", sql.Int, detalleOrdenCompra.cantidad)
-        .input(
-          "total_detalle",
-          sql.Decimal(18, 2),
-          detalleOrdenCompra.total_detalle
-        )
-        .input("cant_x_recibir", sql.Int, detalleOrdenCompra.cant_x_recibir)
-        .query(`
-          INSERT INTO oc.DetalleOrdenCompra 
-            (ID_SOLICITUD, ID_ORDEN_COMPRA, ID_PRODUCTO, PRECIO, CANTIDAD, FECHA_CREACION, FECHA_ACTUALIZACION,
-             TOTAL_DETALLE, CANT_X_RECIBIR)
-          VALUES
-            (@id_solicitud, @id_orden_compra, @id_producto, @precio_unitario, @cantidad, GETDATE(), GETDATE(),
-             @total_detalle, @cant_x_recibir)
-        `);
+      const request = transaction ? transaction.request() : new sql.Request();
+      // Configurar inputs
+      request.input("id_solicitud", sql.Int, detalleOrdenCompra.id_solicitud);
+      request.input(
+        "id_orden_compra",
+        sql.Int,
+        detalleOrdenCompra.id_orden_compra
+      );
+      request.input("id_producto", sql.Int, detalleOrdenCompra.id_producto);
+      request.input(
+        "precio_unitario",
+        sql.Decimal(18, 2),
+        detalleOrdenCompra.precio_unitario
+      );
+      request.input("cantidad", sql.Int, detalleOrdenCompra.cantidad);
+      request.input(
+        "total_detalle",
+        sql.Decimal(18, 2),
+        detalleOrdenCompra.total_detalle
+      );
+      request.input(
+        "cant_x_recibir",
+        sql.Int,
+        detalleOrdenCompra.cant_x_recibir
+      );
+
+      const query = `
+        INSERT INTO oc.DetalleOrdenCompra 
+          (ID_SOLICITUD, ID_ORDEN_COMPRA, ID_PRODUCTO, PRECIO, CANTIDAD, FECHA_CREACION, FECHA_ACTUALIZACION,
+           TOTAL_DETALLE, CANT_X_RECIBIR)
+        VALUES
+          (@id_solicitud, @id_orden_compra, @id_producto, @precio_unitario, @cantidad, GETDATE(), NULL,
+           @total_detalle, @cant_x_recibir)
+      `;
+
+      await request.query(query);
     } catch (error) {
       console.error("Error al guardar detalle de orden:", error.message);
       throw new Error("Error al guardar detalle de orden");
@@ -206,6 +222,8 @@ class OrdenesRepository {
           oc.Proveedor
         WHERE
           ESTATUS_PROVEEDOR = 1 AND ELIMINADO = 0
+        ORDER BY
+          NOMBRE_PROVEEDOR
       `);
       return result.recordset;
     } catch (error) {
@@ -245,6 +263,8 @@ class OrdenesRepository {
         WHERE pb.ID_PROVEEDOR = ${id_proveedor}
           AND pb.ELIMINADO = 0
           AND b.ELIMINADO = 0
+        ORDER BY
+          b.NOMBRE_BANCO
       `);
       return result.recordset;
     } catch (error) {
@@ -281,6 +301,8 @@ class OrdenesRepository {
         WHERE
           ELIMINADO = 0
           AND ESTATUS_FORMA_PAGO = 1
+        ORDER BY
+          NOMBRE
       `);
       return result.recordset;
     } catch (error) {
@@ -313,6 +335,8 @@ class OrdenesRepository {
           ID_MONEDA, ABREV, NOMBRE, CAMBIO
         FROM
           oc.Monedas
+        ORDER BY
+          NOMBRE
       `);
       return result.recordset;
     } catch (error) {
@@ -331,6 +355,8 @@ class OrdenesRepository {
           oc.Empresa
         WHERE
           ELIMINADO = 0
+        ORDER BY
+          NOMBRE
       `);
       return result.recordset;
     } catch (error) {
@@ -339,16 +365,35 @@ class OrdenesRepository {
     }
   }
 
+  async getEmpresaById(id_empresa) {
+    try {
+      const pool = await sql.connect(config);
+      const result = await pool
+        .request()
+        .input("id_empresa", sql.Int, id_empresa).query(`
+          SELECT NOMBRE, DOCUMENTO, DIRECCION
+          FROM oc.Empresa
+          WHERE ID_EMPRESA = @id_empresa
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error("Error al obtener empresa por ID:", error.message);
+      throw new Error("Error al obtener empresa por ID");
+    }
+  }
+
   async getCentroCostos() {
     try {
       const pool = await sql.connect(config);
       const result = await pool.request().query(`
         SELECT
-          ID_CENTRO_COSTO, NOMBRE, ENCARGADO
+          ID_CENTRO_COSTO, NOMBRE, ENCARGADO, CORREO_ENCARGADO, PRESUPUESTO
         FROM
           oc.CentroCosto
         WHERE
-          ESTATUS_FORMA_PAGO = 1
+          ESTATUS = 1
+        ORDER BY
+          NOMBRE
       `);
       return result.recordset;
     } catch (error) {
@@ -360,6 +405,39 @@ class OrdenesRepository {
     }
   }
 
+  async getCentroCostoById(id_centro_costo) {
+    try {
+      const pool = await sql.connect(config);
+      const result = await pool
+        .request()
+        .input("id_centro_costo", sql.Int, id_centro_costo).query(`
+          SELECT NOMBRE
+          FROM oc.CentroCosto
+          WHERE ID_CENTRO_COSTO = @id_centro_costo
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error("Error al obtener centro de costo por ID:", error.message);
+      throw new Error("Error al obtener centro de costo por ID");
+    }
+  }
+
+  async getPlazoPagoById(id_plazo) {
+    try {
+      const pool = await sql.connect(config);
+      const result = await pool.request().input("id_plazo", sql.Int, id_plazo)
+        .query(`
+          SELECT NOMBRE
+          FROM oc.PlazoPago
+          WHERE ID_FORMA_PAGO = @id_plazo
+        `);
+      return result.recordset[0];
+    } catch (error) {
+      console.error("Error al obtener plazo de pago por ID:", error.message);
+      throw new Error("Error al obtener plazo de pago por ID");
+    }
+  }
+
   async getTipoOrdenes() {
     try {
       const pool = await sql.connect(config);
@@ -368,6 +446,8 @@ class OrdenesRepository {
           id_tipo, nombre
         FROM
           oc.TipoOrden
+        ORDER BY
+          nombre
       `);
       return result.recordset;
     } catch (error) {
@@ -394,6 +474,8 @@ class OrdenesRepository {
           oc.DetalleTipoOrden dto
         WHERE 
           dto.activo = 1
+        ORDER BY
+          dto.nombre_detalle
       `);
       return result.recordset;
     } catch (error) {
@@ -415,6 +497,8 @@ class OrdenesRepository {
           oc.Producto
         WHERE
           ELIMINADO = 0
+        ORDER BY
+          DESCRIPCION
       `);
       return result.recordset;
     } catch (error) {
@@ -458,11 +542,10 @@ class OrdenesRepository {
       const pool = await sql.connect(config);
       const result = await pool.request().input("id_orden", sql.Int, id_orden)
         .query(`
-          SELECT p.DESCRIPCION, opc.CANTIDAD, opc.PRECIO AS precio_unitario
+          SELECT p.codigo, p.DESCRIPCION, opc.CANTIDAD, p.UNIDAD, opc.PRECIO AS precio_unitario, opc.TOTAL_DETALLE AS valor_total
           FROM oc.DetalleOrdenCompra opc
           JOIN oc.Producto p ON opc.ID_PRODUCTO = p.ID_PRODUCTO
-          WHERE opc.ID_ORDEN_COMPRA = @id_orden 
-            AND p.ELIMINADO = 0
+          WHERE opc.ID_ORDEN_COMPRA = @id_orden AND p.ELIMINADO = 0
         `);
       return result.recordset;
     } catch (error) {

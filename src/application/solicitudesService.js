@@ -1,5 +1,6 @@
 // src/application/solicitudesService.js
 import SolicitudesRepository from "../adapters/repository/solicitudesRepository.js";
+import dayjs from "dayjs";
 
 class SolicitudesService {
   constructor() {
@@ -25,7 +26,31 @@ class SolicitudesService {
 
   // Obtener una solicitud por ID
   async getSolicitudById(id) {
-    return await this.solicitudesRepository.getById(id);
+    const solicitud = await this.solicitudesRepository.getById(id);
+
+    if (!solicitud) {
+      return null;
+    }
+
+    if (solicitud.estatus.toLowerCase() === "editando") {
+      const lockedAt = dayjs(solicitud.locked_at);
+      const now = dayjs();
+      const diff = now.diff(lockedAt, "minute");
+
+      const lockTimeout = 5;
+
+      if (diff > lockTimeout) {
+        await this.updateEstatus(id, "abierta");
+        solicitud.estatus = "abierta";
+        solicitud.locked_at = null;
+      }
+    }
+
+    return solicitud;
+  }
+
+  async releaseLock(id) {
+    await this.updateEstatus(id, "abierta");
   }
 
   // Crear una nueva solicitud

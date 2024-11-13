@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Orden de Compra</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            margin: auto;
+        }
+
+        /* Encabezado */
+        .header, .section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            background: white;
+        }
+
+        .header h1 {
+            text-align: center;
+            font-size: 20px;
+            margin: 0;
+            color: #444;
+            text-decoration: underline;
+        }
+
+        .info-table, .items-table, .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .info-table td, .items-table th, .items-table td, .summary-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .items-table th, .summary-table th {
+            background-color: #f7f7f7;
+            font-weight: bold;
+        }
+
+        .summary-table td {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 0 5px;
+        }
+
+        .header .info, .header .details {
+            width: 49%;
+            display: inline-block;
+            vertical-align: top;
+            margin-bottom: 10px;
+        }
+
+        .header .details {
+            text-align: right;
+        }
+
+        .section p {
+            margin: 8px 0;
+        }
+
+        .items-table th, .items-table td {
+            font-size: 12px;
+        }
+
+        .summary-table {
+            margin-top: 20px;
+        }
+
+        .footer-note {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 20px;
+            color: #777;
+        }
+
+        /* Hover en las filas de la tabla */
+        .items-table tr:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Paginación */
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        /* Header y footer */
+        .page-header, .page-footer {
+            position: fixed;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 50px;
+            background: #f7f7f7;
+            text-align: center;
+            line-height: 50px;
+            font-size: 12px;
+        }
+
+        .page-footer {
+            bottom: 0;
+            font-size: 10px;
+            color: #777;
+        }
+
+        /* Paginación en pie de página */
+        .footer-content {
+            font-size: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="info">
+                <p><strong>EMPRESA:</strong> <%= Empresa.nombre %></p>
+                <p><strong>RUT:</strong> <%= Empresa.documento %></p>
+                <p><strong>DIRECCIÓN:</strong> <%= Empresa.direccion %></p>
+            </div>
+            <div class="details">
+                <p><strong>CENTRO DE COSTO:</strong> <%= CentroCosto.nombre %></p>
+                <p><strong>FECHA:</strong> <%= ordenFecha %></p>
+                <p><strong>N°:</strong> <%= ordenID %></p>
+            </div>
+            <h1>ORDEN DE COMPRA</h1>
+        </div>
+
+        <div class="section">
+            <table class="info-table">
+                <tr>
+                    <td colspan="2"><strong>SEÑOR (ES):</strong> <%= Proveedor.nombre %></td>
+
+                </tr>
+                <tr>
+                    <td><strong>DIRECCIÓN:</strong> Avenida Mexico 789 Recoleta, Región Metropolitana de Santiago</td>
+                    <td><strong>RUT:</strong> <%= Proveedor.documento %></td>
+                </tr>
+                <tr>
+                    <td><strong>BANCO:</strong> <%= Banco.nombre %></td>
+                    <td><strong>TIPO CUENTA:</strong> <%= Banco.tipo_cuenta %></td>
+                </tr>
+                <tr>
+                    <td><strong>N°:</strong> <%= Banco.numero_cuenta %></td>
+                    <td><strong>CORREO:</strong> <%= Proveedor.correo_principal %></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <p><strong>DIRECCION DE DESPACHO:</strong> AV EL CERRO 751, Providencia, Región Metropolitana de Santiago</p>
+            <p><strong>FORMA DE PAGO:</strong> <%= PlazoPago.nombre %></p>
+            <p><strong>CONTACTO:</strong> KATHERINNE PEÑA, KPENA@TURISTIK.COM</p>
+        </div>
+        <div class="section">
+            <p><strong>OBSERVACION:</strong> <%= OrdenNota %></p>
+        </div>
+
+        <table class="items-table">
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Cantidad / Unidad</th>
+                <th>Precio Unitario</th>
+                <th>Valor Total</th>
+            </tr>
+            <!-- Aquí los datos de los productos -->
+            <tr><td>1001</td><td>Producto A</td><td>5 / Caja</td><td>$100.00</td><td>$500.00</td></tr>
+            <tr><td>1002</td><td>Producto B</td><td>10 / Unidad</td><td>$50.00</td><td>$500.00</td></tr>
+            <tr><td>1003</td><td>Producto C</td><td>3 / Paquete</td><td>$200.00</td><td>$600.00</td></tr>
+            <tr><td>1004</td><td>Producto D</td><td>7 / Caja</td><td>$150.00</td><td>$1050.00</td></tr>
+            <tr><td>1005</td><td>Producto E</td><td>2 / Unidad</td><td>$500.00</td><td>$1000.00</td></tr>
+            <tr><td>1006</td><td>Producto F</td><td>1 / Paquete</td><td>$300.00</td><td>$300.00</td></tr>
+            <tr><td>1007</td><td>Producto G</td><td>15 / Caja</td><td>$80.00</td><td>$1200.00</td></tr>
+            <tr><td>1008</td><td>Producto H</td><td>4 / Unidad</td><td>$60.00</td><td>$240.00</td></tr>
+            <tr><td>1009</td><td>Producto I</td><td>8 / Caja</td><td>$120.00</td><td>$960.00</td></tr>
+            <tr><td>1010</td><td>Producto J</td><td>6 / Paquete</td><td>$200.00</td><td>$1200.00</td></tr>
+        </table>
+
+        <table class="summary-table">
+            <tr>
+                <td><strong>Neto</strong></td>
+                <td>US$</td>
+                <td>6.400.000,00</td>
+            </tr>
+            <tr>
+                <td><strong>Dcto.</strong></td>
+                <td>US$</td>
+                <td>0,00</td>
+            </tr>
+            <tr>
+                <td><strong>Cargos</strong></td>
+                <td>US$</td>
+                <td>0,00</td>
+            </tr>
+            <tr>
+                <td><strong>Subtotal</strong></td>
+                <td>US$</td>
+                <td>6.400.000,00</td>
+            </tr>
+            <tr>
+                <td><strong>IVA 19%</strong></td>
+                <td>US$</td>
+                <td>1.216.000,00</td>
+            </tr>
+            <tr>
+                <td><strong>Total</strong></td>
+                <td>US$</td>
+                <td>7.616.000,00</td>
+            </tr>
+        </table>
+
+        <div class="footer-note">
+            <p>Este documento no es una factura. Se emite con fines de registro.</p>
+        </div>
+
+        <div class="page-footer">
+            <p>© 2024 TURISTIK | Orden N° 8000</p>
+        </div>
+    </div>
+</body>
+</html>

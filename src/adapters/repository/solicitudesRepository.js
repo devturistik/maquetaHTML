@@ -26,7 +26,7 @@ class SolicitudesRepository {
     try {
       const pool = await sql.connect(config);
       const result = await pool.request().input("id", sql.Int, id).query(`
-          SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado
+          SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado, s.locked_at
           FROM oc.Solicitud s
           JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
           WHERE s.id_solicitud = @id
@@ -95,9 +95,30 @@ class SolicitudesRepository {
     }
   }
 
+  async updateArchivosSolicitud(id, solicitudData) {
+    try {
+      const pool = await sql.connect(config);
+      await pool
+        .request()
+        .input("id", sql.Int, id)
+        .input("archivos", sql.NVarChar, JSON.stringify(solicitudData.archivos))
+        .query(`
+          UPDATE oc.Solicitud
+          SET
+              archivos = @archivos,
+              updated_at = GETDATE()
+          WHERE id_solicitud = @id
+        `);
+    } catch (error) {
+      console.error("Error al actualizar los archivos de la solicitud:", error);
+      throw error;
+    }
+  }
+
   async updateEstatus(id, nuevoEstatus) {
     try {
       const pool = await sql.connect(config);
+
       const estatusResult = await pool
         .request()
         .input("nombre", sql.NVarChar, nuevoEstatus)
@@ -111,15 +132,22 @@ class SolicitudesRepository {
 
       const estatusId = estatusResult.recordset[0].id_estatus;
 
+      let locked_at = null;
+      if (nuevoEstatus.toLowerCase() === "editando") {
+        locked_at = new Date();
+      }
+
       await pool
         .request()
         .input("id", sql.Int, id)
-        .input("estatus_id", sql.TinyInt, estatusId).query(`
-        UPDATE oc.Solicitud
-        SET estatus_id = @estatus_id,
-            updated_at = GETDATE()
-        WHERE id_solicitud = @id
-      `);
+        .input("estatus_id", sql.TinyInt, estatusId)
+        .input("locked_at", sql.DateTime, locked_at).query(`
+          UPDATE oc.Solicitud
+          SET estatus_id = @estatus_id,
+              locked_at = @locked_at,
+              updated_at = GETDATE()
+          WHERE id_solicitud = @id
+        `);
     } catch (error) {
       console.error("Error al actualizar el estatus de la solicitud:", error);
       throw error;

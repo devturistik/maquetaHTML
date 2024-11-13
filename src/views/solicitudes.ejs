@@ -44,8 +44,8 @@
 
       <div style="display: none;">
         <select id="estatus-filter" class="form-select" style="width: 200px;">
-          <option value="">Todos</option>
-          <% 
+          <option value="">Sin filtro</option>
+          <%
             const estatusSet = new Set();
             solicitudes.forEach(solicitud => {
               let estatusDisplayOption = solicitud.estatus;
@@ -103,7 +103,7 @@
                     <td><%= solicitud.descripcion %></td>
                     <td>
                       <% if (solicitud.hasFiles) { %>
-                        <a href="/solicitudes/ver-archivos/<%= solicitud.id %>">Ver archivos</a>
+                        <a href="/solicitudes-ver-archivos/<%= solicitud.id %>">Ver archivos</a>
                       <% } else { %>
                         Sin archivos
                       <% } %>
@@ -174,11 +174,6 @@
                   </tr>
                   <% }); %>
                 <% } else { %>
-                <tr>
-                  <td colspan="8" class="text-center">
-                    No hay solicitudes disponibles.
-                  </td>
-                </tr>
                 <% } %>
               </tbody>
             </table>
@@ -201,7 +196,8 @@
       responsive: true,
       language: {
         url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
-        search: ""
+        search: "",
+        emptyTable: "No hay solicitudes disponibles."
       },
       pageLength: 10,
       lengthChange: false,

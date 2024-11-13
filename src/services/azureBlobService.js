@@ -1,5 +1,10 @@
 // src/services/azureBlobService.js
-import { BlobServiceClient } from "@azure/storage-blob";
+import {
+  BlobServiceClient,
+  StorageSharedKeyCredential,
+  generateBlobSASQueryParameters,
+  BlobSASPermissions,
+} from "@azure/storage-blob";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -7,6 +12,8 @@ dotenv.config();
 const AZURE_STORAGE_CONNECTION_STRING =
   process.env.AZURE_STORAGE_CONNECTION_STRING;
 const CONTAINER_NAME = process.env.AZURE_STORAGE_CONTAINER_NAME;
+const AZURE_STORAGE_ACCOUNT_KEY = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+const AZURE_STORAGE_ACCOUNT_NAME = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 
 if (!AZURE_STORAGE_CONNECTION_STRING) {
   console.error(
@@ -22,11 +29,29 @@ if (!CONTAINER_NAME) {
   process.exit(1);
 }
 
+if (!AZURE_STORAGE_ACCOUNT_KEY) {
+  console.error(
+    "Error: AZURE_STORAGE_ACCOUNT_KEY no está definido en el entorno."
+  );
+  process.exit(1);
+}
+
+if (!AZURE_STORAGE_ACCOUNT_NAME) {
+  console.error(
+    "Error: AZURE_STORAGE_ACCOUNT_NAME no está definido en el entorno."
+  );
+  process.exit(1);
+}
+
 const blobServiceClient = BlobServiceClient.fromConnectionString(
   AZURE_STORAGE_CONNECTION_STRING
 );
-
 const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
+
+const sharedKeyCredential = new StorageSharedKeyCredential(
+  AZURE_STORAGE_ACCOUNT_NAME,
+  AZURE_STORAGE_ACCOUNT_KEY
+);
 
 class AzureBlobService {
   /**
@@ -96,6 +121,42 @@ class AzureBlobService {
     } catch (error) {
       console.error(`Error al eliminar el blob "${blobUrl}":`, error.message);
       throw new Error("Error al eliminar el archivo de Azure Blob Storage");
+    }
+  }
+
+  /**
+   * Genera una URL SAS para un blob con permisos de lectura y el encabezado Content-Disposition.
+   * @param {string} blobName - Nombre del blob.
+   * @param {string} [downloadName] - Nombre que tendrá el archivo al descargarse.
+   * @returns {string} - URL SAS completa.
+   */
+  static generateSasUrl(blobName, downloadName = null) {
+    try {
+      const sasOptions = {
+        containerName: CONTAINER_NAME,
+        blobName: blobName,
+        permissions: BlobSASPermissions.parse("r"),
+        startsOn: new Date(),
+        expiresOn: new Date(new Date().valueOf() + 60 * 60 * 1000), // 1 hora
+      };
+
+      if (downloadName) {
+        sasOptions.contentDisposition = `attachment; filename="${encodeURIComponent(
+          downloadName
+        )}"`;
+      }
+
+      const sasToken = generateBlobSASQueryParameters(
+        sasOptions,
+        sharedKeyCredential
+      ).toString();
+      const sasUrl = `${
+        containerClient.getBlockBlobClient(blobName).url
+      }?${sasToken}`;
+      return sasUrl;
+    } catch (error) {
+      console.error("Error al generar SAS URL:", error.message);
+      throw new Error("Error al generar SAS URL");
     }
   }
 }

@@ -13,7 +13,13 @@ router.get("/solicitudes", solicitudesController.getAllSolicitudes);
 router.get("/solicitudes/:id", solicitudesController.getSolicitudById);
 
 // Ruta para ver los archivos de una solicitud específica
-router.get("/solicitudes/ver-archivos/:id", solicitudesController.viewArchivos);
+router.get("/solicitudes-ver-archivos/:id", solicitudesController.viewArchivos);
+
+// Ruta para descargar un archivo de una solicitud
+router.get(
+  "/solicitudes/:id/descargar/:filename",
+  solicitudesController.downloadArchivo
+);
 
 // Ruta para renderizar el formulario para crear una solicitud
 router.get("/solicitudes-crear", solicitudesController.renderCreateForm);
@@ -43,6 +49,11 @@ router.get(
 router.post(
   "/solicitudes-cancelar-edicion/:id",
   solicitudesController.cancelarEdicion
+);
+// Ruta para liberar el bloqueo de edición
+router.post(
+  "/solicitudes-liberar-edicion/:id",
+  solicitudesController.liberarEdicion
 );
 
 // Rutas para eliminar una solicitud específica

@@ -1,6 +1,7 @@
 // src/routes/routesOrdenes.js
 import express from "express";
 import OrdenesController from "../controllers/ordenesController.js";
+import upload from "../middlewares/upload.js";
 
 const router = express.Router();
 const ordenesController = new OrdenesController();
@@ -11,15 +12,15 @@ router.get("/ordenes", ordenesController.getAllOrdenes);
 // Ruta para ver una orden específica
 router.get("/ordenes/:id", ordenesController.getOrdenById);
 
-// Ruta para generar PDF de una orden
-router.get("/ordenes/:id/pdf", ordenesController.generatePdfOrden);
-
 // Ruta para renderizar el formulario para crear orden dada una solicitud
 router.get("/ordenes-crear/:id", ordenesController.renderCreateForm);
 
 // Ruta para procesar la creación de orden dada una solicitud
-router.post("/ordenes-crear/:id", ordenesController.createOrden);
-
+router.post(
+  "/ordenes-crear/:id",
+  upload.array("ordenArchivos", 10),
+  ordenesController.createOrden
+);
 // Ruta para renderizar el formulario para editar una orden
 router.get("/ordenes-editar/:id", ordenesController.renderEditForm);
 
