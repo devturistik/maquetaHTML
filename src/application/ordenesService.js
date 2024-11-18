@@ -1,17 +1,13 @@
 // src/application/ordenesService.js
 import OrdenesRepository from "../adapters/repository/ordenesRepository.js";
-import SolicitudesService from "./solicitudesService.js";
-import sql from "mssql";
-import config from "../config/database.js";
 
 class OrdenesService {
   constructor() {
     this.ordenesRepository = new OrdenesRepository();
-    this.solicitudesService = new SolicitudesService();
   }
 
   async getAllOrdenes() {
-    return await this.ordenesRepository.getAll();
+    return await this.ordenesRepository.getAllOrdenes();
   }
 
   async getOrdenById(id) {
@@ -23,172 +19,166 @@ class OrdenesService {
     }
   }
 
-  async createOrden(ordenData, detalles, archivos) {
-    const pool = await sql.connect(config);
-    const transaction = new sql.Transaction(pool);
+  async getProveedores() {
+    return await this.ordenesRepository.getProveedores();
+  }
 
+  async getPlazosDePago() {
+    return await this.ordenesRepository.getPlazosDePago();
+  }
+
+  async getEmpresas() {
+    return await this.ordenesRepository.getEmpresas();
+  }
+
+  async getCentrosDeCosto() {
+    return await this.ordenesRepository.getCentrosDeCosto();
+  }
+
+  async getTiposDeOrden() {
+    return await this.ordenesRepository.getTiposDeOrden();
+  }
+
+  async getMonedas() {
+    return await this.ordenesRepository.getMonedas();
+  }
+
+  async getProductos() {
+    return await this.ordenesRepository.getProductos();
+  }
+
+  async getBancosByProveedor(proveedorId) {
+    return await this.ordenesRepository.getBancosByProveedor(proveedorId);
+  }
+
+  async getCuentasContablesByEmpresa(empresaId) {
+    return await this.ordenesRepository.getCuentasContablesByEmpresa(empresaId);
+  }
+
+  async getDetallesTipoOrden(tipoOrdenId) {
+    return await this.ordenesRepository.getDetallesTipoOrden(tipoOrdenId);
+  }
+
+  async createOrden(newOrden) {
     try {
-      await transaction.begin();
-
-      const repo = this.ordenesRepository;
-
-      const orden = await repo.saveOrden(ordenData, transaction);
-      const id_orden = orden.id_orden;
-
-      for (const detalle of detalles) {
-        detalle.id_orden_compra = id_orden;
-        await repo.saveDetalleOrdenCompra(detalle, transaction);
-      }
-
-      await transaction.commit();
-      return id_orden;
+      return await this.ordenesRepository.createOrden(newOrden);
     } catch (error) {
-      await transaction.rollback();
       console.error("Error en OrdenesService.createOrden:", error.message);
-      throw new Error("Error al crear la orden de compra.");
+      throw error;
     }
   }
 
-  async updateOrden(id_orden, ordenData) {
-    return await this.ordenesRepository.updateOrden(id_orden, ordenData);
-  }
-
-  async deleteOrden(id_orden) {
-    return await this.ordenesRepository.deleteOrden(id_orden);
-  }
-
-  async getUltimaOrdenCreada() {
+  async updateOrdenCodigo(id_orden, codigo) {
     try {
-      return await this.ordenesRepository.getUltimaOrdenCreada();
+      await this.ordenesRepository.updateOrdenCodigo(id_orden, codigo);
     } catch (error) {
       console.error(
-        "Error en OrdenesService.getUltimaOrdenCreada:",
+        "Error en OrdenesService.updateOrdenCodigo:",
         error.message
       );
       throw error;
     }
   }
 
-  async getProveedores() {
+  async updateOrdenPdfUrl(id_orden, pdfUrl) {
     try {
-      return await this.ordenesRepository.getProveedores();
+      await this.ordenesRepository.updateOrdenPdfUrl(id_orden, pdfUrl);
     } catch (error) {
-      console.error("Error en OrdenesService.getProveedores:", error.message);
+      console.error(
+        "Error en OrdenesService.updateOrdenPdfUrl:",
+        error.message
+      );
       throw error;
     }
   }
 
-  async getProveedorById(id_proveedor) {
+  async getProveedorById(id) {
     try {
-      return await this.ordenesRepository.getProveedorById(id_proveedor);
+      return await this.ordenesRepository.getProveedorById(id);
     } catch (error) {
       console.error("Error en OrdenesService.getProveedorById:", error.message);
       throw error;
     }
   }
 
-  async getBancosByProveedor(id_proveedor) {
-    return await this.ordenesRepository.getBancosByProveedor(id_proveedor);
-  }
-
-  async getBancoById(id_banco) {
+  async getBancoById(id) {
     try {
-      return await this.ordenesRepository.getBancoById(id_banco);
+      return await this.ordenesRepository.getBancoById(id);
     } catch (error) {
       console.error("Error en OrdenesService.getBancoById:", error.message);
       throw error;
     }
   }
 
-  async getPlazoPagos() {
+  async getPlazoPagoById(id) {
     try {
-      return await this.ordenesRepository.getPlazoPagos();
+      return await this.ordenesRepository.getPlazoPagoById(id);
     } catch (error) {
-      console.error("Error en OrdenesService.getPlazoPagos:", error.message);
+      console.error("Error en OrdenesService.getPlazoPagoById:", error.message);
       throw error;
     }
   }
 
-  async getEmpresas() {
+  async getEmpresaById(id) {
     try {
-      return await this.ordenesRepository.getEmpresas();
+      return await this.ordenesRepository.getEmpresaById(id);
     } catch (error) {
-      console.error("Error en OrdenesService.getEmpresas:", error.message);
+      console.error("Error en OrdenesService.getEmpresaById:", error.message);
       throw error;
     }
   }
 
-  async getTipoOrdenes() {
+  async getCentroCostoById(id) {
     try {
-      return await this.ordenesRepository.getTipoOrdenes();
-    } catch (error) {
-      console.error("Error en OrdenesService.getTipoOrdenes:", error.message);
-      throw error;
-    }
-  }
-
-  async getDetalleTipoOrden() {
-    try {
-      return await this.ordenesRepository.getDetalleTipoOrden();
+      return await this.ordenesRepository.getCentroCostoById(id);
     } catch (error) {
       console.error(
-        "Error en OrdenesService.getDetalleTipoOrden:",
+        "Error en OrdenesService.getCentroCostoById:",
         error.message
       );
       throw error;
     }
   }
 
-  async getMonedas() {
+  async getTipoOrdenById(id) {
     try {
-      return await this.ordenesRepository.getMonedas();
+      return await this.ordenesRepository.getTipoOrdenById(id);
     } catch (error) {
-      console.error("Error en OrdenesService.getMonedas:", error.message);
+      console.error("Error en OrdenesService.getTipoOrdenById:", error.message);
       throw error;
     }
   }
 
-  async getCentroCostos() {
+  async getMonedaById(id) {
     try {
-      return await this.ordenesRepository.getCentroCostos();
+      return await this.ordenesRepository.getMonedaById(id);
     } catch (error) {
-      console.error("Error en OrdenesService.getCentroCostos:", error.message);
+      console.error("Error en OrdenesService.getMonedaById:", error.message);
       throw error;
     }
   }
 
-  async getProductos() {
+  async getCuentaContableById(id) {
     try {
-      return await this.ordenesRepository.getProductos();
-    } catch (error) {
-      console.error("Error en OrdenesService.getProductos:", error.message);
-      throw error;
-    }
-  }
-
-  async getProductoById(id_producto) {
-    try {
-      return await this.ordenesRepository.getProductoById(id_producto);
-    } catch (error) {
-      console.error("Error en OrdenesService.getProductoById:", error.message);
-      throw error;
-    }
-  }
-
-  async getMonedaById(id_moneda) {
-    return await this.ordenesRepository.getMonedaById(id_moneda);
-  }
-
-  async getCategorias() {
-    return await this.ordenesRepository.getCategorias();
-  }
-
-  async getProductosByOrden(id_orden) {
-    try {
-      return await this.ordenesRepository.getProductosByOrden(id_orden);
+      return await this.ordenesRepository.getCuentaContableById(id);
     } catch (error) {
       console.error(
-        "Error en OrdenesService.getProductosByOrden:",
+        "Error en OrdenesService.getCuentaContableById:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getProveedorBanco(id_banco, id_proveedor) {
+    try {
+      return await this.ordenesRepository.getProveedorBanco(
+        id_banco,
+        id_proveedor
+      );
+    } catch (error) {
+      console.error(
+        "Error en OrdenesService.getProveedorBanco:",
         error.message
       );
       throw error;

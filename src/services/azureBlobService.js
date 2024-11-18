@@ -159,6 +159,33 @@ class AzureBlobService {
       throw new Error("Error al generar SAS URL");
     }
   }
+
+  /**
+   * Sube un buffer a Azure Blob Storage con un nombre de blob específico.
+   * @param {string} blobName - Nombre del blob.
+   * @param {Buffer} buffer - Buffer de datos a subir.
+   * @param {string} contentType - Tipo de contenido MIME.
+   * @returns {Promise<string>} - URL del blob subido.
+   */
+  static async uploadBufferWithName(blobName, buffer, contentType) {
+    try {
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+      const uploadBlobResponse = await blockBlobClient.uploadData(buffer, {
+        blobHTTPHeaders: { blobContentType: contentType },
+      });
+
+      console.log(
+        `Blob "${blobName}" cargado con éxito. Request ID: ${uploadBlobResponse.requestId}`
+      );
+
+      return blockBlobClient.url;
+    } catch (error) {
+      console.error(
+        `Error al subir buffer a Azure Blob Storage: ${error.message}`
+      );
+      throw new Error("Error al subir el archivo");
+    }
+  }
 }
 
 export default AzureBlobService;

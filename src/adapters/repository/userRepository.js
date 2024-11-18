@@ -1,17 +1,11 @@
-import sql from "mssql";
-import config from "../../config/database.js";
+import { sql, poolPromise } from "../../config/database.js";
 
 // Clase UserRepository que contiene los métodos CRUD para usuarios
 class UserRepository {
-  constructor() {
-    // Conexión a la base de datos usando un pool de conexiones
-    this.poolPromise = sql.connect(config);
-  }
-
   // Obtener todos los usuarios
   async getAllUsers() {
     try {
-      const pool = await this.poolPromise;
+      const pool = await poolPromise;
       const result = await pool
         .request()
         .query(
@@ -35,7 +29,7 @@ class UserRepository {
   async getUserById(decodedId) {
     try {
       // Conectar al pool y realizar la consulta
-      const pool = await this.poolPromise;
+      const pool = await poolPromise;
       const result = await pool
         .request()
         .input("id", sql.Int, decodedId)
@@ -74,7 +68,7 @@ class UserRepository {
     usuarioCreador,
   }) {
     try {
-      const pool = await this.poolPromise;
+      const pool = await poolPromise;
 
       // Verifica si el correo ya está en uso
       const checkEmail = await pool
@@ -156,7 +150,7 @@ class UserRepository {
 
       // Completar y ejecutar la consulta
       query += queryFields.join(", ") + " WHERE id = @id";
-      const pool = await this.poolPromise;
+      const pool = await poolPromise;
       const updateRequest = pool.request();
 
       // Asignar los valores modificados al request
@@ -175,7 +169,7 @@ class UserRepository {
   // Eliminar un usuario
   async deleteUser(id) {
     try {
-      const pool = await this.poolPromise;
+      const pool = await poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
         DELETE FROM SistemaWebOC.usuarios
         WHERE id = @id

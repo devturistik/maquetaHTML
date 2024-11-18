@@ -3,269 +3,6 @@
 <%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: "' + solicitud.asunto + '"' }) %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
-
-<div class="content-wrapper">
-  <div class="container-xxl flex-grow-1 container-p-y">
-    <div class="app-orden-compra">
-      <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
-        <div class="card-body p-2">
-          <h6 class="mb-0" style="color: #fff;">DATOS</h6>
-        </div>
-      </div>
-
-      <% if (errorMessage && errorMessage.length > 0) { %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <%= errorMessage %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-      <% } %>
-
-      <form action="/ordenes-crear/<%= solicitud.id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
-        <div class="row">
-          <!-- Proveedor -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-proveedor">Proveedor <span class="text-danger">*</span></label>
-            <select id="orden-proveedor" class="form-select select2" name="ordenProveedor" required>
-              <option value="">Seleccione un proveedor</option>
-              <% proveedores.forEach(proveedor => { %>
-                <option value="<%= proveedor.ID_PROVEEDOR %>"><%= proveedor.NOMBRE_PROVEEDOR %></option>
-              <% }) %>
-            </select>
-          </div>
-
-          <!-- Banco -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-banco">Banco <span class="text-danger">*</span></label>
-            <select id="orden-banco" class="form-select select2 <%= errors && errors.ordenBanco ? 'is-invalid' : '' %>" name="ordenBanco" required disabled>
-              <option value="">Seleccione un banco</option>
-            </select>
-            <% if (errors && errors.ordenBanco) { %>
-              <div class="invalid-feedback"><%= errors.ordenBanco %></div>
-            <% } %>
-          </div>
-
-          <!-- Plazo de Pago -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-plazo">Plazo de Pago <span class="text-danger">*</span></label>
-            <select id="orden-plazo" class="form-select select2 <%= errors && errors.ordenPlazo ? 'is-invalid' : '' %>" name="ordenPlazo" required>
-              <option value="">Seleccione plazo de pago</option>
-              <% plazoPagos.forEach(plazo => { %>
-                <option value="<%= plazo.ID_FORMA_PAGO %>"><%= plazo.NOMBRE %></option>
-              <% }) %>
-            </select>
-            <% if (errors && errors.ordenPlazo) { %>
-              <div class="invalid-feedback"><%= errors.ordenPlazo %></div>
-            <% } %>
-          </div>
-
-          <!-- Empresa -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-empresa">Empresa <span class="text-danger">*</span></label>
-            <select id="orden-empresa" class="form-select select2 <%= errors && errors.ordenEmpresa ? 'is-invalid' : '' %>" name="ordenEmpresa" required>
-              <option value="">Seleccione una empresa</option>
-              <% empresas.forEach(empresa => { %>
-                <option value="<%= empresa.ID_EMPRESA %>"><%= empresa.NOMBRE %></option>
-              <% }) %>
-            </select>
-            <% if (errors && errors.ordenEmpresa) { %>
-              <div class="invalid-feedback"><%= errors.ordenEmpresa %></div>
-            <% } %>
-          </div>
-
-          <!-- Centro de Costo -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-centro-costo">Centro de Costo <span class="text-danger">*</span></label>
-            <select id="orden-centro-costo" class="form-select select2 <%= errors && errors.ordenCentroCosto ? 'is-invalid' : '' %>" name="ordenCentroCosto" required>
-              <option value="">Seleccione un centro de costo</option>
-              <% centroCostos.forEach(centro => { %>
-                <option value="<%= centro.ID_CENTRO_COSTO %>"><%= centro.NOMBRE %></option>
-              <% }) %>
-            </select>
-            <% if (errors && errors.ordenCentroCosto) { %>
-              <div class="invalid-feedback"><%= errors.ordenCentroCosto %></div>
-            <% } %>
-          </div>
-
-          <!-- Tipo de Orden -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-tipo">Tipo de Orden <span class="text-danger">*</span></label>
-            <select id="orden-tipo" class="form-select select2 <%= errors && errors.ordenTipo ? 'is-invalid' : '' %>" name="ordenTipo" required>
-              <option value="">Seleccione un tipo de orden</option>
-              <% tipoOrdenes.forEach(tipo => { %>
-                <option value="<%= tipo.id_tipo %>"><%= tipo.nombre %></option>
-              <% }) %>
-            </select>
-            <% if (errors && errors.ordenTipo) { %>
-              <div class="invalid-feedback"><%= errors.ordenTipo %></div>
-            <% } %>
-          </div>
-
-          <!-- Moneda -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-moneda">Moneda <span class="text-danger">*</span></label>
-            <div class="input-group">
-              <select id="orden-moneda" class="form-select select2 <%= errors && errors.ordenMoneda ? 'is-invalid' : '' %>" name="ordenMoneda" required>
-                <option value="">Seleccione una moneda</option>
-                <% monedas.forEach(moneda => { %>
-                  <option value="<%= moneda.ID_MONEDA %>" data-symbol="<%= moneda.ABREV %>" data-cambio="<%= moneda.CAMBIO %>"><%= moneda.NOMBRE %> (<%= moneda.ABREV %>)</option>
-                <% }) %>
-              </select>
-            </div>
-            <% if (errors && errors.ordenMoneda) { %>
-              <div class="invalid-feedback"><%= errors.ordenMoneda %></div>
-            <% } %>
-          </div>
-
-          <!-- Fecha Oculta -->
-          <input type="hidden" id="orden-fecha" name="ordenFecha" value="<%= fechaActual %>" />
-
-          <!-- Cuenta Contable -->
-          <div class="col-md-3 mb-3">
-            <label class="form-label" for="orden-cuenta-contable">Cuenta Contable <span class="text-danger">*</span></label>
-            <select id="orden-cuenta-contable" class="form-select select2 <%= errors && errors.ordenCuentaContable ? 'is-invalid' : '' %>" name="ordenCuentaContable" required>
-              <option value="">Seleccione una cuenta contable</option>
-              <% cuentasContable.forEach(cuenta => { %>
-                <option value="<%= cuenta.nombre %>"><%= cuenta.nombre %></option>
-              <% }) %>
-            </select>
-            <% if (errors && errors.ordenCuentaContable) { %>
-              <div class="invalid-feedback"><%= errors.ordenCuentaContable %></div>
-            <% } %>
-          </div>
-
-          <!-- Archivos -->
-          <div class="col-md-6 mb-3">
-            <label class="form-label" for="orden-archivos">Archivos</label>
-            <input
-              type="file"
-              class="form-control d-none"
-              id="orden-archivos"
-              name="ordenArchivos[]"
-              accept=".pdf,.jpg,.jpeg,.png,.docx"
-              multiple
-              aria-label="Subir Archivos"
-              onchange="handleFileSelect(this)"
-            />
-            <div class="mb-2">
-              <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('orden-archivos').click()">
-                <i class="fas fa-upload me-1"></i> Seleccionar archivos
-              </button>
-            </div>
-            <div class="mb-2">
-              <small class="form-text text-muted">
-                Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
-              </small>
-            </div>
-            <% if (errors && errors.ordenArchivos) { %>
-              <div class="invalid-feedback d-block"><%= errors.ordenArchivos %></div>
-            <% } %>
-            <ul id="file-list" class="list-group mt-2"></ul>
-
-            <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
-              <div class="mt-2">
-                <a href="/solicitudes-ver-archivos/<%= solicitud.id %>" target="_blank">Ver archivos de la solicitud</a>
-              </div>
-            <% } %>
-          </div>
-
-          <!-- Nota -->
-          <div class="col-md-6 mb-3">
-            <label class="form-label" for="orden-nota">Nota</label>
-            <textarea class="form-control" id="orden-nota" name="ordenNota" rows="2" style="resize: vertical;" placeholder="Escribe una nota aquí..."><%= solicitud.descripcion || '' %></textarea>
-          </div>
-        </div>
-
-        <!-- Sección DETALLE -->
-        <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
-          <div class="card-body p-2">
-            <h6 class="mb-0" style="color: #fff;">DETALLE</h6>
-          </div>
-        </div>
-
-        <!-- Sección de Productos -->
-        <div class="row mb-4">
-          <div class="col-md-9">
-            <label class="form-label" for="producto">Producto</label>
-            <select id="producto" class="form-select select2" name="productoSelect">
-              <option value="">Seleccione un producto</option>
-              <% productos.forEach(producto => { %>
-                <option value="<%= producto.ID_PRODUCTO %>"><%= producto.DESCRIPCION %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <button type="button" class="btn btn-primary w-100" id="add-producto">Agregar Producto</button>
-          </div>
-        </div>
-
-        <!-- Tabla de Productos -->
-        <div class="table-responsive mb-4">
-          <table class="table table-bordered">
-            <colgroup>
-              <col style="width: 50%;">
-              <col style="width: 10%;">
-              <col style="width: 20%;">
-              <col style="width: 20%;">
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Cantidad</th>
-                <th>Valor Unitario</th>
-                <th>Valor Total</th>
-              </tr>
-            </thead>
-            <tbody id="boleta-table-body">
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Totales -->
-        <div class="row">
-          <div class="col-md-6 offset-md-6">
-            <table class="table table-sm">
-              <tbody>
-                <tr>
-                  <td>Sub-total <span class="moneda-symbol"></span>:</td>
-                  <td id="subtotal">0.00</td>
-                </tr>
-                <tr class="impuesto-row hide">
-                  <td>Impuesto <span class="moneda-symbol"></span>:</td>
-                  <td id="impuesto">0.00</td>
-                </tr>
-                <tr class="retencion-row hide">
-                  <td>Retención <span class="moneda-symbol"></span>:</td>
-                  <td id="retencion">0.00</td>
-                </tr>
-                <tr class="propina-row hide">
-                  <td>Propina <span class="moneda-symbol"></span>:</td>
-                  <td id="propina">0.00</td>
-                </tr>
-                <tr class="total-row">
-                  <th>Total <span class="moneda-symbol"></span>:</th>
-                  <th id="total" style="font-size: 1.5em;">0.00</th>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Botones de Acción -->
-        <div class="d-flex justify-content-end gap-4">
-          <a href="/ordenes" class="btn btn-secondary">Regresar</a>
-          <button type="submit" class="btn btn-primary" id="submit-btn">Crear Orden</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<div class="content-backdrop fade"></div>
-</div>
-
-<!-- Incluir Font Awesome para los íconos -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
 <style>
   .total-row th {
     font-size: 1.5em;
@@ -300,343 +37,648 @@
   .propina-row.show {
     display: table-row;
   }
+
+  .moneda-symbol {
+    font-weight: bold;
+  }
 </style>
 
+<div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-orden-compra">
+      <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
+        <div class="card-body p-2">
+          <h6 class="mb-0" style="color: #fff;">DATOS</h6>
+        </div>
+      </div>
+
+      <% if (errorMessage && errorMessage.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= errorMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      <% } %>
+
+      <form action="/ordenes-crear/<%= solicitud.id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <div class="row">
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-proveedor">Proveedor <span class="text-danger">*</span></label>
+            <select id="orden-proveedor" class="form-select select2" name="id_proveedor" required>
+              <option value="">Seleccione un proveedor</option>
+              <% proveedores.forEach(proveedor => { %>
+                <option value="<%= proveedor.ID_PROVEEDOR %>"><%= proveedor.NOMBRE_PROVEEDOR %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-banco">Banco <span class="text-danger">*</span></label>
+            <select id="orden-banco" class="form-select select2" name="id_banco" required disabled>
+              <option value="">Seleccione un banco</option>
+            </select>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-plazo">Plazo de Pago <span class="text-danger">*</span></label>
+            <select id="orden-plazo" class="form-select select2" name="id_plazoPago" required>
+              <option value="">Seleccione plazo de pago</option>
+              <% plazosdepago.forEach(plazo => { %>
+                <option value="<%= plazo.ID_FORMA_PAGO %>"><%= plazo.NOMBRE %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-empresa">Empresa <span class="text-danger">*</span></label>
+            <select id="orden-empresa" class="form-select select2" name="id_empresa" required>
+              <option value="">Seleccione una empresa</option>
+              <% empresas.forEach(empresa => { %>
+                <option value="<%= empresa.ID_EMPRESA %>"><%= empresa.NOMBRE %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-centro-costo">Centro de Costo <span class="text-danger">*</span></label>
+            <select id="orden-centro-costo" class="form-select select2" name="id_centroCosto" required>
+              <option value="">Seleccione un centro de costo</option>
+              <% centrosdecosto.forEach(centro => { %>
+                <option value="<%= centro.ID_CENTRO_COSTO %>"><%= centro.NOMBRE %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-tipo">Tipo de Orden <span class="text-danger">*</span></label>
+            <select id="orden-tipo" class="form-select select2" name="id_tipoOrden" required>
+              <option value="">Seleccione un tipo de orden</option>
+              <% tiposdeorden.forEach(tipo => { %>
+                <option value="<%= tipo.id_tipo %>"><%= tipo.nombre %></option>
+              <% }); %>
+            </select>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-moneda">Moneda <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <select id="orden-moneda" class="form-select select2" name="id_moneda" required>
+                <option value="">Seleccione una moneda</option>
+                <% monedas.forEach(moneda => { %>
+                  <option value="<%= moneda.ID_MONEDA %>" data-abrev="<%= moneda.ABREV %>"><%= moneda.NOMBRE %> (<%= moneda.ABREV %>)</option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="col-md-3 mb-3">
+            <label class="form-label" for="orden-cuenta-contable">Cuenta Contable <span class="text-danger">*</span></label>
+            <select id="orden-cuenta-contable" class="form-select select2" name="id_cuentaContable" required disabled>
+              <option value="">Seleccione una cuenta contable</option>
+            </select>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="orden-archivos">Subir Cotizacion</label>
+            <input
+              type="file"
+              class="form-control d-none"
+              id="orden-archivos"
+              name="cotizacion"
+              accept=".pdf,.jpg,.jpeg,.png,.docx"
+              multiple
+              aria-label="Subir Archivos"
+              onchange="handleFileSelect(this)"
+            />
+            <div class="mb-2">
+              <small class="form-text text-muted">
+                Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
+              </small>
+            </div>
+            <div class="mb-2">
+              <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('orden-archivos').click()">
+                <i class="fas fa-upload me-1"></i> Seleccionar archivos
+              </button>
+            </div>
+            <ul id="file-list" class="list-group mt-2"></ul>
+            <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
+              <div class="mt-2">
+                <a href="/solicitudes-ver-archivos/<%= solicitud.id %>" target="_blank">Ver archivos de la solicitud</a>
+              </div>
+            <% } %>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label" for="orden-nota">Nota</label>
+            <textarea class="form-control" id="orden-nota" name="Nota" rows="2" style="resize: vertical;" placeholder="Escribe una nota aquí..."><%= solicitud.descripcion || '' %></textarea>
+          </div>
+        </div>
+
+        <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
+          <div class="card-body p-2">
+            <h6 class="mb-0" style="color: #fff;">DETALLE</h6>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-9">
+            <label class="form-label" for="producto">Producto</label>
+            <select id="producto" class="form-select select2" name="Producto" style="width: 100%;">
+              <option value="">Seleccione un producto</option>
+              <% productos.forEach(producto => { %>
+                <option value="<%= producto.ID_PRODUCTO %>" data-unidad="<%= producto.UNIDAD %>"><%= producto.DESCRIPCION %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" id="add-producto">Agregar Producto</button>
+          </div>
+        </div>
+
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered" id="productos-table">
+            <colgroup>
+              <col style="width: 50%;">
+              <col style="width: 10%;">
+              <col style="width: 20%;">
+              <col style="width: 20%;">
+              <col style="width: 5%;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Valor Unitario</th>
+                <th>Valor Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="productos-tbody">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 offset-md-6">
+            <table class="table table-sm">
+              <tbody>
+                <tr>
+                  <td>Sub-total:</td>
+                  <td id="subtotal"><span class="moneda-symbol"></span></td>
+                </tr>
+                <tr class="impuesto-row hide">
+                  <td id="impuesto-label">Impuesto:</td>
+                  <td id="impuesto"><span class="moneda-symbol"></span></td>
+                </tr>
+                <tr class="retencion-row hide">
+                  <td id="retencion-label">Retención:</td>
+                  <td id="retencion"><span class="moneda-symbol"></span></td>
+                </tr>
+                <tr class="propina-row hide">
+                  <td id="propina-label">Propina:</td>
+                  <td id="propina"><span class="moneda-symbol"></span></td>
+                </tr>
+                <tr class="total-row">
+                  <th>Total:</th>
+                  <th id="total" style="font-size: 1.5em;"><span class="moneda-symbol"></span></th>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <input type="hidden" name="subtotal" id="hidden-subtotal">
+        <input type="hidden" name="impuesto" id="hidden-impuesto">
+        <input type="hidden" name="retencion" id="hidden-retencion">
+        <input type="hidden" name="propina" id="hidden-propina">
+        <input type="hidden" name="total" id="hidden-total">
+        <input type="hidden" name="productos" id="hidden-productos">
+
+        <div class="d-flex justify-content-end gap-4">
+          <a href="/solicitudes" class="btn btn-secondary">Regresar</a>
+          <button type="submit" class="btn btn-primary" id="submit-btn">Crear Orden</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="content-backdrop fade"></div>
+</div>
+
 <script>
-  const detalleTipoOrden = <%- JSON.stringify(detalleTipoOrden) %>;
+  $(document).ready(function() {
+    $.fn.select2.defaults.set('language', 'es');
 
-  function handleFileSelect(input) {
-    const fileList = document.getElementById('file-list');
-    fileList.innerHTML = '';
-
-    for (let i = 0; i < input.files.length; i++) {
-      const file = input.files[i];
-
-      const li = document.createElement('li');
-      li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.textContent = file.name;
-
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'btn btn-sm btn-danger';
-      removeButton.textContent = 'Eliminar';
-      removeButton.onclick = function() {
-        const dt = new DataTransfer();
-        for (let j = 0; j < input.files.length; j++) {
-          if (j !== i) dt.items.add(input.files[j]);
-        }
-        input.files = dt.files;
-        li.remove();
-      };
-
-      li.appendChild(removeButton);
-      fileList.appendChild(li);
-    }
-  }
-
-  $(document).ready(function () {
     $('.select2').select2({
-      width: '100%',
       placeholder: 'Seleccione una opción',
-      allowClear: true
+      allowClear: true,
+      width: '100%',
+      matcher: function(params, data) {
+        if (data.id === "") {
+          return null;
+        }
+        if ($.trim(params.term) === "") {
+          return data;
+        }
+        if (typeof data.text === 'undefined') {
+          return null;
+        }
+        if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+          var modifiedData = $.extend({}, data, true);
+          return modifiedData;
+        }
+        return null;
+      }
     });
 
-    // Cambiar el placeholder del campo de búsqueda a "Buscar..." cuando el dropdown se abre
     $('.select2').on('select2:open', function () {
-      setTimeout(function() {
-        const searchField = $('.select2-search__field');
-        searchField.attr('placeholder', 'Buscar...');
-      }, 100);
+      var selectElement = $(this);
+      var labelText = selectElement.closest('.mb-3').find('label').text().toLowerCase();
+      labelText = labelText.replace('*', '').trim();
+      var searchField = $('.select2-container--open .select2-search__field');
+      searchField.attr('placeholder', 'Buscar ' + labelText);
     });
 
-    $('#orden-banco').prop('disabled', true);
-
-    let currentSymbol = '';
-
-    function updateCurrencySymbol(symbol) {
-      currentSymbol = symbol;
-      $('.moneda-symbol').text(symbol);
-      
-      $('#boleta-table-body tr').each(function() {
-        const precioUnitarioInput = $(this).find('input[name="precio_unitario_editable[]"]');
-        const precioUnitario = parseFloat(precioUnitarioInput.val()) || 0;
-        const cantidad = parseInt($(this).find('.cantidad-input').val()) || 1;
-        const valorTotal = precioUnitario * cantidad;
-
-        $(this).find('td:nth-child(3)').html(`
-          <input type="hidden" name="precio_unitario[]" value="${precioUnitario.toFixed(2)}">
-          <input type="number" 
-                 name="precio_unitario_editable[]"
-                 value="${precioUnitario.toFixed(2)}" 
-                 min="0" 
-                 step="0.01" 
-                 class="form-control precio-unitario-input" 
-                 required 
-                 style="width: 100px;" />
-        `);
-
-        $(this).find('.valor-total').html(`
-          ${currentSymbol} ${valorTotal.toFixed(2)} 
-          <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
-        `);
-      });
-
-      actualizarTotales();
+    function updateSelect2($select) {
+      $select.trigger('change.select2');
     }
 
-    function gestionarTotalesPorTipo(tipoOrdenId) {
-      const detalles = detalleTipoOrden.filter(detalle => detalle.id_tipo_orden == tipoOrdenId && detalle.activo);
+    let currentMonedaAbrev = '';
+    let useIntegers = false;
+    let appliedDetails = [];
 
-      $('.impuesto-row').removeClass('show').addClass('hide');
-      $('.retencion-row').removeClass('show').addClass('hide');
-      $('.propina-row').removeClass('show').addClass('hide');
-
-      detalles.forEach(detalle => {
-        const nombreDetalle = detalle.nombre_detalle.trim().toLowerCase();
-
-        if (nombreDetalle === 'impuesto') {
-          $('.impuesto-row').removeClass('hide').addClass('show');
-        }
-        if (nombreDetalle === 'retencion') {
-          $('.retencion-row').removeClass('hide').addClass('show');
-        }
-        if (nombreDetalle === 'propina') {
-          $('.propina-row').removeClass('hide').addClass('show');
-        }
+    function formatNumber(number, useIntegers) {
+      if (number === undefined || number === null || isNaN(number)) {
+        return '0';
+      }
+      return number.toLocaleString('es-CL', {
+        minimumFractionDigits: useIntegers ? 0 : 2,
+        maximumFractionDigits: useIntegers ? 0 : 2,
+        useGrouping: true,
       });
-
-      actualizarTotales();
     }
 
-    function actualizarTotales() {
+    function updateMonedaSymbols() {
+      $('.moneda-symbol').each(function() {
+        $(this).text(currentMonedaAbrev ? currentMonedaAbrev + ' ' : '');
+      });
+    }
+
+    function calcularTotales() {
       let subtotal = 0;
-      $('#boleta-table-body tr').each(function() {
-        const valorTotalText = $(this).find(".valor-total").text();
-        const valorTotal = parseFloat(valorTotalText.replace(/[^\d.-]/g, '')) || 0;
+      $('#productos-tbody tr').each(function () {
+        let valorTotalData = $(this).find('.valor-total-data').data('value');
+        let valorTotal = parseFloat(valorTotalData);
+        if (isNaN(valorTotal)) {
+          valorTotal = 0;
+        }
         subtotal += valorTotal;
       });
+      let formattedSubtotal = formatNumber(subtotal, useIntegers);
+      $('#subtotal').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedSubtotal}`);
 
+      $('#impuesto-label').text('Impuesto:').closest('.impuesto-row').addClass('hide');
+      $('#retencion-label').text('Retención:').closest('.retencion-row').addClass('hide');
+      $('#propina-label').text('Propina:').closest('.propina-row').addClass('hide');
 
       let impuesto = 0;
       let retencion = 0;
       let propina = 0;
 
-      const tipoOrdenId = $('#orden-tipo').val();
+      appliedDetails.forEach(detail => {
+        let cantidad = parseFloat(detail.cantidad);
+        if (isNaN(cantidad)) {
+          cantidad = 0;
+        }
 
-      if (tipoOrdenId) {
-        const detalles = detalleTipoOrden.filter(detalle => detalle.id_tipo_orden == tipoOrdenId && detalle.activo);
-
-        detalles.forEach(detalle => {
-          const nombreDetalle = detalle.nombre_detalle.trim().toLowerCase();
-          const cantidad = parseFloat(detalle.cantidad) || 0;
-          const tipoDetalle = detalle.tipo_detalle.trim().toLowerCase();
-
-
-          if (nombreDetalle === 'impuesto') {
-            if (tipoDetalle === 'porcentaje' || tipoDetalle === '%') {
-              impuesto += subtotal * (cantidad / 100);
-            } else {
-              impuesto += cantidad;
-            }
+        if (detail.nombre_detalle.toLowerCase() === 'impuesto') {
+          if (detail.tipo_detalle === '%') {
+            $('#impuesto-label').text(`Impuesto(${detail.cantidad}%) :`);
+            impuesto += subtotal * (cantidad / 100);
+          } else {
+            $('#impuesto-label').text('Impuesto(fijo) :');
+            impuesto += cantidad;
           }
-          if (nombreDetalle === 'retencion') {
-            if (tipoDetalle === 'porcentaje' || tipoDetalle === '%') {
-              retencion += subtotal * (cantidad / 100);
-            } else {
-              retencion += cantidad;
-            }
+          $('#impuesto-label').closest('.impuesto-row').removeClass('hide');
+        } else if (detail.nombre_detalle.toLowerCase() === 'retencion') {
+          if (detail.tipo_detalle === '%') {
+            $('#retencion-label').text(`Retención(${detail.cantidad}%) :`);
+            retencion += subtotal * (cantidad / 100);
+          } else {
+            $('#retencion-label').text('Retención(fijo) :');
+            retencion += cantidad;
           }
-          if (nombreDetalle === 'propina') {
-            if (tipoDetalle === 'porcentaje' || tipoDetalle === '%') {
-              propina += subtotal * (cantidad / 100);
-            } else {
-              propina += cantidad;
-            }
+          $('#retencion-label').closest('.retencion-row').removeClass('hide');
+        } else if (detail.nombre_detalle.toLowerCase() === 'propina') {
+          if (detail.tipo_detalle === '%') {
+            $('#propina-label').text(`Propina(${detail.cantidad}%) :`);
+            propina += subtotal * (cantidad / 100);
+          } else {
+            $('#propina-label').text('Propina(fijo) :');
+            propina += cantidad;
           }
-        });
-      }
-
-      let total = subtotal + impuesto - retencion + propina;
-
-      $('#subtotal').text(`${subtotal.toFixed(2)}`);
-      $('#impuesto').text(`${impuesto.toFixed(2)}`);
-      $('#retencion').text(`${retencion.toFixed(2)}`);
-      $('#propina').text(`${propina.toFixed(2)}`);
-      $('#total').text(`${total.toFixed(2)}`);
-    }
-
-    // Manejar el cambio en el select de Proveedor
-    $('#orden-proveedor').on('change', function() {
-      const id_proveedor = $(this).val();
-
-      if (id_proveedor) {
-        $('#orden-banco').prop('disabled', false);
-
-        $.ajax({
-          url: '/api/bancos',
-          method: 'GET',
-          data: { id_proveedor },
-          success: function(bancos) {
-            $('#orden-banco').empty().append('<option value="">Seleccione un banco</option>');
-
-            bancos.forEach(banco => {
-              $('#orden-banco').append(`<option value="${banco.ID_BANCO}">${banco.NOMBRE_BANCO}</option>`);
-            });
-
-            $('#orden-banco').trigger('change');
-          },
-          error: function(err) {
-            console.error("Error al obtener bancos:", err);
-            alert("Error al cargar los bancos asociados al proveedor seleccionado.");
-          }
-        });
-      } else {
-        $('#orden-banco').prop('disabled', true).empty().append('<option value="">Seleccione un banco</option>').trigger('change');
-      }
-    });
-
-    // Manejar el cambio en el select de Tipo de Orden
-    $('#orden-tipo').on('change', function() {
-      const tipoOrdenId = $(this).val();
-
-      if (tipoOrdenId) {
-        gestionarTotalesPorTipo(tipoOrdenId);
-      } else {
-        $('.impuesto-row').removeClass('show').addClass('hide');
-        $('.retencion-row').removeClass('show').addClass('hide');
-        $('.propina-row').removeClass('show').addClass('hide');
-        actualizarTotales();
-      }
-    });
-
-    // Manejar el cambio en el select de Moneda
-    $('#orden-moneda').on('change', function() {
-      const selectedOption = $(this).find('option:selected');
-      const symbol = selectedOption.data('symbol') || '$';
-      const cambio = parseFloat(selectedOption.data('cambio')) || 1;
-
-      updateCurrencySymbol(symbol);
-    });
-
-    // Agregar Producto
-    $('#add-producto').on('click', async function() {
-      const productoSelect = $('#producto');
-      const productoId = productoSelect.val();
-      const productoText = productoSelect.find('option:selected').text();
-
-      if (!productoId) {
-        alert("Por favor seleccione un producto.");
-        return;
-      }
-
-      let existe = false;
-      $('#boleta-table-body tr').each(function() {
-        const id_producto = $(this).find('input[name="producto[]"]').val();
-        if (id_producto == productoId) {
-          existe = true;
-          return false;
+          $('#propina-label').closest('.propina-row').removeClass('hide');
         }
       });
 
-      if (existe) {
-        alert("El producto ya ha sido agregado.");
+      let formattedImpuesto = formatNumber(impuesto, useIntegers);
+      $('#impuesto').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedImpuesto}`);
+
+      let formattedRetencion = formatNumber(retencion, useIntegers);
+      $('#retencion').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedRetencion}`);
+
+      let formattedPropina = formatNumber(propina, useIntegers);
+      $('#propina').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedPropina}`);
+
+      let total = subtotal + impuesto - retencion + propina;
+      let formattedTotal = formatNumber(total, useIntegers);
+      $('#total').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedTotal}`);
+    }
+
+    function fetchDetallesTipoOrden(tipoOrdenId) {
+      return $.ajax({
+        url: `/api/tipos-orden/${tipoOrdenId}/detalles`,
+        method: 'GET',
+        dataType: 'json'
+      });
+    }
+
+    $('#orden-proveedor').on('change', function() {
+      var proveedorId = $(this).val();
+      var $bancoSelect = $('#orden-banco');
+
+      if (proveedorId) {
+        $bancoSelect.prop('disabled', true).html('<option> Cargando bancos...</option>');
+        updateSelect2($bancoSelect);
+
+        $.ajax({
+          url: `/api/proveedores/${proveedorId}/bancos`,
+          method: 'GET',
+          dataType: 'json',
+          success: function(bancos) {
+            $bancoSelect.empty();
+            if (bancos.length > 0) {
+              $bancoSelect.append('<option value="">Seleccione un banco</option>');
+              bancos.forEach(function(banco) {
+                $bancoSelect.append(`<option value="${banco.ID_BANCO}">${banco.NOMBRE_BANCO} | ${banco.TIPO_CUENTA} ${banco.NUMERO_CUENTA}</option>`);
+              });
+              $bancoSelect.prop('disabled', false);
+            } else {
+              $bancoSelect.append('<option value="no-bancos" disabled selected>No hay bancos para este proveedor</option>');
+              $bancoSelect.prop('disabled', false);
+            }
+            updateSelect2($bancoSelect);
+          },
+          error: function(xhr, status, error) {
+            console.error("Error al cargar bancos:", error);
+            $bancoSelect.empty().append('<option value="">Error al cargar bancos</option>').prop('disabled', true);
+            updateSelect2($bancoSelect);
+            alert('Hubo un error al cargar los bancos. Por favor, intenta nuevamente.');
+          }
+        });
+      } else {
+        $bancoSelect.empty().append('<option value="">Seleccione un banco</option>').prop('disabled', true);
+        updateSelect2($bancoSelect);
+      }
+    });
+
+    $('#orden-empresa').on('change', function() {
+      var empresaId = $(this).val();
+      var $cuentaContableSelect = $('#orden-cuenta-contable');
+
+      if (empresaId) {
+        $cuentaContableSelect.prop('disabled', true).html('<option> Cargando cuentas contables...</option>');
+        updateSelect2($cuentaContableSelect);
+
+        $.ajax({
+          url: `/api/empresas/${empresaId}/cuentas-contables`,
+          method: 'GET',
+          dataType: 'json',
+          success: function(cuentasContables) {
+            $cuentaContableSelect.empty();
+            if (cuentasContables.length > 0) {
+              $cuentaContableSelect.append('<option value="">Seleccione una cuenta contable</option>');
+              cuentasContables.forEach(function(cuenta) {
+                $cuentaContableSelect.append(`<option value="${cuenta.ID_CUENTA}">${cuenta.NOMBRE_CUENTA} | ${cuenta.CODIGO}</option>`);
+              });
+              $cuentaContableSelect.prop('disabled', false);
+            } else {
+              $cuentaContableSelect.append('<option value="no-cuentas" disabled selected>No hay cuentas contables para esta empresa</option>');
+              $cuentaContableSelect.prop('disabled', false);
+            }
+            updateSelect2($cuentaContableSelect);
+          },
+          error: function(xhr, status, error) {
+            console.error("Error al cargar cuentas contables:", error);
+            $cuentaContableSelect.empty().append('<option value="">Error al cargar cuentas contables</option>').prop('disabled', true);
+            updateSelect2($cuentaContableSelect);
+            alert('Hubo un error al cargar las cuentas contables. Por favor, intenta nuevamente.');
+          }
+        });
+      } else {
+        $cuentaContableSelect.empty().append('<option value="">Seleccione una cuenta contable</option>').prop('disabled', true);
+        updateSelect2($cuentaContableSelect);
+      }
+    });
+
+    $('#orden-tipo').on('change', function() {
+      let tipoOrdenId = $(this).val();
+      appliedDetails = [];
+
+      if (!tipoOrdenId) {
+        calcularTotales();
         return;
       }
 
-      try {
-        const response = await $.ajax({
-          url: '/api/producto-detalle',
-          method: 'GET',
-          data: { id_producto: productoId },
+      fetchDetallesTipoOrden(tipoOrdenId)
+        .done(function(data) {
+          if (!Array.isArray(data)) {
+            console.error('Datos de detalles tipo de orden no son una matriz:', data);
+            alert('Datos de detalles tipo de orden inválidos.');
+            appliedDetails = [];
+            calcularTotales();
+            return;
+          }
+
+          appliedDetails = data.map(detail => ({
+            nombre_detalle: detail.NOMBRE_DETALLE || '',
+            cantidad: detail.CANTIDAD ? parseFloat(detail.CANTIDAD) : 0,
+            tipo_detalle: detail.TIPO_DETALLE || ''
+          }));
+          calcularTotales();
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+          console.error('Error al obtener detalles del tipo de orden:', errorThrown);
+          alert('Hubo un error al obtener los detalles del tipo de orden. Por favor, intenta nuevamente.');
+          appliedDetails = [];
+          calcularTotales();
         });
+    });
 
-        const precioUnitarioOriginal = parseFloat(response.PRECIO_UNITARIO) || 0;
-        const cambio = parseFloat($('#orden-moneda').find('option:selected').data('cambio')) || 1;
-        const precioUnitario = precioUnitarioOriginal * cambio;
-        const cantidad = 1;
-        const valorTotal = precioUnitario * cantidad;
+    $('#orden-moneda').on('change', function() {
+      let selectedOption = $(this).find('option:selected');
+      let abrev = selectedOption.data('abrev') || '';
+      currentMonedaAbrev = abrev;
+      useIntegers = (abrev === 'CLP$' || abrev === 'UF');
+      updateMonedaSymbols();
 
-        const newRow = $(`
-          <tr>
-            <td>
-              <input type="hidden" name="producto[]" value="${productoId}">
-              ${productoText}
-            </td>
-            <td>
-              <input type="number" name="cantidad[]" value="${cantidad}" min="1" class="form-control cantidad-input" required />
-            </td>
-            <td>
-              <input type="hidden" name="precio_unitario[]" value="${precioUnitario.toFixed(2)}">
-              <input type="number" 
-                     name="precio_unitario_editable[]" 
-                     value="${precioUnitario.toFixed(2)}" 
-                     min="0" 
-                     step="0.01" 
-                     class="form-control precio-unitario-input" 
-                     required 
-                     style="width: 100px;" />
-            </td>
-            <td class="valor-total">${currentSymbol} ${valorTotal.toFixed(2)}
-              <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
-            </td>
-          </tr>
-        `);
+      $('#productos-tbody tr').each(function() {
+        let valorUnitarioAbrev = $(this).find('.valor-unitario').siblings('.moneda-symbol');
+        let valorTotalAbrev = $(this).find('.valor-total').siblings('.moneda-symbol');
 
-        $('#boleta-table-body').append(newRow);
-        actualizarTotales();
+        if (valorUnitarioAbrev.length) {
+          valorUnitarioAbrev.text(abrev);
+          if (useIntegers) {
+            $(this).find('.valor-unitario').attr('step', '1').attr('min', '0').val(Math.round($(this).find('.valor-unitario').val()));
+          } else {
+            $(this).find('.valor-unitario').attr('step', '0.01').attr('min', '0.01');
+          }
+        }
 
-        productoSelect.val('').trigger('change');
-      } catch (error) {
-        console.error("Error al obtener detalles del producto:", error);
-        alert("Error al obtener detalles del producto seleccionado.");
+        if (valorTotalAbrev.length) {
+          valorTotalAbrev.text(abrev);
+        }
+      });
+
+      calcularTotales();
+    });
+
+    const initialMonedaOption = $('#orden-moneda').find('option:selected');
+    if (initialMonedaOption.val()) {
+      currentMonedaAbrev = initialMonedaOption.data('abrev') || '';
+      useIntegers = (currentMonedaAbrev === 'CLP$' || currentMonedaAbrev === 'UF');
+      updateMonedaSymbols();
+
+      $('#productos-tbody tr').each(function() {
+        let valorUnitarioAbrev = $(this).find('.valor-unitario').siblings('.moneda-symbol');
+        let valorTotalAbrev = $(this).find('.valor-total').siblings('.moneda-symbol');
+
+        if (valorUnitarioAbrev.length) {
+          valorUnitarioAbrev.text(currentMonedaAbrev);
+          if (useIntegers) {
+            $(this).find('.valor-unitario').attr('step', '1').attr('min', '0').val(Math.round($(this).find('.valor-unitario').val()));
+          } else {
+            $(this).find('.valor-unitario').attr('step', '0.01').attr('min', '0.01');
+          }
+        }
+
+        if (valorTotalAbrev.length) {
+          valorTotalAbrev.text(currentMonedaAbrev);
+        }
+      });
+
+      calcularTotales();
+    }
+
+    $('#add-producto').on('click', function() {
+      let productoId = $('#producto').val();
+      let productoDesc = $('#producto option:selected').text();
+      let productoUnidad = $('#producto option:selected').data('unidad');
+
+      if (!productoId) {
+        alert('Por favor, selecciona un producto.');
+        return;
       }
+
+      let existente = $('#productos-tbody tr').filter(function() {
+        return $(this).data('producto-id') === productoId;
+      }).length > 0;
+
+      if (existente) {
+        alert('El producto seleccionado ya ha sido agregado.');
+        return;
+      }
+
+      let tr = $('<tr>')
+        .attr('data-producto-id', productoId)
+        .attr('data-unidad', productoUnidad)
+        .html(`
+        <td>${productoDesc}</td>
+        <td>
+          <input type="number" class="form-control cantidad" min="1" value="1" required>
+        </td>
+        <td>
+          <div class="input-group">
+            <span class="input-group-text moneda-symbol">${currentMonedaAbrev}</span>
+            <input type="number" class="form-control valor-unitario" min="${useIntegers ? '0' : '0.01'}" step="${useIntegers ? '1' : '0.01'}" value="0.00" required>
+          </div>
+        </td>
+        <td>
+          <span class="moneda-symbol">${currentMonedaAbrev}</span>
+          <span class="valor-total">0</span>
+          <input type="hidden" class="valor-total-data" data-value="0">
+        </td>
+        <td>
+          <button type="button" class="btn btn-danger btn-sm eliminar-producto">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </td>
+      `);
+    $('#productos-tbody').append(tr);
+      calcularTotales();
     });
 
-    // Remover Producto sin Confirmación
-    $('#boleta-table-body').on('click', '.remove-producto', function() {
+    $('#productos-tbody').on('input', '.cantidad, .valor-unitario', function() {
+      let tr = $(this).closest('tr');
+      let cantidad = parseFloat(tr.find('.cantidad').val()) || 0;
+      let valorUnitario = parseFloat(tr.find('.valor-unitario').val()) || 0;
+      let valorTotal = cantidad * valorUnitario;
+      let formattedValorTotal = formatNumber(valorTotal, useIntegers);
+
+      tr.find('.valor-total').text(formattedValorTotal);
+      tr.find('.valor-total-data').data('value', valorTotal.toFixed(useIntegers ? 0 : 2));
+
+      calcularTotales();
+    });
+
+    $('#productos-tbody').on('click', '.eliminar-producto', function() {
       $(this).closest('tr').remove();
-      actualizarTotales();
+      calcularTotales();
     });
 
-    // Actualizar Totales al Cambiar Valor Unitario
-    $('#boleta-table-body').on('input', '.precio-unitario-input', function() {
-      const precioUnitario = parseFloat($(this).val()) || 0;
-      const row = $(this).closest('tr');
-      const cantidad = parseInt(row.find('.cantidad-input').val()) || 1;
+    window.handleFileSelect = function(input) {
+      const fileList = input.files;
+      const fileListEl = $('#file-list');
+      fileListEl.empty();
 
-      const precioUnitarioInputHidden = row.find('input[name="precio_unitario[]"]');
-      precioUnitarioInputHidden.val(precioUnitario.toFixed(2));
+      if (fileList.length > 0) {
+        Array.from(fileList).forEach(file => {
+          let li = $('<li>').addClass('list-group-item').text(file.name);
+          fileListEl.append(li);
+        });
+      }
+    };
 
-      const nuevoValorTotal = precioUnitario * cantidad;
-      row.find('.valor-total').html(`
-        ${currentSymbol} ${nuevoValorTotal.toFixed(2)} 
-        <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
-      `);
-      actualizarTotales();
+    $('#submit-btn').on('click', function (e) {
+      const productos = [];
+      $('#productos-tbody tr').each(function () {
+        productos.push({
+          id_producto: $(this).data('producto-id'),
+          descripcion: $(this).find('td:nth-child(1)').text().trim(),
+          cantidad: parseFloat($(this).find('.cantidad').val()),
+          valorUnitario: parseFloat($(this).find('.valor-unitario').val()),
+          valorTotal: parseFloat($(this).find('.valor-total-data').data('value')),
+          unidad: $(this).data('unidad'),
+        });
+      });
+
+      const extractNumericValue = (text) => {
+        const rawValue = text.replace(/[^\d.,-]/g, '');
+        if (currentMonedaAbrev === 'CLP$' || currentMonedaAbrev === 'UF') {
+          return parseInt(rawValue.replace(/\./g, '').replace(/,/g, '')) || 0;
+        } else {
+          const normalizedValue = rawValue.replace(/\./g, '').replace(',', '.');
+          return parseFloat(normalizedValue) || 0;
+        }
+      };
+
+      $('#hidden-subtotal').val(extractNumericValue($('#subtotal').text()));
+      $('#hidden-impuesto').val(extractNumericValue($('#impuesto').text()));
+      $('#hidden-retencion').val(extractNumericValue($('#retencion').text()));
+      $('#hidden-propina').val(extractNumericValue($('#propina').text()));
+      $('#hidden-total').val(extractNumericValue($('#total').text()));
+      $('#hidden-productos').val(JSON.stringify(productos));
     });
-
-    // Actualizar Totales al Cambiar Cantidad
-    $('#boleta-table-body').on('input', '.cantidad-input', function() {
-      const cantidad = parseInt($(this).val()) || 1;
-      const row = $(this).closest('tr');
-      const precioUnitario = parseFloat(row.find('input[name="precio_unitario_editable[]"]').val()) || 0;
-      
-      const precioUnitarioInputHidden = row.find('input[name="precio_unitario[]"]');
-      precioUnitarioInputHidden.val(precioUnitario.toFixed(2));
-
-      const nuevoValorTotal = precioUnitario * cantidad;
-      row.find('.valor-total').html(`
-        ${currentSymbol} ${nuevoValorTotal.toFixed(2)} 
-        <button type="button" class="btn btn-sm btn-danger remove-producto" style="float: right;">✖</button>
-      `);
-      actualizarTotales();
-    });
-
-    // Inicializar Totales con el Cambio Inicial
-    const initialSymbol = $('#orden-moneda').find('option:selected').data('symbol') || '';
-    currentSymbol = initialSymbol;
-    $('.moneda-symbol').text(currentSymbol);
-    actualizarTotales();
   });
 </script>
 

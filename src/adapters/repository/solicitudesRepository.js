@@ -1,18 +1,29 @@
 // src/adapters/repository/solicitudesRepository.js
-import sql from "mssql";
-import config from "../../config/database.js";
+import { sql, poolPromise } from "../../config/database.js";
 
 class SolicitudesRepository {
   // Obtener todas las solicitudes no eliminadas
   async getAll() {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
       const result = await pool.request().query(`
-        SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, s.usuario_solicitante, s.correo_solicitante, s.created_at, e.nombre AS estatus
-        FROM oc.Solicitud s
-        JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
-        WHERE s.eliminado = 0
-        ORDER BY s.created_at DESC
+        SELECT
+          s.id_solicitud,
+          s.asunto,
+          s.descripcion,
+          s.archivos,
+          s.usuario_solicitante,
+          s.correo_solicitante,
+          s.created_at,
+          e.nombre AS estatus
+        FROM
+          oc.Solicitud s
+        JOIN
+          oc.Estatus e ON s.estatus_id = e.id_estatus
+        WHERE
+          s.eliminado = 0
+        ORDER BY
+          s.created_at DESC
       `);
       return result.recordset;
     } catch (error) {
@@ -24,9 +35,18 @@ class SolicitudesRepository {
   // Obtener una solicitud por ID
   async getById(id) {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
       const result = await pool.request().input("id", sql.Int, id).query(`
-          SELECT s.id_solicitud, s.asunto, s.descripcion, s.archivos, e.nombre AS estatus, s.usuario_solicitante, s.correo_solicitante, s.eliminado, s.locked_at
+          SELECT
+            s.id_solicitud,
+            s.asunto,
+            s.descripcion,
+            s.archivos,
+            e.nombre AS estatus,
+            s.usuario_solicitante,
+            s.correo_solicitante,
+            s.eliminado,
+            s.locked_at
           FROM oc.Solicitud s
           JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
           WHERE s.id_solicitud = @id
@@ -41,7 +61,7 @@ class SolicitudesRepository {
   // Guardar una nueva solicitud
   async saveSolicitud(solicitud) {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
 
       const defaultStatusResult = await pool
         .request()
@@ -74,7 +94,7 @@ class SolicitudesRepository {
   // Actualizar una solicitud existente
   async updateSolicitud(id, solicitudData) {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
       await pool
         .request()
         .input("id", sql.Int, id)
@@ -97,7 +117,7 @@ class SolicitudesRepository {
 
   async updateArchivosSolicitud(id, solicitudData) {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
       await pool
         .request()
         .input("id", sql.Int, id)
@@ -117,7 +137,7 @@ class SolicitudesRepository {
 
   async updateEstatus(id, nuevoEstatus) {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
 
       const estatusResult = await pool
         .request()
@@ -157,7 +177,7 @@ class SolicitudesRepository {
   // Eliminar una solicitud (marcar como eliminado)
   async deleteSolicitud(id, justificacion) {
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
       await pool
         .request()
         .input("id", sql.Int, id)

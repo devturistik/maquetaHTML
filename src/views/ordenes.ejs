@@ -41,21 +41,10 @@
                   </td>
                   <td><%= orden.producto %></td>
                   <td><%= orden.cantidad %></td>
-                  <td>$<%= orden.montoTotal.toLocaleString('es-CL') %></td>
-                  <td>
-                    <% orden.aprobaciones.forEach(aprobacion => { %>
-                    <p>
-                      <%= aprobacion.aprobador %>:
-                      <span
-                        class="badge <%= aprobacion.estado === 'Aprobado' ? 'bg-success' : 'bg-warning' %>"
-                        ><%= aprobacion.estado %></span
-                      >
-                    </p>
-                    <% }) %>
-                  </td>
+                  <td>$<%= orden.montoTotal %></td>
                   <td>
                     <span
-                      class="badge <%= orden.estado === 'Pendiente' ? 'bg-warning' : orden.estado === 'Completada' ? 'bg-success' : 'bg-danger' %>"
+                      class="badge"
                     >
                       <%= orden.estado %>
                     </span>

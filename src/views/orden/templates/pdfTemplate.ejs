@@ -139,14 +139,14 @@
     <div class="container">
         <div class="header">
             <div class="info">
-                <p><strong>EMPRESA:</strong> <%= Empresa.nombre %></p>
-                <p><strong>RUT:</strong> <%= Empresa.documento %></p>
-                <p><strong>DIRECCIÓN:</strong> <%= Empresa.direccion %></p>
+                <p><strong>EMPRESA:</strong> <%= defaultText(empresa.NOMBRE) %></p>
+                <p><strong>RUT:</strong> <%= defaultText(empresa.DOCUMENTO) %></p>
+                <p><strong>DIRECCIÓN:</strong> <%= defaultText(empresa.DIRECCION) %></p>
             </div>
             <div class="details">
-                <p><strong>CENTRO DE COSTO:</strong> <%= CentroCosto.nombre %></p>
-                <p><strong>FECHA:</strong> <%= ordenFecha %></p>
-                <p><strong>N°:</strong> <%= ordenID %></p>
+                <p><strong>CENTRO DE COSTO:</strong> <%= defaultText(centrocosto.NOMBRE) %></p>
+                <p><strong>FECHA:</strong> <%= defaultText(fechaHoy) %></p>
+                <p><strong>N°:</strong> <%= defaultText(codigooc) %></p>
             </div>
             <h1>ORDEN DE COMPRA</h1>
         </div>
@@ -154,31 +154,29 @@
         <div class="section">
             <table class="info-table">
                 <tr>
-                    <td colspan="2"><strong>SEÑOR (ES):</strong> <%= Proveedor.nombre %></td>
-
+                    <td colspan="2"><strong>SEÑOR (ES):</strong> <%= defaultText(proveedor.NOMBRE_PROVEEDOR) %></td>
                 </tr>
                 <tr>
-                    <td><strong>DIRECCIÓN:</strong> Avenida Mexico 789 Recoleta, Región Metropolitana de Santiago</td>
-                    <td><strong>RUT:</strong> <%= Proveedor.documento %></td>
+                    <td colspan="2"><strong>RUT:</strong> <%= defaultText(proveedor.DOCUMENTO_PROVEEDOR) %></td>
                 </tr>
                 <tr>
-                    <td><strong>BANCO:</strong> <%= Banco.nombre %></td>
-                    <td><strong>TIPO CUENTA:</strong> <%= Banco.tipo_cuenta %></td>
+                    <td><strong>BANCO:</strong> <%= defaultText(banco.NOMBRE_BANCO) %></td>
+                    <td><strong>TIPO CUENTA:</strong> <%= defaultText(banco.TIPO_CUENTA) %></td>
                 </tr>
                 <tr>
-                    <td><strong>N°:</strong> <%= Banco.numero_cuenta %></td>
-                    <td><strong>CORREO:</strong> <%= Proveedor.correo_principal %></td>
+                    <td><strong>N°:</strong> <%= defaultText(banco.NUMERO_CUENTA) %></td>
+                    <td><strong>CORREO:</strong> <%= defaultText(proveedor.CORREO_PRINCIPAL) %></td>
                 </tr>
             </table>
         </div>
 
         <div class="section">
-            <p><strong>DIRECCION DE DESPACHO:</strong> AV EL CERRO 751, Providencia, Región Metropolitana de Santiago</p>
-            <p><strong>FORMA DE PAGO:</strong> <%= PlazoPago.nombre %></p>
-            <p><strong>CONTACTO:</strong> KATHERINNE PEÑA, KPENA@TURISTIK.COM</p>
+            <p><strong>DIRECCION DE DESPACHO:</strong> <%= defaultText(empresa.DIRECCION) %></p>
+            <p><strong>FORMA DE PAGO:</strong> <%= defaultText(plazopago.NOMBRE) %></p>
+            <p><strong>CONTACTO:</strong> <%= defaultText(creadoroc) %></p>
         </div>
         <div class="section">
-            <p><strong>OBSERVACION:</strong> <%= OrdenNota %></p>
+            <p><strong>OBSERVACION:</strong> <%= defaultText(nota) %></p>
         </div>
 
         <table class="items-table">
@@ -189,50 +187,62 @@
                 <th>Precio Unitario</th>
                 <th>Valor Total</th>
             </tr>
-            <!-- Aquí los datos de los productos -->
-            <tr><td>1001</td><td>Producto A</td><td>5 / Caja</td><td>$100.00</td><td>$500.00</td></tr>
-            <tr><td>1002</td><td>Producto B</td><td>10 / Unidad</td><td>$50.00</td><td>$500.00</td></tr>
-            <tr><td>1003</td><td>Producto C</td><td>3 / Paquete</td><td>$200.00</td><td>$600.00</td></tr>
-            <tr><td>1004</td><td>Producto D</td><td>7 / Caja</td><td>$150.00</td><td>$1050.00</td></tr>
-            <tr><td>1005</td><td>Producto E</td><td>2 / Unidad</td><td>$500.00</td><td>$1000.00</td></tr>
-            <tr><td>1006</td><td>Producto F</td><td>1 / Paquete</td><td>$300.00</td><td>$300.00</td></tr>
-            <tr><td>1007</td><td>Producto G</td><td>15 / Caja</td><td>$80.00</td><td>$1200.00</td></tr>
-            <tr><td>1008</td><td>Producto H</td><td>4 / Unidad</td><td>$60.00</td><td>$240.00</td></tr>
-            <tr><td>1009</td><td>Producto I</td><td>8 / Caja</td><td>$120.00</td><td>$960.00</td></tr>
-            <tr><td>1010</td><td>Producto J</td><td>6 / Paquete</td><td>$200.00</td><td>$1200.00</td></tr>
+            <% productos.forEach(producto => { %>
+            <tr>
+                <td>
+                    <%= producto.id_producto %>
+                </td>
+                <td>
+                    <%= defaultText(producto.descripcion) %>
+                </td>
+                <td>
+                    <%= producto.cantidad %> / <%= defaultText(producto.unidad) %>
+                </td>
+                <td>
+                    <%= defaultText(moneda.ABREV) %><%= formatNumber(producto.valorUnitario) %>
+                </td>
+                <td>
+                    <%= defaultText(moneda.ABREV) %><%= formatNumber(producto.valorTotal) %>
+                </td>
+            </tr>
+            <% }); %>
         </table>
-
         <table class="summary-table">
-            <tr>
-                <td><strong>Neto</strong></td>
-                <td>US$</td>
-                <td>6.400.000,00</td>
-            </tr>
-            <tr>
-                <td><strong>Dcto.</strong></td>
-                <td>US$</td>
-                <td>0,00</td>
-            </tr>
-            <tr>
-                <td><strong>Cargos</strong></td>
-                <td>US$</td>
-                <td>0,00</td>
-            </tr>
+            <% if (formatNumber(totales.subtotal, moneda.ABREV)) { %>
             <tr>
                 <td><strong>Subtotal</strong></td>
-                <td>US$</td>
-                <td>6.400.000,00</td>
+                <td><%= moneda.ABREV %></td>
+                <td><%= formatNumber(totales.subtotal, moneda.ABREV) %></td>
             </tr>
+            <% } %>
+            <% if (formatNumber(totales.impuesto, moneda.ABREV)) { %>
             <tr>
-                <td><strong>IVA 19%</strong></td>
-                <td>US$</td>
-                <td>1.216.000,00</td>
+                <td><strong>Impuesto</strong></td>
+                <td><%= moneda.ABREV %></td>
+                <td><%= formatNumber(totales.impuesto, moneda.ABREV) %></td>
             </tr>
+            <% } %>
+            <% if (formatNumber(totales.retencion, moneda.ABREV)) { %>
+            <tr>
+                <td><strong>Retención</strong></td>
+                <td><%= moneda.ABREV %></td>
+                <td><%= formatNumber(totales.retencion, moneda.ABREV) %></td>
+            </tr>
+            <% } %>
+            <% if (formatNumber(totales.propina, moneda.ABREV)) { %>
+            <tr>
+                <td><strong>Propina</strong></td>
+                <td><%= moneda.ABREV %></td>
+                <td><%= formatNumber(totales.propina, moneda.ABREV) %></td>
+            </tr>
+            <% } %>
+            <% if (formatNumber(totales.total, moneda.ABREV)) { %>
             <tr>
                 <td><strong>Total</strong></td>
-                <td>US$</td>
-                <td>7.616.000,00</td>
+                <td><%= moneda.ABREV %></td>
+                <td><%= formatNumber(totales.total, moneda.ABREV) %></td>
             </tr>
+            <% } %>
         </table>
 
         <div class="footer-note">
@@ -240,7 +250,7 @@
         </div>
 
         <div class="page-footer">
-            <p>© 2024 TURISTIK | Orden N° 8000</p>
+            <p>© <%= defaultText(fechaHoy.substring(6, 10)) %> TURISTIK | Orden N° <%= defaultText(codigooc) %></p>
         </div>
     </div>
 </body>

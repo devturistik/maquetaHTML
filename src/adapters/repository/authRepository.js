@@ -1,17 +1,12 @@
 // src/adapters/repository/authRepository.js
-import sql from "mssql";
-import config from "../../config/database.js";
+import { sql, poolPromise } from "../../config/db.js";
 import User from "../../domain/user.js";
 
 export default class AuthRepository {
-  constructor() {
-    this.poolPromise = sql.connect(config); // Conexión a la BD
-  }
-
   // Obtiene usuario por correo
   async getUserByEmail(email) {
     try {
-      const pool = await this.poolPromise;
+      const pool = await poolPromise;
       const result = await pool
         .request()
         .input("correo", sql.NVarChar, email)

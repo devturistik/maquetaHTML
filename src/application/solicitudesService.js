@@ -71,6 +71,13 @@ class SolicitudesService {
   async deleteSolicitud(id, justificacion) {
     return await this.solicitudesRepository.deleteSolicitud(id, justificacion);
   }
+
+  async updateArchivosSolicitud(solicitudId, archivos) {
+    return await this.solicitudesRepository.updateArchivosSolicitud(
+      solicitudId,
+      archivos
+    );
+  }
 }
 
 export default SolicitudesService;

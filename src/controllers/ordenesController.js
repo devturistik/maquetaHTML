@@ -9,6 +9,13 @@ import {
   generateCodigoOrden,
   calculateFechaVencimiento,
 } from "../utils/helpers.js";
+import AzureBlobService from "../services/azureBlobService.js";
+import axios from "axios";
+import ejs from "ejs";
+import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -22,6 +29,7 @@ class OrdenesController {
   getAllOrdenes = async (req, res) => {
     try {
       const ordenes = await this.ordenesService.getAllOrdenes();
+      console.log(ordenes);
       res.render("ordenes", {
         ordenes: ordenes.map((orden) => ({
           ...orden,
@@ -75,61 +83,37 @@ class OrdenesController {
       await this.solicitudesService.updateEstatus(id_solicitud, "procesada");
 
       solicitud.id = encodeBase64(solicitud.id_solicitud);
-      try {
-        solicitud.archivos = JSON.parse(solicitud.archivos || "[]");
-      } catch (error) {
-        console.error("Error al parsear los archivos de la solicitud:", error);
-        solicitud.archivos = [];
-      }
 
       const [
         proveedores,
-        plazoPagos,
+        plazosdepago,
         empresas,
-        tipoOrdenes,
+        centrosdecosto,
+        tiposdeorden,
         monedas,
-        centroCostos,
         productos,
-        detalleTipoOrden,
       ] = await Promise.all([
         this.ordenesService.getProveedores(),
-        this.ordenesService.getPlazoPagos(),
+        this.ordenesService.getPlazosDePago(),
         this.ordenesService.getEmpresas(),
-        this.ordenesService.getTipoOrdenes(),
+        this.ordenesService.getCentrosDeCosto(),
+        this.ordenesService.getTiposDeOrden(),
         this.ordenesService.getMonedas(),
-        this.ordenesService.getCentroCostos(),
         this.ordenesService.getProductos(),
-        this.ordenesService.getDetalleTipoOrden(),
       ]);
 
-      const fechaActual = dayjs().tz("America/Santiago").format("YYYY-MM-DD");
-      const fechaActualDisplay = dayjs()
-        .tz("America/Santiago")
-        .format("DD/MM/YYYY");
-
-      res.render("orden/crear", {
+      return res.render("orden/crear", {
         solicitud,
         proveedores,
-        plazoPagos,
+        plazosdepago,
         empresas,
-        tipoOrdenes,
-        detalleTipoOrden,
+        centrosdecosto,
+        tiposdeorden,
         monedas,
-        centroCostos,
         productos,
-        cuentasContable: [
-          { nombre: "Caja" },
-          { nombre: "Banco" },
-          { nombre: "Clientes" },
-          { nombre: "Proveedores" },
-          { nombre: "Inventario" },
-          { nombre: "Capital" },
-          { nombre: "Ventas" },
-          { nombre: "Compras" },
-        ],
-        fechaActual,
-        fechaActualDisplay,
         errors: {},
+        successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
       });
     } catch (error) {
       console.error(
@@ -144,454 +128,258 @@ class OrdenesController {
     }
   };
 
-  createOrden = async (req, res) => {
-    try {
-      const encodedId = req.params.id;
-      const id_solicitud = decodeBase64(encodedId);
-
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        // Eliminar archivos subidos si hay errores de validación
-        if (req.files && req.files.length > 0) {
-          req.files.forEach(file => {
-            fs.unlink(file.path, (err) => {
-              if (err) console.error("Error al eliminar archivo:", err.message);
-            });
-          });
-        }
-
-        // Renderizar el formulario nuevamente con los errores y los datos ingresados
-        const solicitud = await this.solicitudesService.getSolicitudById(id_solicitud);
-        const proveedores = await this.ordenesService.getProveedores();
-        const plazoPagos = await this.ordenesService.getPlazoPagos();
-        const empresas = await this.ordenesService.getEmpresas();
-        const centroCostos = await this.ordenesService.getCentroCostos();
-        const tipoOrdenes = await this.ordenesService.getTipoOrdenes();
-        const monedas = await this.ordenesService.getMonedas();
-        const productos = await this.ordenesService.getProductos();
-        const detalleTipoOrden = await this.ordenesService.getDetalleTipoOrden();
-        const cuentasContable = await this.ordenesService.getCuentasContable();
-
-        return res.status(400).render("ordenes/crear", {
-          solicitud,
-          proveedores,
-          plazoPagos,
-          empresas,
-          centroCostos,
-          tipoOrdenes,
-          monedas,
-          productos,
-          detalleTipoOrden,
-          cuentasContable,
-          fechaActual: dayjs().tz("America/Santiago").format("YYYY-MM-DD"),
-          errors: errors.mapped(),
-          errorMessage: "Por favor corrige los errores en el formulario."
-        });
-      }
-
-      const {
-        ordenProveedor,
-        ordenBanco,
-        ordenPlazo,
-        ordenEmpresa,
-        ordenCentroCosto,
-        ordenTipo,
-        ordenMoneda,
-        ordenNota
-      } = req.body;
-
-      const productosSeleccionados = Array.isArray(req.body.producto) ? req.body.producto : [req.body.producto];
-      const cantidades = Array.isArray(req.body.cantidad) ? req.body.cantidad : [req.body.cantidad];
-      const preciosUnitarios = Array.isArray(req.body.precio_unitario) ? req.body.precio_unitario : [req.body.precio_unitario];
-
-      if (productosSeleccionados.length === 0 || !productosSeleccionados[0]) {
-        req.flash("errorMessage", "Debe agregar al menos un producto a la orden.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-
-      let ruta_archivo_pdf = null;
-      let documentos_cotizacion = null;
-      if (req.files && req.files.length > 0) {
-        ruta_archivo_pdf = req.files[0].path;
-        if (req.files.length > 1) {
-          documentos_cotizacion = req.files.slice(1).map(file => file.path).join(';');
-        }
-      }
-
-      const detalleTipoOrden = await this.ordenesService.getDetalleTipoOrden();
-
-      let subtotal = 0;
-      const detalles = [];
-      for (let i = 0; i < productosSeleccionados.length; i++) {
-        const id_producto = parseInt(productosSeleccionados[i]);
-        const cantidad = parseFloat(cantidades[i]);
-        const precio_unitario = parseFloat(preciosUnitarios[i]);
-
-        if (isNaN(id_producto) || isNaN(cantidad) || isNaN(precio_unitario)) {
-          req.flash("errorMessage", "Datos de productos inválidos.");
-          return res.redirect(`/ordenes-crear/${req.params.id}`);
-        }
-
-        const valor_total = cantidad * precio_unitario;
-        subtotal += valor_total;
-
-        detalles.push({
-          id_solicitud,
-          id_producto,
-          precio_unitario,
-          cantidad,
-          valor_total,
-          unidad: 'Unidad'
-        });
-      }
-
-      let impuesto = 0;
-      let retencion = 0;
-      let propina = 0;
-
-      const detallesFiltrados = detalleTipoOrden.filter(detalle => detalle.id_tipo_orden == ordenTipo && detalle.activo);
-
-      detallesFiltrados.forEach(detalle => {
-        const nombre_detalle = detalle.nombre_detalle.trim().toLowerCase();
-        const cantidad = parseFloat(detalle.cantidad);
-        const tipo_detalle = detalle.tipo_detalle.trim().toLowerCase();
-
-        if (nombre_detalle === 'impuesto') {
-          if (tipo_detalle === 'porcentaje' || tipo_detalle === '%') {
-            impuesto += subtotal * (cantidad / 100);
-          } else {
-            impuesto += cantidad;
-          }
-        }
-
-        if (nombre_detalle === 'retencion') {
-          if (tipo_detalle === 'porcentaje' || tipo_detalle === '%') {
-            retencion += subtotal * (cantidad / 100);
-          } else {
-            retencion += cantidad;
-          }
-        }
-
-        if (nombre_detalle === 'propina') {
-          if (tipo_detalle === 'porcentaje' || tipo_detalle === '%') {
-            propina += subtotal * (cantidad / 100);
-          } else {
-            propina += cantidad;
-          }
-        }
-      });
-
-      const total = subtotal + impuesto - retencion + propina;
-      const total_local = total;
-
-      const codigoOrden = generateCodigoOrden();
-
-      const fecha_vencimiento = calculateFechaVencimiento(parseInt(ordenPlazo));
-
-      const ordenData = {
-        codigo: codigoOrden,
-        subtotal: subtotal.toFixed(2),
-        total: total.toFixed(2),
-        impuesto: impuesto.toFixed(2),
-        retencion: retencion.toFixed(2),
-        usuario_creador: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
-        correo_creador: res.locals.user.correo,
-        nota_creador: ordenNota || null,
-        ruta_archivo_pdf: ruta_archivo_pdf || null,
-        documentos_cotizacion: documentos_cotizacion || null,
-        nivel_aprobacion: 1, // Ajusta según tu lógica
-        total_local: total_local.toFixed(2),
-        id_moneda: parseInt(ordenMoneda),
-        id_empresa: ordenEmpresa ? parseInt(ordenEmpresa) : null,
-        id_solicitud: id_solicitud,
-        id_proveedor: parseInt(ordenProveedor),
-        id_tipo_orden: parseInt(ordenTipo),
-        id_plazo: parseInt(ordenPlazo),
-        creado_por: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
-        fecha_vencimiento: fecha_vencimiento
-      };
-
-      const id_orden = await this.ordenesService.createOrden(ordenData, detalles, req.files);
-
-      const ordenCreada = await this.ordenesService.getOrdenById(id_orden);
-
-      const [
-        Empresa,
-        CentroCosto,
-        Proveedor,
-        Banco,
-        PlazoPago,
-        productosOrden
-      ] = await Promise.all([
-        this.ordenesService.getEmpresaById(ordenCreada.id_empresa),
-        this.ordenesService.getCentroCostoById(ordenCreada.id_centro_costo),
-        this.ordenesService.getProveedorById(ordenCreada.id_proveedor),
-        this.ordenesService.getBancoById(ordenCreada.id_banco),
-        this.ordenesService.getPlazoPagoById(ordenCreada.id_plazo),
-        this.ordenesService.getProductosByOrden(id_orden),
-      ]);
-
-      const data = {
-        Empresa,
-        CentroCosto,
-        Proveedor,
-        Banco,
-        PlazoPago,
-        direccionDespacho: 'AV EL CERRO 751, Providencia, Región Metropolitana de Santiago',
-        contacto: 'KATHERINNE PEÑA, KPENA@TURISTIK.COM',
-        OrdenNota: ordenCreada.nota_creador,
-        ordenFecha: dayjs(ordenCreada.created_at).format("DD/MM/YYYY"),
-        ordenID: ordenCreada.codigo,
-        productos: productosOrden.map(producto => ({
-          codigo: producto.codigo || 'N/A',
-          descripcion: producto.descripcion,
-          cantidad: producto.cantidad,
-          unidad: producto.unidad,
-          precio_unitario: parseFloat(producto.precio_unitario),
-          valor_total: parseFloat(producto.valor_total)
-        })),
-        subtotal: parseFloat(ordenCreada.subtotal),
-        descuento: 0.00,
-        cargos: 0.00,
-        impuesto: parseFloat(ordenCreada.impuesto),
-        retencion: parseFloat(ordenCreada.retencion),
-        total: parseFloat(ordenCreada.total),
-        monedaSymbol: "US$"
-      };
-
-      res.render("orden/templates/pdfTemplate.ejs", data);
-    } catch (error) {
-      console.error("Error al crear orden:", error.message);
-
-      // Manejo de errores de validación específicos
-      if (error.validationErrors) {
-        const encodedId = req.params.id;
-        const id_solicitud = decodeBase64(encodedId);
-        const solicitud = await this.solicitudesService.getSolicitudById(id_solicitud);
-        const proveedores = await this.ordenesService.getProveedores();
-        const plazoPagos = await this.ordenesService.getPlazoPagos();
-        const empresas = await this.ordenesService.getEmpresas();
-        const centroCostos = await this.ordenesService.getCentroCostos();
-        const tipoOrdenes = await this.ordenesService.getTipoOrdenes();
-        const monedas = await this.ordenesService.getMonedas();
-        const productos = await this.ordenesService.getProductos();
-        const detalleTipoOrden = await this.ordenesService.getDetalleTipoOrden();
-        const cuentasContable = await this.ordenesService.getCuentasContable();
-
-        res.render("ordenes/crear", {
-          solicitud,
-          proveedores,
-          plazoPagos,
-          empresas,
-          centroCostos,
-          tipoOrdenes,
-          monedas,
-          productos,
-          detalleTipoOrden,
-          cuentasContable,
-          fechaActual: dayjs().tz("America/Santiago").format("YYYY-MM-DD"),
-          fechaActualDisplay: dayjs().tz("America/Santiago").format("DD/MM/YYYY"),
-          errors: error.validationErrors,
-          errorMessage: "Por favor corrige los errores en el formulario."
-        });
-      } else {
-        req.flash("errorMessage", "Error al crear la orden: " + error.message);
-        res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-    }
-  };
-
   getBancosPorProveedor = async (req, res) => {
     try {
-      const { id_proveedor } = req.query;
-      if (!id_proveedor) {
-        return res.status(400).json({ error: "ID de proveedor es requerido" });
+      const proveedorId = parseInt(req.params.proveedorId, 10);
+      if (isNaN(proveedorId)) {
+        return res.status(400).json({ error: "ID de proveedor inválido" });
       }
 
       const bancos = await this.ordenesService.getBancosByProveedor(
-        parseInt(id_proveedor)
+        proveedorId
       );
       res.json(bancos);
     } catch (error) {
       console.error("Error al obtener bancos por proveedor:", error.message);
-      res.status(500).json({ error: "Error al obtener bancos por proveedor" });
+      res.status(500).json({ error: "Error al obtener los bancos" });
     }
   };
 
-  getMoneda = async (req, res) => {
+  getCuentasContablesPorEmpresa = async (req, res) => {
     try {
-      const { id_moneda } = req.query;
-      if (!id_moneda) {
-        return res.status(400).json({ error: "ID de moneda es requerido" });
+      const empresaId = parseInt(req.params.empresaId, 10);
+      if (isNaN(empresaId)) {
+        return res.status(400).json({ error: "ID de empresa inválido" });
       }
 
-      const moneda = await this.ordenesService.getMonedaById(
-        parseInt(id_moneda)
+      const cuentasContables =
+        await this.ordenesService.getCuentasContablesByEmpresa(empresaId);
+      res.json(cuentasContables);
+    } catch (error) {
+      console.error(
+        "Error al obtener cuentas contables por empresa:",
+        error.message
       );
-      res.json(moneda);
-    } catch (error) {
-      console.error("Error al obtener moneda:", error.message);
-      res.status(500).json({ error: "Error al obtener moneda" });
+      res.status(500).json({ error: "Error al obtener las cuentas contables" });
     }
   };
 
-  // Método para obtener detalles de un producto
-  getProductoDetalle = async (req, res) => {
+  getDetallesTipoOrden = async (req, res) => {
     try {
-      const { id_producto } = req.query;
-
-      if (!id_producto) {
-        return res.status(400).json({ error: "ID de producto es requerido." });
+      const tipoOrdenId = parseInt(req.params.tipoOrdenId, 10);
+      if (isNaN(tipoOrdenId)) {
+        return res.status(400).json({ error: "ID de tipo de orden inválido" });
       }
 
-      const productoId = parseInt(id_producto, 10);
-      if (isNaN(productoId)) {
-        return res.status(400).json({ error: "ID de producto inválido." });
-      }
-
-      const producto = await this.ordenesService.getProductoById(productoId);
-
-      if (!producto) {
-        return res.status(404).json({ error: "Producto no encontrado." });
-      }
-
-      res.json({
-        ID_PRODUCTO: producto.ID_PRODUCTO,
-        DESCRIPCION: producto.DESCRIPCION,
-        PRECIO_UNITARIO: parseFloat(producto.PRECIO_UNITARIO).toFixed(2),
-        UNIDAD: producto.UNIDAD,
-        PRESENTACION: producto.PRESENTACION,
-      });
+      const detalles = await this.ordenesService.getDetallesTipoOrden(
+        tipoOrdenId
+      );
+      res.json(detalles);
     } catch (error) {
-      console.error("Error en getProductoDetalle:", error.message);
-      res.status(500).json({ error: "Error interno del servidor." });
+      console.error(
+        "Error al obtener detalles del tipo de orden:",
+        error.message
+      );
+      res
+        .status(500)
+        .json({ error: "Error al obtener los detalles del tipo de orden" });
     }
   };
 
-  renderEditForm = async (req, res) => {
+  createOrden = async (req, res) => {
     try {
-      const id = decodeBase64(req.params.id);
-      const orden = await this.ordenesService.getOrdenById(id);
-      if (!orden) {
-        req.flash("errorMessage", "Orden de compra no encontrada.");
-        return res.redirect("/ordenes");
-      }
-
-      orden.id = encodeBase64(id);
-
-      // Obtener productos de la orden
-      const productos = await this.ordenesService.getProductosByOrden(id);
-
-      // Obtener listas necesarias para el formulario
-      const [
-        proveedores,
-        plazoPagos,
-        empresas,
-        tipoOrdenes,
-        monedas,
-        centroCostos,
-        todosProductos,
-      ] = await Promise.all([
-        this.ordenesService.getProveedores(),
-        this.ordenesService.getPlazoPagos(),
-        this.ordenesService.getEmpresas(),
-        this.ordenesService.getTipoOrdenes(),
-        this.ordenesService.getMonedas(),
-        this.ordenesService.getCentroCostos(),
-        this.ordenesService.getProductos(),
-      ]);
-
-      res.render("orden/editar", {
-        orden,
-        productos,
-        proveedores,
-        plazoPagos,
-        empresas,
-        tipoOrdenes,
-        monedas,
-        centroCostos,
-        todosProductos,
-        errors: {},
-      });
-    } catch (error) {
-      console.error("Error al obtener orden para editar:", error.message);
-      res.status(500).send("Error al obtener orden para editar");
-    }
-  };
-
-  updateOrden = async (req, res) => {
-    try {
-      const id = decodeBase64(req.params.id);
+      const id_solicitud = decodeBase64(req.params.id);
       const {
+        id_proveedor,
+        id_banco,
+        id_plazoPago,
+        id_empresa,
+        id_centroCosto,
+        id_tipoOrden,
+        id_moneda,
+        id_cuentaContable,
+        Nota,
         subtotal,
         impuesto,
         retencion,
+        propina,
         total,
-        ordenProveedor,
-        ordenMoneda,
-        ordenPlazo,
-        ordenTipo,
-        ordenSolicitud,
-        nota_creador,
       } = req.body;
+      const productos = JSON.parse(req.body.productos || "[]");
+      const fechaHoySantiago = dayjs()
+        .tz("America/Santiago")
+        .format("DD-MM-YYYY");
+      const fechaVencimiento = calculateFechaVencimiento(30);
 
-      const archivos = req.files && req.files.length > 0 ? req.files : [];
-      const archivosPaths = archivos.map((file) => `/uploads/${file.filename}`);
-      const documentosCotizacion = archivosPaths.length
-        ? JSON.stringify(archivosPaths)
-        : JSON.stringify([]);
+      const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}, ${res.locals.user.correo}`;
 
-      const { nombre, apellido, correo } = res.locals.user || {};
+      let totalLocal = total;
 
-      const total_local =
-        parseFloat(total) * parseFloat(req.body.tipo_cambio || 1);
+      let documentosCotizacion = [];
+      if (req.files && req.files.length > 0) {
+        const archivos = req.files.map((file) => {
+          const uniqueSuffix = fechaHoySantiago;
+          const blobName = `${uniqueSuffix}_${file.originalname}`;
+          return { blobName, file };
+        });
 
-      const ordenData = {
-        subtotal: parseFloat(subtotal) || 0,
-        total: parseFloat(total) || 0,
-        impuesto: parseFloat(impuesto) || 0,
-        retencion: parseFloat(retencion) || 0,
-        usuario_creador: `${nombre} ${apellido}`,
-        correo_creador: correo,
-        nota_creador: nota_creador,
-        documentos_cotizacion: documentosCotizacion,
-        nivel_aprobacion: 1,
-        justificacion_rechazo: null,
+        const blobUrls = await AzureBlobService.uploadFilesWithNames(archivos);
+
+        documentosCotizacion = blobUrls.map((url) => ({ url, eliminado: 0 }));
+      }
+
+      const [
+        Solicitud,
+        Proveedor,
+        Banco,
+        PlazoPago,
+        Empresa,
+        CentroCosto,
+        TipoOrden,
+        Moneda,
+        CuentaContable,
+      ] = await Promise.all([
+        this.solicitudesService.getSolicitudById(id_solicitud),
+        this.ordenesService.getProveedorById(id_proveedor),
+        this.ordenesService.getProveedorBanco(id_banco, id_proveedor),
+        this.ordenesService.getPlazoPagoById(id_plazoPago),
+        this.ordenesService.getEmpresaById(id_empresa),
+        this.ordenesService.getCentroCostoById(id_centroCosto),
+        this.ordenesService.getTipoOrdenById(id_tipoOrden),
+        this.ordenesService.getMonedaById(id_moneda),
+        this.ordenesService.getCuentaContableById(id_cuentaContable),
+      ]);
+
+      if (Moneda.ABREV !== "CLP$") {
+        totalLocal = Moneda.CAMBIO * total;
+      }
+
+      const newOrden = {
+        codigo: "",
+        subtotal: subtotal,
+        total: total,
+        impuesto: impuesto,
+        retencion: retencion,
+        usuario_creador: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
+        correo_creador: `${res.locals.user.correo}`,
+        nota_creador: Nota,
         ruta_archivo_pdf: null,
-        total_local: total_local,
-        id_moneda: parseInt(ordenMoneda),
-        id_solicitud: parseInt(ordenSolicitud),
-        id_proveedor: parseInt(ordenProveedor),
-        id_tipo_orden: parseInt(ordenTipo),
-        id_plazo: parseInt(ordenPlazo),
-        creado_por: `${nombre} ${apellido}`,
+        documentos_cotizacion: JSON.stringify(documentosCotizacion),
+        nivel_aprobacion: 1,
+        justificacion_rechazo: "",
+        total_local: totalLocal,
+        id_moneda: id_moneda,
+        id_empresa: id_empresa,
+        id_solicitud: id_solicitud,
+        id_proveedor: id_proveedor,
+        id_tipo_orden: id_tipoOrden,
+        id_plazo: id_plazoPago,
+        fecha_vencimiento: fechaVencimiento,
       };
 
-      await this.ordenesService.updateOrden(id, ordenData);
+      const id_orden = await this.ordenesService.createOrden(newOrden);
 
-      req.flash("successMessage", "Orden actualizada con éxito");
-      res.redirect(`/ordenes/${encodeBase64(id)}`);
+      const codigoOC = generateCodigoOrden(id_orden);
+      await this.ordenesService.updateOrdenCodigo(id_orden, codigoOC);
+
+      function defaultText(value, fallback = "SIN DATO") {
+        return value && value.trim ? value.trim() : fallback;
+      }
+
+      function formatNumber(value, currency) {
+        if (value === null || value === 0) {
+          return null;
+        }
+        if (currency === "CLP$" || currency === "UF") {
+          return Math.round(value).toLocaleString("es-CL");
+        } else {
+          return value
+            .toFixed(2)
+            .replace(".", ",")
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+      }
+
+      const templateData = {
+        codigooc: codigoOC.match(/OC-(\d+)_/)[1],
+        creadoroc: creadorOC,
+        solicitud: Solicitud,
+        proveedor: Proveedor,
+        banco: Banco,
+        plazopago: PlazoPago,
+        empresa: Empresa,
+        centrocosto: CentroCosto,
+        tipoorden: TipoOrden,
+        moneda: Moneda,
+        cuentacontable: CuentaContable,
+        nota: Nota,
+        productos,
+        totales: {
+          subtotal: parseFloat(subtotal),
+          impuesto: parseFloat(impuesto || 0),
+          retencion: parseFloat(retencion || 0),
+          propina: parseFloat(propina || 0),
+          total: parseFloat(total),
+        },
+        fechaHoy: fechaHoySantiago,
+        defaultText,
+        formatNumber,
+      };
+
+      const templatePath = path.join(
+        process.cwd(),
+        "src",
+        "views",
+        "orden",
+        "templates",
+        "pdfTemplate.ejs"
+      );
+
+      const html = await ejs.renderFile(templatePath, templateData, {
+        encoding: "utf8",
+        async: true,
+      });
+
+      try {
+        const response = await axios.post(
+          process.env.URL_API_CREATE_PDF,
+          html,
+          {
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+            },
+            responseType: "arraybuffer",
+          }
+        );
+
+        const pdfBuffer = Buffer.from(response.data);
+
+        const pdfBlobName = `OC-${id_orden}-${fechaHoySantiago}.pdf`;
+        const pdfUrl = await AzureBlobService.uploadBufferWithName(
+          pdfBlobName,
+          pdfBuffer,
+          "application/pdf"
+        );
+
+        await this.ordenesService.updateOrdenPdfUrl(id_orden, pdfUrl);
+
+        req.flash("successMessage", "Orden creada exitosamente.");
+        res.redirect("/ordenes");
+      } catch (postError) {
+        console.error("Error al enviar la petición POST:", postError);
+        req.flash(
+          "errorMessage",
+          "Hubo un error al procesar la orden. Por favor, inténtelo nuevamente."
+        );
+        res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
     } catch (error) {
-      console.error("Error al actualizar orden:", error.message);
+      console.error("Error al crear la orden:", error.message);
       req.flash(
         "errorMessage",
-        "Error al actualizar la orden: " + error.message
+        "Hubo un error al crear la orden. Por favor, inténtelo nuevamente."
       );
-      res.redirect(`/ordenes-editar/${req.params.id}`);
-    }
-  };
-
-  deleteOrden = async (req, res) => {
-    try {
-      const id = decodeBase64(req.params.id);
-      await this.ordenesService.deleteOrden(id);
-
-      req.flash("successMessage", "Orden eliminada con éxito");
-      res.redirect("/ordenes");
-    } catch (error) {
-      console.error("Error al eliminar orden:", error.message);
-      req.flash("errorMessage", "Error al eliminar la orden: " + error.message);
-      res.redirect("/ordenes");
+      res.redirect(`/ordenes-crear/${req.params.id}`);
     }
   };
 }

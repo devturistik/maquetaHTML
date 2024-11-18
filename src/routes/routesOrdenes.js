@@ -15,28 +15,29 @@ router.get("/ordenes/:id", ordenesController.getOrdenById);
 // Ruta para renderizar el formulario para crear orden dada una solicitud
 router.get("/ordenes-crear/:id", ordenesController.renderCreateForm);
 
+// Ruta API para obtener bancos por proveedor
+router.get(
+  "/api/proveedores/:proveedorId/bancos",
+  ordenesController.getBancosPorProveedor
+);
+
+// Ruta API para obtener cuentas contables por empresa
+router.get(
+  "/api/empresas/:empresaId/cuentas-contables",
+  ordenesController.getCuentasContablesPorEmpresa
+);
+
+// Ruta API para obtener detalles de tipo de orden
+router.get(
+  "/api/tipos-orden/:tipoOrdenId/detalles",
+  ordenesController.getDetallesTipoOrden
+);
+
 // Ruta para procesar la creación de orden dada una solicitud
 router.post(
   "/ordenes-crear/:id",
-  upload.array("ordenArchivos", 10),
+  upload.array("cotizacion", 10),
   ordenesController.createOrden
 );
-// Ruta para renderizar el formulario para editar una orden
-router.get("/ordenes-editar/:id", ordenesController.renderEditForm);
-
-// Ruta para procesar la edición de una orden
-router.post("/ordenes-editar/:id", ordenesController.updateOrden);
-
-// Ruta para eliminar una orden
-router.post("/ordenes-eliminar/:id", ordenesController.deleteOrden);
-
-// Ruta para obtener bancos por proveedor (para AJAX)
-router.get("/api/bancos", ordenesController.getBancosPorProveedor);
-
-// Ruta para obtener moneda por ID (para AJAX)
-router.get("/api/moneda", ordenesController.getMoneda);
-
-// Ruta para obtener detalles de un producto (para AJAX)
-router.get("/api/producto-detalle", ordenesController.getProductoDetalle);
 
 export default router;

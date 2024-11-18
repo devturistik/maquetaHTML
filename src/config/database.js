@@ -1,6 +1,5 @@
 // src/config/database.js
-//import dotenv from 'dotenv';
-// dotenv.config();
+import sql from "mssql";
 
 const config = {
   user: process.env.DB_USER || "carriagada",
@@ -12,6 +11,22 @@ const config = {
     trustServerCertificate:
       process.env.DB_TRUST_SERVER_CERTIFICATE === "true" || true,
   },
+  pool: {
+    max: 20,
+    min: 5,
+    idleTimeoutMillis: 30000,
+  },
 };
 
-export default config;
+const poolPromise = new sql.ConnectionPool(config)
+  .connect()
+  .then((pool) => {
+    console.log("Conexión a SQL Server establecida");
+    return pool;
+  })
+  .catch((err) => {
+    console.error("Error en la conexión a la base de datos:", err);
+    throw err;
+  });
+
+export { sql, poolPromise };

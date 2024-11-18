@@ -1,556 +1,619 @@
-import sql from "mssql";
-import config from "../../config/database.js";
+// src/adapters/repository/ordenesRepository.js
+import { sql, poolPromise } from "../../config/database.js";
 
 class OrdenesRepository {
-  async getAll() {
+  async getAllOrdenes() {
+    const query = `
+      SELECT
+        *
+      FROM
+        oc.OrdenCompra
+      ORDER BY
+        ID_ORDEN ASC
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          id_orden, codigo, subtotal, total, impuesto, retencion, usuario_creador, correo_creador, nota_creador,
-          ruta_archivo_pdf, documentos_cotizacion, nivel_aprobacion, justificacion_rechazo, total_local,
-          id_moneda, id_solicitud, id_proveedor, id_tipo_orden, id_plazo, creado_por, fecha_vencimiento
-        FROM oc.OrdenCompra
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error al obtener órdenes de la base de datos:",
-        error.message
-      );
-      throw new Error("Error al obtener órdenes");
-    }
-  }
-
-  async getById(id, transaction = null) {
-    try {
-      const request = transaction ? transaction.request() : new sql.Request();
-      const result = await request
-        .input("id_orden", sql.Int, id)
-        .query(`SELECT * FROM oc.OrdenCompra WHERE id_orden = @id_orden`);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener orden:", error.message);
-      throw new Error("Error al obtener la orden de compra.");
-    }
-  }
-
-  async saveOrden(orden, transaction = null) {
-    try {
-      const request = transaction ? transaction.request() : new sql.Request();
-      // Configurar inputs
-      request.input("codigo", sql.NVarChar(255), orden.codigo);
-      request.input("subtotal", sql.Decimal(10, 2), orden.subtotal);
-      request.input("total", sql.Decimal(10, 2), orden.total);
-      request.input("impuesto", sql.Decimal(10, 2), orden.impuesto);
-      request.input("retencion", sql.Decimal(10, 2), orden.retencion);
-      request.input(
-        "usuario_creador",
-        sql.NVarChar(255),
-        orden.usuario_creador
-      );
-      request.input("correo_creador", sql.NVarChar(255), orden.correo_creador);
-      request.input("nota_creador", sql.NVarChar(255), orden.nota_creador);
-      request.input(
-        "ruta_archivo_pdf",
-        sql.NVarChar(255),
-        orden.ruta_archivo_pdf
-      );
-      request.input(
-        "documentos_cotizacion",
-        sql.NVarChar(255),
-        orden.documentos_cotizacion
-      );
-      request.input("nivel_aprobacion", sql.TinyInt, orden.nivel_aprobacion);
-      request.input("total_local", sql.Decimal(10, 2), orden.total_local);
-      request.input("id_moneda", sql.Int, orden.id_moneda);
-      request.input("id_empresa", sql.Int, orden.id_empresa);
-      request.input("id_solicitud", sql.Int, orden.id_solicitud);
-      request.input("id_proveedor", sql.Int, orden.id_proveedor);
-      request.input("id_tipo_orden", sql.Int, orden.id_tipo_orden);
-      request.input("id_plazo", sql.Int, orden.id_plazo);
-      request.input("creado_por", sql.NVarChar(100), orden.creado_por);
-      request.input("fecha_vencimiento", sql.Date, orden.fecha_vencimiento);
-
-      const query = `
-        INSERT INTO oc.OrdenCompra 
-          (codigo, subtotal, total, impuesto, retencion, nota_creador, documentos_cotizacion, usuario_creador,
-           correo_creador, id_moneda, id_empresa, id_solicitud, id_proveedor, id_tipo_orden, id_plazo, nivel_aprobacion,
-           justificacion_rechazo, ruta_archivo_pdf, total_local, creado_por, fecha_vencimiento, created_at)
-        VALUES
-          (@codigo, @subtotal, @total, @impuesto, @retencion, @nota_creador, @documentos_cotizacion, @usuario_creador,
-           @correo_creador, @id_moneda, @id_empresa, @id_solicitud, @id_proveedor, @id_tipo_orden, @id_plazo, @nivel_aprobacion,
-           @justificacion_rechazo, @ruta_archivo_pdf, @total_local, @creado_por, @fecha_vencimiento, GETDATE())
-        SELECT SCOPE_IDENTITY() AS id_orden
-      `;
-
-      const result = await request.query(query);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error en OrdenesRepository.saveOrden:", error.message);
-      throw new Error("Error al guardar la orden de compra.");
-    }
-  }
-
-  async saveDetalleOrdenCompra(detalleOrdenCompra, transaction = null) {
-    try {
-      const request = transaction ? transaction.request() : new sql.Request();
-      // Configurar inputs
-      request.input("id_solicitud", sql.Int, detalleOrdenCompra.id_solicitud);
-      request.input(
-        "id_orden_compra",
-        sql.Int,
-        detalleOrdenCompra.id_orden_compra
-      );
-      request.input("id_producto", sql.Int, detalleOrdenCompra.id_producto);
-      request.input(
-        "precio_unitario",
-        sql.Decimal(18, 2),
-        detalleOrdenCompra.precio_unitario
-      );
-      request.input("cantidad", sql.Int, detalleOrdenCompra.cantidad);
-      request.input(
-        "total_detalle",
-        sql.Decimal(18, 2),
-        detalleOrdenCompra.total_detalle
-      );
-      request.input(
-        "cant_x_recibir",
-        sql.Int,
-        detalleOrdenCompra.cant_x_recibir
-      );
-
-      const query = `
-        INSERT INTO oc.DetalleOrdenCompra 
-          (ID_SOLICITUD, ID_ORDEN_COMPRA, ID_PRODUCTO, PRECIO, CANTIDAD, FECHA_CREACION, FECHA_ACTUALIZACION,
-           TOTAL_DETALLE, CANT_X_RECIBIR)
-        VALUES
-          (@id_solicitud, @id_orden_compra, @id_producto, @precio_unitario, @cantidad, GETDATE(), NULL,
-           @total_detalle, @cant_x_recibir)
-      `;
-
-      await request.query(query);
-    } catch (error) {
-      console.error("Error al guardar detalle de orden:", error.message);
-      throw new Error("Error al guardar detalle de orden");
-    }
-  }
-
-  async updateOrden(id_orden, updatedFields) {
-    try {
-      const pool = await sql.connect(config);
-      const request = pool.request();
-      request.input("id_orden", sql.Int, id_orden);
-
-      Object.keys(updatedFields).forEach((key) => {
-        if (key !== "id") {
-          if (typeof updatedFields[key] === "number") {
-            request.input(key, sql.Decimal(18, 2), updatedFields[key]);
-          } else {
-            request.input(key, sql.NVarChar, updatedFields[key]);
-          }
-        }
-      });
-
-      const result = await request.query(`
-        UPDATE oc.OrdenCompra
-        SET
-          subtotal = @subtotal,
-          total = @total,
-          impuesto = @impuesto,
-          retencion = @retencion,
-          usuario_creador = @usuario_creador,
-          correo_creador = @correo_creador,
-          nota_creador = @nota_creador,
-          documentos_cotizacion = @documentos_cotizacion,
-          nivel_aprobacion = @nivel_aprobacion,
-          justificacion_rechazo = @justificacion_rechazo,
-          ruta_archivo_pdf = @ruta_archivo_pdf,
-          total_local = @total_local,
-          id_moneda = @id_moneda,
-          id_solicitud = @id_solicitud,
-          id_proveedor = @id_proveedor,
-          id_tipo_orden = @id_tipo_orden,
-          id_plazo = @id_plazo,
-          actualizado_por = @creado_por,
-          updated_at = GETDATE()
-        WHERE id_orden = @id_orden
-      `);
-      return result.rowsAffected[0];
-    } catch (error) {
-      console.error("Error al actualizar orden:", error.message);
-      throw new Error("Error al actualizar orden");
-    }
-  }
-
-  async deleteOrden(id_orden) {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool
-        .request()
-        .input("id_orden", sql.Int, id_orden)
-        .query(`DELETE FROM oc.OrdenCompra WHERE id_orden = @id_orden`);
-      return result.rowsAffected[0];
-    } catch (error) {
-      console.error("Error al eliminar orden:", error.message);
-      throw new Error("Error al eliminar orden");
-    }
-  }
-
-  async getUltimaOrdenCreada() {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT TOP 1 id_orden
-        FROM oc.OrdenCompra
-        ORDER BY id_orden DESC
-      `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener la última orden creada:", error.message);
-      throw new Error("Error al obtener la última orden creada");
+      console.error("Error al obtener ordenes:", error.message);
+      throw error;
     }
   }
 
   async getProveedores() {
+    const query = `
+      SELECT
+        ID_PROVEEDOR,
+        NOMBRE_PROVEEDOR,
+        DOCUMENTO_PROVEEDOR,
+        TELEFONO_PRINCIPAL,
+        CORREO_PRINCIPAL
+      FROM
+        oc.Proveedor
+      WHERE
+        ESTATUS_PROVEEDOR = 1 AND ELIMINADO = 0
+      ORDER BY
+        NOMBRE_PROVEEDOR
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          ID_PROVEEDOR, NOMBRE_PROVEEDOR, DOCUMENTO_PROVEEDOR, TELEFONO_PRINCIAL, CORREO_PRINCIPAL
-        FROM
-          oc.Proveedor
-        WHERE
-          ESTATUS_PROVEEDOR = 1 AND ELIMINADO = 0
-        ORDER BY
-          NOMBRE_PROVEEDOR
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error en OrdenesRepository.getProveedores:",
-        error.message
-      );
-      throw new Error("Error al obtener proveedores.");
+      console.error("Error al obtener proveedores:", error.message);
+      throw error;
     }
   }
 
-  async getProveedorById(id_proveedor) {
+  async getPlazosDePago() {
+    const query = `
+      SELECT
+        ID_FORMA_PAGO, NOMBRE
+      FROM
+        oc.PlazoPago
+      WHERE
+        ELIMINADO = 0
+        AND ESTATUS_FORMA_PAGO = 1
+      ORDER BY
+        NOMBRE
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool
-        .request()
-        .input("id_proveedor", sql.Int, id_proveedor).query(`
-          SELECT *
-          FROM oc.Proveedor
-          WHERE ID_PROVEEDOR = @id_proveedor
-            AND ELIMINADO = 0
-        `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener proveedor por ID:", error.message);
-      throw new Error("Error al obtener proveedor por ID");
-    }
-  }
-
-  async getBancosByProveedor(id_proveedor) {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT b.ID_BANCO, b.NOMBRE_BANCO
-        FROM oc.ProveedorBanco pb
-        JOIN oc.Banco b ON pb.ID_BANCO = b.ID_BANCO
-        WHERE pb.ID_PROVEEDOR = ${id_proveedor}
-          AND pb.ELIMINADO = 0
-          AND b.ELIMINADO = 0
-        ORDER BY
-          b.NOMBRE_BANCO
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error("Error al obtener bancos por proveedor:", error.message);
-      throw new Error("Error al obtener bancos por proveedor");
-    }
-  }
-
-  async getBancoById(id_banco) {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().input("id_banco", sql.Int, id_banco)
-        .query(`
-          SELECT *
-          FROM oc.Banco
-          WHERE ID_BANCO = @id_banco
-            AND ELIMINADO = 0
-        `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener banco por ID:", error.message);
-      throw new Error("Error al obtener banco por ID");
-    }
-  }
-
-  async getPlazoPagos() {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          ID_FORMA_PAGO, NOMBRE
-        FROM
-          oc.PlazoPago
-        WHERE
-          ELIMINADO = 0
-          AND ESTATUS_FORMA_PAGO = 1
-        ORDER BY
-          NOMBRE
-      `);
-      return result.recordset;
-    } catch (error) {
-      console.error("Error en OrdenesRepository.getPlazoPagos:", error.message);
-      throw new Error("Error al obtener plazos de pago.");
-    }
-  }
-
-  async getMonedaById(id_moneda) {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().input("id_moneda", sql.Int, id_moneda)
-        .query(`
-          SELECT ID_MONEDA, ABREV, NOMBRE, CAMBIO
-          FROM oc.Monedas
-          WHERE ID_MONEDA = @id_moneda
-        `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener moneda por ID:", error.message);
-      throw new Error("Error al obtener moneda");
-    }
-  }
-
-  async getMonedas() {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          ID_MONEDA, ABREV, NOMBRE, CAMBIO
-        FROM
-          oc.Monedas
-        ORDER BY
-          NOMBRE
-      `);
-      return result.recordset;
-    } catch (error) {
-      console.error("Error en OrdenesRepository.getMonedas:", error.message);
-      throw new Error("Error al obtener monedas.");
+      console.error("Error al obtener plazos de pago:", error.message);
+      throw error;
     }
   }
 
   async getEmpresas() {
+    const query = `
+      SELECT
+        ID_EMPRESA, NOMBRE
+      FROM
+        oc.Empresa
+      WHERE
+        ELIMINADO = 0
+      ORDER BY
+        NOMBRE
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          ID_EMPRESA, NOMBRE
-        FROM
-          oc.Empresa
-        WHERE
-          ELIMINADO = 0
-        ORDER BY
-          NOMBRE
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error("Error en OrdenesRepository.getEmpresas:", error.message);
-      throw new Error("Error al obtener empresas.");
+      console.error("Error al obtener empresas:", error.message);
+      throw error;
     }
   }
 
-  async getEmpresaById(id_empresa) {
+  async getCentrosDeCosto() {
+    const query = `
+      SELECT
+        ID_CENTRO_COSTO, NOMBRE, ENCARGADO, CORREO_ENCARGADO, PRESUPUESTO
+      FROM
+        oc.CentroCosto
+      WHERE
+        ESTATUS = 1
+      ORDER BY
+        NOMBRE
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool
-        .request()
-        .input("id_empresa", sql.Int, id_empresa).query(`
-          SELECT NOMBRE, DOCUMENTO, DIRECCION
-          FROM oc.Empresa
-          WHERE ID_EMPRESA = @id_empresa
-        `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener empresa por ID:", error.message);
-      throw new Error("Error al obtener empresa por ID");
-    }
-  }
-
-  async getCentroCostos() {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          ID_CENTRO_COSTO, NOMBRE, ENCARGADO, CORREO_ENCARGADO, PRESUPUESTO
-        FROM
-          oc.CentroCosto
-        WHERE
-          ESTATUS = 1
-        ORDER BY
-          NOMBRE
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error en OrdenesRepository.getCentroCostos:",
-        error.message
-      );
-      throw new Error("Error al obtener centros de costo.");
+      console.error("Error al obtener centro de costos:", error.message);
+      throw error;
     }
   }
 
-  async getCentroCostoById(id_centro_costo) {
+  async getTiposDeOrden() {
+    const query = `
+      SELECT
+        id_tipo, nombre
+      FROM
+        oc.TipoOrden
+      ORDER BY
+        nombre
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool
-        .request()
-        .input("id_centro_costo", sql.Int, id_centro_costo).query(`
-          SELECT NOMBRE
-          FROM oc.CentroCosto
-          WHERE ID_CENTRO_COSTO = @id_centro_costo
-        `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener centro de costo por ID:", error.message);
-      throw new Error("Error al obtener centro de costo por ID");
-    }
-  }
-
-  async getPlazoPagoById(id_plazo) {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().input("id_plazo", sql.Int, id_plazo)
-        .query(`
-          SELECT NOMBRE
-          FROM oc.PlazoPago
-          WHERE ID_FORMA_PAGO = @id_plazo
-        `);
-      return result.recordset[0];
-    } catch (error) {
-      console.error("Error al obtener plazo de pago por ID:", error.message);
-      throw new Error("Error al obtener plazo de pago por ID");
-    }
-  }
-
-  async getTipoOrdenes() {
-    try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          id_tipo, nombre
-        FROM
-          oc.TipoOrden
-        ORDER BY
-          nombre
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error en OrdenesRepository.getTipoOrdenes:",
-        error.message
-      );
-      throw new Error("Error al obtener tipos de orden.");
+      console.error("Error al obtener tipos de orden:", error.message);
+      throw error;
     }
   }
 
-  async getDetalleTipoOrden() {
+  async getMonedas() {
+    const query = `
+      SELECT
+        ID_MONEDA, ABREV, NOMBRE, CAMBIO
+      FROM
+        oc.Monedas
+      ORDER BY
+        NOMBRE
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT 
-          dto.id_detalle_tipo_orden,
-          dto.id_tipo_orden,
-          dto.nombre_detalle,
-          dto.cantidad,
-          dto.tipo_detalle,
-          dto.activo
-        FROM 
-          oc.DetalleTipoOrden dto
-        WHERE 
-          dto.activo = 1
-        ORDER BY
-          dto.nombre_detalle
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error en OrdenesRepository.getDetalleTipoOrden:",
-        error.message
-      );
-      throw new Error("Error al obtener detalles de tipo de orden.");
+      console.error("Error al obtener monedas:", error.message);
+      throw error;
     }
   }
 
   async getProductos() {
+    const query = `
+      SELECT
+        ID_PRODUCTO, DESCRIPCION, UNIDAD
+      FROM
+        oc.Producto
+      WHERE
+        ELIMINADO = 0
+      ORDER BY
+        DESCRIPCION
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().query(`
-        SELECT
-          ID_PRODUCTO, DESCRIPCION, UNIDAD, PRESENTACION, ESTATUS_PRODUCTO, FECHA_CREACION, FECHA_ACTUALIZACION
-        FROM
-          oc.Producto
-        WHERE
-          ELIMINADO = 0
-        ORDER BY
-          DESCRIPCION
-      `);
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error("Error en OrdenesRepository.getProductos:", error.message);
-      throw new Error("Error al obtener productos.");
+      console.error("Error al obtener productos:", error.message);
+      throw error;
     }
   }
 
-  async getProductoById(id_producto) {
+  async getBancosByProveedor(proveedorId) {
+    const query = `
+      SELECT
+        b.ID_BANCO,
+        b.NOMBRE_BANCO,
+        pb.TIPO_CUENTA,
+        pb.NUMERO_CUENTA
+      FROM
+        oc.ProveedorBanco pb
+      JOIN
+        oc.Banco b
+      ON
+        pb.ID_BANCO = b.ID_BANCO
+      WHERE
+        pb.ID_PROVEEDOR = @ID_PROVEEDOR
+      AND pb.ELIMINADO = 0
+      AND b.ELIMINADO = 0
+      ORDER BY
+        b.NOMBRE_BANCO
+    `;
     try {
-      const pool = await sql.connect(config);
+      const pool = await poolPromise;
       const result = await pool
         .request()
-        .input("id_producto", sql.Int, id_producto).query(`
-          SELECT
-            ID_PRODUCTO,
-            DESCRIPCION,
-            UNIDAD,
-            PRESENTACION,
-            ESTATUS_PRODUCTO,
-            FECHA_CREACION,
-            FECHA_ACTUALIZACION
-          FROM
-            oc.Producto
-          WHERE
-            ID_PRODUCTO = @id_producto
-            AND ELIMINADO = 0
-        `);
+        .input("ID_PROVEEDOR", sql.Int, proveedorId)
+        .query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener bancos por proveedor:", error.message);
+      throw error;
+    }
+  }
+
+  async getCuentasContablesByEmpresa(empresaId) {
+    const query = `
+      SELECT
+        ID_CUENTA,
+        NOMBRE_CUENTA,
+        CODIGO
+      FROM
+        oc.Cuentas
+      WHERE
+        ID_EMPRESA = @ID_EMPRESA
+      ORDER BY
+        NOMBRE_CUENTA
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("ID_EMPRESA", sql.Int, empresaId)
+        .query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error(
+        "Error al obtener cuentas contables por empresa:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getDetallesTipoOrden(tipoOrdenId) {
+    const query = `
+      SELECT
+        NOMBRE_DETALLE,
+        CANTIDAD,
+        TIPO_DETALLE
+      FROM
+        oc.DetalleTipoOrden
+      WHERE
+        ID_TIPO_ORDEN = @ID_TIPO_ORDEN
+        AND ACTIVO = 1
+      ORDER BY
+        NOMBRE_DETALLE
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("ID_TIPO_ORDEN", sql.Int, tipoOrdenId)
+        .query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error(
+        "Error al obtener detalles de tipo de orden:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async createOrden(newOrden) {
+    const query = `
+      INSERT INTO oc.OrdenCompra(
+        CODIGO,
+        SUBTOTAL,
+        TOTAL,
+        IMPUESTO,
+        RETENCION,
+        USUARIO_CREADOR,
+        CORREO_CREADOR,
+        NOTA_CREADOR,
+        DOCUMENTOS_COTIZACION,
+        NIVEL_APROBACION,
+        TOTAL_LOCAL,
+        ID_MONEDA,
+        ID_EMPRESA,
+        ID_SOLICITUD,
+        ID_PROVEEDOR,
+        ID_TIPO_ORDEN,
+        ID_PLAZO,
+        FECHA_VENCIMIENTO
+      )
+      OUTPUT INSERTED.ID_ORDEN AS id_orden
+      VALUES(
+        @CODIGO,
+        @SUBTOTAL,
+        @TOTAL,
+        @IMPUESTO,
+        @RETENCION,
+        @USUARIO_CREADOR,
+        @CORREO_CREADOR,
+        @NOTA_CREADOR,
+        @DOCUMENTOS_COTIZACION,
+        @NIVEL_APROBACION,
+        @TOTAL_LOCAL,
+        @ID_MONEDA,
+        @ID_EMPRESA,
+        @ID_SOLICITUD,
+        @ID_PROVEEDOR,
+        @ID_TIPO_ORDEN,
+        @ID_PLAZO,
+        @FECHA_VENCIMIENTO
+      )
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("CODIGO", sql.NVarChar, newOrden.codigo)
+        .input("SUBTOTAL", sql.Decimal, newOrden.subtotal)
+        .input("TOTAL", sql.Decimal, newOrden.total)
+        .input("IMPUESTO", sql.Decimal, newOrden.impuesto)
+        .input("RETENCION", sql.Decimal, newOrden.retencion)
+        .input("USUARIO_CREADOR", sql.NVarChar, newOrden.usuario_creador)
+        .input("CORREO_CREADOR", sql.NVarChar, newOrden.correo_creador)
+        .input("NOTA_CREADOR", sql.NVarChar, newOrden.nota_creador)
+        .input("RUTA_ARCHIVO_PDF", sql.NVarChar, newOrden.ruta_archivo_pdf)
+        .input(
+          "DOCUMENTOS_COTIZACION",
+          sql.NVarChar,
+          newOrden.documentos_cotizacion
+        )
+        .input("NIVEL_APROBACION", sql.TinyInt, newOrden.nivel_aprobacion)
+        .input(
+          "JUSTIFICACION_RECHAZO",
+          sql.NVarChar,
+          newOrden.justificacion_rechazo
+        )
+        .input("TOTAL_LOCAL", sql.Decimal, newOrden.total_local)
+        .input("ID_MONEDA", sql.Int, newOrden.id_moneda)
+        .input("ID_EMPRESA", sql.Int, newOrden.id_empresa)
+        .input("ID_SOLICITUD", sql.Int, newOrden.id_solicitud)
+        .input("ID_PROVEEDOR", sql.Int, newOrden.id_proveedor)
+        .input("ID_TIPO_ORDEN", sql.Int, newOrden.id_tipo_orden)
+        .input("ID_PLAZO", sql.Int, newOrden.id_plazo)
+        .input("FECHA_VENCIMIENTO", sql.Date, newOrden.fecha_vencimiento)
+        .query(query);
+      return result.recordset[0].id_orden;
+    } catch (error) {
+      console.error("Error en ordenesRepository.createOrden:", error.message);
+      throw error;
+    }
+  }
+
+  async updateOrdenCodigo(id_orden, codigo) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET CODIGO = @CODIGO
+      WHERE ID_ORDEN = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("CODIGO", sql.NVarChar, codigo)
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(query);
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.updateOrdenCodigo:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async updateOrdenPdfUrl(id_orden, pdfData) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET RUTA_ARCHIVO_PDF = @PDF_DATA
+      WHERE ID_ORDEN = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("PDF_DATA", sql.NVarChar, JSON.stringify(pdfData))
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(query);
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.updateOrdenPdfUrl:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getProveedorById(id) {
+    const query = `
+      SELECT
+        NOMBRE_PROVEEDOR,
+        DOCUMENTO_PROVEEDOR,
+        TELEFONO_PRINCIPAL,
+        CORREO_PRINCIPAL
+      FROM
+        oc.Proveedor
+      WHERE
+        ID_PROVEEDOR = @ID
+      AND
+        ELIMINADO = 0
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
       return result.recordset[0];
     } catch (error) {
       console.error(
-        "Error en OrdenesRepository.getProductoById:",
+        "Error en ordenesRepository.getProveedorById:",
         error.message
       );
-      throw new Error("Error al obtener el producto por ID.");
+      throw error;
     }
   }
 
-  async getProductosByOrden(id_orden) {
+  async getBancoById(id) {
+    const query = `
+      SELECT
+        NOMBRE_BANCO
+      FROM
+        oc.Banco
+      WHERE
+        ID_BANCO = @ID
+      AND
+        ELIMINADO = 0
+    `;
     try {
-      const pool = await sql.connect(config);
-      const result = await pool.request().input("id_orden", sql.Int, id_orden)
-        .query(`
-          SELECT p.codigo, p.DESCRIPCION, opc.CANTIDAD, p.UNIDAD, opc.PRECIO AS precio_unitario, opc.TOTAL_DETALLE AS valor_total
-          FROM oc.DetalleOrdenCompra opc
-          JOIN oc.Producto p ON opc.ID_PRODUCTO = p.ID_PRODUCTO
-          WHERE opc.ID_ORDEN_COMPRA = @id_orden AND p.ELIMINADO = 0
-        `);
-      return result.recordset;
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
     } catch (error) {
-      console.error("Error al obtener productos por orden:", error.message);
-      throw new Error("Error al obtener productos por orden");
+      console.error("Error en ordenesRepository.getBancoById:", error.message);
+      throw error;
+    }
+  }
+
+  async getPlazoPagoById(id) {
+    const query = `
+      SELECT
+        NOMBRE
+      FROM
+        oc.PlazoPago
+      WHERE
+        ID_FORMA_PAGO = @ID
+      AND
+        ELIMINADO = 0
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.getPlazoPagoById:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getEmpresaById(id) {
+    const query = `
+      SELECT
+        NOMBRE,
+        DOCUMENTO,
+        DIRECCION
+      FROM
+        oc.Empresa
+      WHERE
+        ID_EMPRESA = @ID
+      AND
+        ELIMINADO = 0
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.getEmpresaById:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getCentroCostoById(id) {
+    const query = `
+      SELECT
+        NOMBRE,
+        ENCARGADO
+      FROM
+        oc.CentroCosto
+      WHERE
+        ID_CENTRO_COSTO = @ID
+      AND
+        ESTATUS = 1
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.getCentroCostoById:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getTipoOrdenById(id) {
+    const query = `
+      SELECT
+        NOMBRE
+      FROM
+        oc.TipoOrden
+      WHERE
+        ID_TIPO = @ID
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.getTipoOrdenById:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getMonedaById(id) {
+    const query = `
+      SELECT
+        ABREV,
+        NOMBRE,
+        CAMBIO
+      FROM
+        oc.Monedas
+      WHERE
+        ID_MONEDA = @ID
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error("Error en ordenesRepository.getMonedaById:", error.message);
+      throw error;
+    }
+  }
+
+  async getCuentaContableById(id) {
+    const query = `
+      SELECT
+        NOMBRE_CUENTA,
+        CODIGO
+      FROM
+        oc.Cuentas
+      WHERE
+        ID_CUENTA = @ID
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.getCuentaContableById:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getProveedorBanco(id_banco, id_proveedor) {
+    const query = `
+      SELECT
+        NUMERO_CUENTA,
+        TIPO_CUENTA,
+        CORREO_BANCO
+      FROM
+        oc.ProveedorBanco
+      WHERE
+        ID_BANCO = @ID_BANCO
+      AND
+        ID_PROVEEDOR = @ID_PROVEEDOR
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("ID_BANCO", sql.Int, id_banco)
+        .input("ID_PROVEEDOR", sql.Int, id_proveedor)
+        .query(query);
+      const proveedorBanco = result.recordset[0];
+      if (!proveedorBanco) {
+        return null;
+      }
+
+      const bancoDetails = await this.getBancoById(id_banco);
+      return {
+        ...proveedorBanco,
+        ...bancoDetails,
+      };
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.getProveedorBanco:",
+        error.message
+      );
+      throw error;
     }
   }
 }
