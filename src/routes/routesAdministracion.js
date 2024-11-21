@@ -7,10 +7,8 @@ const administracionController = new AdministracionController();
 
 router.get("/administracion", administracionController.renderTables);
 
-// Ruta genérica para listar registros de cualquier tabla
 router.get("/administracion/:tabla", administracionController.listarRegistros);
 
-// Rutas genéricas para CRUD
 router.get(
   "/administracion/:tabla/crear",
   administracionController.mostrarFormularioCrear
@@ -30,6 +28,10 @@ router.post(
 router.post(
   "/administracion/:tabla/eliminar/:id",
   administracionController.eliminarRegistro
+);
+router.post(
+  "/administracion/:tabla/eliminar/:id/confirmar",
+  administracionController.confirmarEliminarFisico
 );
 
 export default router;

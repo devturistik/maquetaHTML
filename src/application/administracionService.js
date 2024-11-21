@@ -4,57 +4,52 @@ import AdministracionRepository from "../adapters/repository/administracionRepos
 class AdministracionService {
   constructor() {
     this.administracionRepository = new AdministracionRepository();
-    this.tablasPermitidas = [
-      "Proveedor",
-      "Banco",
-      "PlazoPago",
-      "Empresa",
-      "CentroCosto",
-      "TipoOrden",
-      "Monedas",
-      "Cuentas",
-      "Producto",
-    ];
+    this.tablasPermitidas = this.administracionRepository.tablasPermitidas;
   }
 
-  async getTables() {
-    const tablasBD = await this.administracionRepository.getTablesFromDB();
-
-    const tablasFiltradas = tablasBD.filter((tabla) =>
-      this.tablasPermitidas.includes(tabla.nombre)
-    );
-
-    tablasFiltradas.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-    return tablasFiltradas;
+  getTables() {
+    return this.administracionRepository.getTablesFromDB();
   }
 
-  async obtenerColumnas(tabla) {
-    return await this.administracionRepository.obtenerColumnas(tabla);
+  obtenerMetadatos(tabla) {
+    return this.administracionRepository.obtenerMetadatos(tabla);
   }
 
-  async obtenerRegistros(tabla) {
-    return await this.administracionRepository.obtenerRegistros(tabla);
+  obtenerRegistros(tabla) {
+    return this.administracionRepository.obtenerRegistros(tabla);
   }
 
-  async crearRegistro(tabla, datos) {
-    return await this.administracionRepository.crearRegistro(tabla, datos);
+  crearRegistro(tabla, datos) {
+    return this.administracionRepository.crearRegistro(tabla, datos);
   }
 
-  async obtenerRegistroPorId(tabla, id) {
-    return await this.administracionRepository.obtenerRegistroPorId(tabla, id);
+  obtenerRegistroPorId(tabla, id) {
+    return this.administracionRepository.obtenerRegistroPorId(tabla, id);
   }
 
-  async actualizarRegistro(tabla, id, datos) {
-    return await this.administracionRepository.actualizarRegistro(
+  actualizarRegistro(tabla, id, datos) {
+    return this.administracionRepository.actualizarRegistro(tabla, id, datos);
+  }
+
+  eliminarLogico(tabla, id, columna, valor) {
+    return this.administracionRepository.eliminarLogico(
       tabla,
       id,
-      datos
+      columna,
+      valor
     );
   }
 
-  async eliminarRegistro(tabla, id) {
-    return await this.administracionRepository.eliminarRegistro(tabla, id);
+  eliminarFisico(tabla, id) {
+    return this.administracionRepository.eliminarFisico(tabla, id);
+  }
+
+  obtenerProveedores() {
+    return this.administracionRepository.obtenerProveedores();
+  }
+
+  obtenerBancos() {
+    return this.administracionRepository.obtenerBancos();
   }
 }
 

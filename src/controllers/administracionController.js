@@ -1,5 +1,6 @@
 // src/controllers/administracionController.js
 import AdministracionService from "../application/administracionService.js";
+import { body, validationResult } from "express-validator";
 
 class AdministracionController {
   constructor() {
@@ -19,14 +20,25 @@ class AdministracionController {
   };
 
   listarRegistros = async (req, res) => {
+    const tabla = req.params.tabla;
     try {
-      const tabla = req.params.tabla;
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
       const registros = await this.administracionService.obtenerRegistros(
         tabla
       );
+      const metadatos = await this.administracionService.obtenerMetadatos(
+        tabla
+      );
+      const columnasVisibles = metadatos.columns;
+
       res.render("administracion/lista", {
         tabla,
         registros,
+        columnas: columnasVisibles,
+        idColumna: metadatos.id,
       });
     } catch (error) {
       console.error(`Error al listar registros de la tabla ${tabla}:`, error);
@@ -37,10 +49,30 @@ class AdministracionController {
   mostrarFormularioCrear = async (req, res) => {
     try {
       const tabla = req.params.tabla;
-      const columnas = await this.administracionService.obtenerColumnas(tabla);
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      const metadatos = await this.administracionService.obtenerMetadatos(
+        tabla
+      );
+      const columnasFormulario = metadatos.columns.filter(
+        (col) => col.editable
+      );
+
+      let proveedores = [];
+      let bancos = [];
+
+      if (tabla === "ProveedorBanco") {
+        proveedores = await this.administracionService.obtenerProveedores();
+        bancos = await this.administracionService.obtenerBancos();
+      }
+
       res.render("administracion/crear", {
         tabla,
-        columnas,
+        columnas: columnasFormulario,
+        proveedores,
+        bancos,
       });
     } catch (error) {
       console.error(
@@ -51,29 +83,129 @@ class AdministracionController {
     }
   };
 
-  crearRegistro = async (req, res) => {
-    try {
+  crearRegistro = [
+    async (req, res, next) => {
       const tabla = req.params.tabla;
-      const datos = req.body;
-      await this.administracionService.crearRegistro(tabla, datos);
-      res.redirect(`/administracion/${tabla}`);
-    } catch (error) {
-      console.error(`Error al crear registro en la tabla ${tabla}:`, error);
-      res.status(500).send("Error interno del servidor");
-    }
-  };
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      const metadatos = await this.administracionService.obtenerMetadatos(
+        tabla
+      );
+      const columnas = metadatos.columns.filter((col) => col.editable);
+      const validations = columnas.map((col) => {
+        switch (col.tipo.toLowerCase()) {
+          case "int":
+            return body(col.nombre)
+              .isInt()
+              .withMessage(`${col.nombre} debe ser un número entero.`);
+          case "varchar":
+          case "nvarchar":
+            return body(col.nombre)
+              .notEmpty()
+              .withMessage(`${col.nombre} es obligatorio.`);
+          case "date":
+          case "datetime":
+            return body(col.nombre)
+              .isISO8601()
+              .toDate()
+              .withMessage(`${col.nombre} debe ser una fecha válida.`);
+          case "bit":
+            return body(col.nombre)
+              .isIn(["0", "1"])
+              .withMessage(`${col.nombre} debe ser 0 o 1.`);
+          default:
+            return body(col.nombre)
+              .notEmpty()
+              .withMessage(`${col.nombre} es obligatorio.`);
+        }
+      });
+
+      await Promise.all(validations.map((validation) => validation.run(req)));
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        const proveedores =
+          tabla === "ProveedorBanco"
+            ? await this.administracionService.obtenerProveedores()
+            : [];
+        const bancos =
+          tabla === "ProveedorBanco"
+            ? await this.administracionService.obtenerBancos()
+            : [];
+        return res.status(400).render("administracion/crear", {
+          tabla,
+          columnas: columnas,
+          errores: errors.array(),
+          proveedores,
+          bancos,
+        });
+      }
+
+      next();
+    },
+    async (req, res) => {
+      try {
+        const tabla = req.params.tabla;
+        const datos = req.body;
+        const metadatos = await this.administracionService.obtenerMetadatos(
+          tabla
+        );
+        const columnaCreadoPor = metadatos.columns.find(
+          (col) => col.nombre.toUpperCase() === "CREADO_POR"
+        );
+        if (columnaCreadoPor) {
+          const nombreCompleto = `${res.locals.user.nombre} ${res.locals.user.apellido}`;
+          datos.CREADO_POR = nombreCompleto;
+        }
+        await this.administracionService.crearRegistro(tabla, datos);
+        res.redirect(`/administracion/${tabla}`);
+      } catch (error) {
+        console.error(`Error al crear registro en la tabla ${tabla}:`, error);
+        res.status(500).send("Error interno del servidor");
+      }
+    },
+  ];
 
   mostrarFormularioEditar = async (req, res) => {
     try {
       const tabla = req.params.tabla;
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
       const id = req.params.id;
       const registro = await this.administracionService.obtenerRegistroPorId(
         tabla,
         id
       );
+      if (!registro) {
+        return res.status(404).send("Registro no encontrado.");
+      }
+
+      const metadatos = await this.administracionService.obtenerMetadatos(
+        tabla
+      );
+      const columnasFormulario = metadatos.columns.filter(
+        (col) => col.editable
+      );
+
+      let proveedores = [];
+      let bancos = [];
+
+      if (tabla === "ProveedorBanco") {
+        proveedores = await this.administracionService.obtenerProveedores();
+        bancos = await this.administracionService.obtenerBancos();
+      }
+
       res.render("administracion/editar", {
         tabla,
         registro,
+        columnas: columnasFormulario,
+        idColumna: metadatos.id,
+        proveedores,
+        bancos,
       });
     } catch (error) {
       console.error(`Error al obtener registro de la tabla ${tabla}:`, error);
@@ -81,30 +213,160 @@ class AdministracionController {
     }
   };
 
-  actualizarRegistro = async (req, res) => {
-    try {
+  actualizarRegistro = [
+    async (req, res, next) => {
       const tabla = req.params.tabla;
-      const id = req.params.id;
-      const datos = req.body;
-      await this.administracionService.actualizarRegistro(tabla, id, datos);
-      res.redirect(`/administracion/${tabla}`);
-    } catch (error) {
-      console.error(
-        `Error al actualizar registro en la tabla ${tabla}:`,
-        error
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      const metadatos = await this.administracionService.obtenerMetadatos(
+        tabla
       );
+      const columnas = metadatos.columns.filter((col) => col.editable);
+      const validations = columnas.map((col) => {
+        switch (col.tipo.toLowerCase()) {
+          case "int":
+            return body(col.nombre)
+              .isInt()
+              .withMessage(`${col.nombre} debe ser un número entero.`);
+          case "varchar":
+          case "nvarchar":
+            return body(col.nombre)
+              .notEmpty()
+              .withMessage(`${col.nombre} es obligatorio.`);
+          case "date":
+          case "datetime":
+            return body(col.nombre)
+              .isISO8601()
+              .toDate()
+              .withMessage(`${col.nombre} debe ser una fecha válida.`);
+          case "bit":
+            return body(col.nombre)
+              .isIn(["0", "1"])
+              .withMessage(`${col.nombre} debe ser 0 o 1.`);
+          default:
+            return body(col.nombre)
+              .notEmpty()
+              .withMessage(`${col.nombre} es obligatorio.`);
+        }
+      });
+
+      await Promise.all(validations.map((validation) => validation.run(req)));
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        const registro = await this.administracionService.obtenerRegistroPorId(
+          tabla,
+          req.params.id
+        );
+        const proveedores =
+          tabla === "ProveedorBanco"
+            ? await this.administracionService.obtenerProveedores()
+            : [];
+        const bancos =
+          tabla === "ProveedorBanco"
+            ? await this.administracionService.obtenerBancos()
+            : [];
+        return res.status(400).render("administracion/editar", {
+          tabla,
+          registro,
+          columnas: columnas,
+          errores: errors.array(),
+          idColumna: metadatos.id,
+          proveedores,
+          bancos,
+        });
+      }
+
+      next();
+    },
+    async (req, res) => {
+      try {
+        const tabla = req.params.tabla;
+        const id = req.params.id;
+        const datos = req.body;
+        await this.administracionService.actualizarRegistro(tabla, id, datos);
+        res.redirect(`/administracion/${tabla}`);
+      } catch (error) {
+        console.error(
+          `Error al actualizar registro en la tabla ${tabla}:`,
+          error
+        );
+        res.status(500).send("Error interno del servidor");
+      }
+    },
+  ];
+
+  eliminarRegistro = async (req, res) => {
+    const tabla = req.params.tabla;
+    const id = req.params.id;
+
+    try {
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      const metadatos = await this.administracionService.obtenerMetadatos(
+        tabla
+      );
+
+      if (!metadatos || !metadatos.columns) {
+        return res.status(500).send("Metadatos de la tabla no encontrados.");
+      }
+
+      const columnaEliminado = metadatos.columns.find(
+        (col) => col.nombre.toUpperCase() === "ELIMINADO"
+      );
+
+      const columnaEstatus = metadatos.columns.find((col) =>
+        col.nombre.toUpperCase().includes("ESTATUS")
+      );
+
+      if (columnaEliminado) {
+        await this.administracionService.eliminarLogico(
+          tabla,
+          id,
+          "ELIMINADO",
+          1
+        );
+        res.redirect(`/administracion/${tabla}`);
+      } else if (columnaEstatus) {
+        await this.administracionService.eliminarLogico(
+          tabla,
+          id,
+          columnaEstatus.nombre,
+          0
+        );
+        res.redirect(`/administracion/${tabla}`);
+      } else {
+        res.render("administracion/confirmarEliminacion", {
+          tabla,
+          id,
+        });
+      }
+    } catch (error) {
+      console.error(`Error al eliminar registro de la tabla ${tabla}:`, error);
       res.status(500).send("Error interno del servidor");
     }
   };
 
-  eliminarRegistro = async (req, res) => {
+  confirmarEliminarFisico = async (req, res) => {
+    const tabla = req.params.tabla;
+    const id = req.params.id;
+
     try {
-      const tabla = req.params.tabla;
-      const id = req.params.id;
-      await this.administracionService.eliminarRegistro(tabla, id);
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      await this.administracionService.eliminarFisico(tabla, id);
       res.redirect(`/administracion/${tabla}`);
     } catch (error) {
-      console.error(`Error al eliminar registro de la tabla ${tabla}:`, error);
+      console.error(
+        `Error al eliminar físicamente registro de la tabla ${tabla}:`,
+        error
+      );
       res.status(500).send("Error interno del servidor");
     }
   };

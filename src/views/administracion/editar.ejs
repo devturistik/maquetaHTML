@@ -1,11 +1,11 @@
-<!-- views/administracion/crear.ejs -->
-<%- include('../partials/header', { title: 'Crear ' + tabla }) %>
+<!-- views/administracion/editar.ejs -->
+<%- include('../partials/header', { title: 'Editar ' + tabla }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
 <div class="container-xxl flex-grow-1 container-p-y">
-  <h4 class="mb-4">Crear Registro en <%= tabla.charAt(0).toUpperCase() + tabla.slice(1) %></h4>
+  <h4 class="mb-4">Editar Registro en <%= tabla.charAt(0).toUpperCase() + tabla.slice(1) %></h4>
   <div class="card">
     <div class="card-body">
       <% if (typeof errores !== 'undefined' && errores.length > 0) { %>
@@ -17,27 +17,35 @@
           </ul>
         </div>
       <% } %>
-      <form action="/administracion/<%= tabla %>/crear" method="POST" novalidate>
+      <form action="/administracion/<%= tabla %>/editar/<%= registro[idColumna] %>" method="POST" novalidate>
         <% columnas.forEach(columna => { %>
           <% if (columna.inputType !== 'hidden') { %>
             <div class="mb-3">
               <label for="<%= columna.nombre %>" class="form-label">
                 <%= columna.nombre.charAt(0).toUpperCase() + columna.nombre.slice(1) %><%= columna.editable ? ' *' : '' %>
               </label>
+              <% 
+                let valor = registro[columna.nombre];
+                if (columna.tipo.toLowerCase() === 'datetime' && valor) {
+                  valor = new Date(valor).toISOString().split('T')[0];
+                } else if (columna.tipo.toLowerCase() === 'bit') {
+                  valor = valor === 1 || valor === '1' ? '1' : '0';
+                }
+              %>
               <% if (columna.inputType === 'select') { %>
                 <% if (tabla === 'ProveedorBanco') { %>
                   <% if (columna.nombre === 'ID_PROVEEDOR') { %>
                     <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
                       <option value="">Seleccione un Proveedor</option>
                       <% proveedores.forEach(proveedor => { %>
-                        <option value="<%= proveedor.ID_PROVEEDOR %>"><%= proveedor.NOMBRE_PROVEEDOR %></option>
+                        <option value="<%= proveedor.ID_PROVEEDOR %>" <%= proveedor.ID_PROVEEDOR == registro.ID_PROVEEDOR ? 'selected' : '' %>><%= proveedor.NOMBRE_PROVEEDOR %></option>
                       <% }) %>
                     </select>
                   <% } else if (columna.nombre === 'ID_BANCO') { %>
                     <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
                       <option value="">Seleccione un Banco</option>
                       <% bancos.forEach(banco => { %>
-                        <option value="<%= banco.ID_BANCO %>"><%= banco.NOMBRE_BANCO %></option>
+                        <option value="<%= banco.ID_BANCO %>" <%= banco.ID_BANCO == registro.ID_BANCO ? 'selected' : '' %>><%= banco.NOMBRE_BANCO %></option>
                       <% }) %>
                     </select>
                   <% } %>
@@ -50,7 +58,7 @@
                   class="form-control" 
                   id="<%= columna.nombre %>" 
                   name="<%= columna.nombre %>" 
-                  value="<%= columna.inputType === 'date' ? '' : '' %>" 
+                  value="<%= valor === null ? 'null' : valor %>" 
                   <%= columna.editable ? 'required' : 'readonly' %>
                 >
               <% } %>
@@ -61,11 +69,11 @@
               type="hidden" 
               id="<%= columna.nombre %>" 
               name="<%= columna.nombre %>" 
-              value="<%= columna.inputType === 'hidden' ? '' : '' %>"
+              value="<%= registro[columna.nombre] === null ? 'null' : registro[columna.nombre] %>"
             >
           <% } %>
         <% }) %>
-        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="submit" class="btn btn-primary">Actualizar</button>
         <a href="/administracion/<%= tabla %>" class="btn btn-secondary">Cancelar</a>
       </form>
     </div>

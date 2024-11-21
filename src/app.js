@@ -33,8 +33,8 @@ app.use(
 app.use(flash());
 // Middleware para pasar mensajes flash a las vistas
 app.use((req, res, next) => {
-  res.locals.successMessage = req.flash('successMessage');
-  res.locals.errorMessage = req.flash('errorMessage');
+  res.locals.successMessage = req.flash("successMessage");
+  res.locals.errorMessage = req.flash("errorMessage");
   next();
 });
 
