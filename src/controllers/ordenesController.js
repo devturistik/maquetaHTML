@@ -5,10 +5,7 @@ import { encodeBase64, decodeBase64 } from "../utils/base64.js";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 import timezone from "dayjs/plugin/timezone.js";
-import {
-  generateCodigoOrden,
-  calculateFechaVencimiento,
-} from "../utils/helpers.js";
+import { calculateFechaVencimiento } from "../utils/helpers.js";
 import AzureBlobService from "../services/azureBlobService.js";
 import axios from "axios";
 import ejs from "ejs";
@@ -29,11 +26,18 @@ class OrdenesController {
   getAllOrdenes = async (req, res) => {
     try {
       const ordenes = await this.ordenesService.getAllOrdenes();
-      console.log(ordenes);
       res.render("ordenes", {
         ordenes: ordenes.map((orden) => ({
           ...orden,
-          id: encodeBase64(orden.id_orden),
+          Encoded_id_orden: encodeBase64(orden.id_orden),
+          Encoded_id_solicitud: encodeBase64(orden.id_solicitud),
+          codigo: orden.codigo.match(/(?<=OC-)\d+/)[0],
+          ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
+          created_at: new Date(orden.created_at).toLocaleString("es-CL", {
+            timeZone: "UTC",
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
         })),
       });
     } catch (error) {
@@ -53,8 +57,7 @@ class OrdenesController {
         return res.redirect("/ordenes");
       }
 
-      orden.id = encodeBase64(orden.id_orden);
-
+      orden.id = encodeBase64(orden.ID_ORDEN);
       res.render("orden/detalle", { orden });
     } catch (error) {
       console.error("Error al obtener orden:", error.message);
@@ -92,6 +95,7 @@ class OrdenesController {
         tiposdeorden,
         monedas,
         productos,
+        cuentascontables,
       ] = await Promise.all([
         this.ordenesService.getProveedores(),
         this.ordenesService.getPlazosDePago(),
@@ -100,6 +104,7 @@ class OrdenesController {
         this.ordenesService.getTiposDeOrden(),
         this.ordenesService.getMonedas(),
         this.ordenesService.getProductos(),
+        this.ordenesService.getCuentasContables(),
       ]);
 
       return res.render("orden/crear", {
@@ -111,6 +116,7 @@ class OrdenesController {
         tiposdeorden,
         monedas,
         productos,
+        cuentascontables,
         errors: {},
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
@@ -142,25 +148,6 @@ class OrdenesController {
     } catch (error) {
       console.error("Error al obtener bancos por proveedor:", error.message);
       res.status(500).json({ error: "Error al obtener los bancos" });
-    }
-  };
-
-  getCuentasContablesPorEmpresa = async (req, res) => {
-    try {
-      const empresaId = parseInt(req.params.empresaId, 10);
-      if (isNaN(empresaId)) {
-        return res.status(400).json({ error: "ID de empresa inválido" });
-      }
-
-      const cuentasContables =
-        await this.ordenesService.getCuentasContablesByEmpresa(empresaId);
-      res.json(cuentasContables);
-    } catch (error) {
-      console.error(
-        "Error al obtener cuentas contables por empresa:",
-        error.message
-      );
-      res.status(500).json({ error: "Error al obtener las cuentas contables" });
     }
   };
 
@@ -206,9 +193,7 @@ class OrdenesController {
         total,
       } = req.body;
       const productos = JSON.parse(req.body.productos || "[]");
-      const fechaHoySantiago = dayjs()
-        .tz("America/Santiago")
-        .format("DD-MM-YYYY");
+      const fechaHoySantiago = dayjs().tz("America/Santiago").toDate();
       const fechaVencimiento = calculateFechaVencimiento(30);
 
       const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}, ${res.locals.user.correo}`;
@@ -218,7 +203,7 @@ class OrdenesController {
       let documentosCotizacion = [];
       if (req.files && req.files.length > 0) {
         const archivos = req.files.map((file) => {
-          const uniqueSuffix = fechaHoySantiago;
+          const uniqueSuffix = dayjs(fechaHoySantiago).format("DD-MM-YYYY");
           const blobName = `${uniqueSuffix}_${file.originalname}`;
           return { blobName, file };
         });
@@ -263,11 +248,10 @@ class OrdenesController {
         usuario_creador: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
         correo_creador: `${res.locals.user.correo}`,
         nota_creador: Nota,
-        ruta_archivo_pdf: null,
         documentos_cotizacion: JSON.stringify(documentosCotizacion),
-        nivel_aprobacion: 1,
-        justificacion_rechazo: "",
+        nivel_aprobacion: 0,
         total_local: totalLocal,
+        id_centro_costo: id_centroCosto,
         id_moneda: id_moneda,
         id_empresa: id_empresa,
         id_solicitud: id_solicitud,
@@ -275,30 +259,15 @@ class OrdenesController {
         id_tipo_orden: id_tipoOrden,
         id_plazo: id_plazoPago,
         fecha_vencimiento: fechaVencimiento,
+        fecha_creacion: fechaHoySantiago,
       };
 
-      const id_orden = await this.ordenesService.createOrden(newOrden);
-
-      const codigoOC = generateCodigoOrden(id_orden);
-      await this.ordenesService.updateOrdenCodigo(id_orden, codigoOC);
-
-      function defaultText(value, fallback = "SIN DATO") {
-        return value && value.trim ? value.trim() : fallback;
-      }
-
-      function formatNumber(value, currency) {
-        if (value === null || value === 0) {
-          return null;
-        }
-        if (currency === "CLP$" || currency === "UF") {
-          return Math.round(value).toLocaleString("es-CL");
-        } else {
-          return value
-            .toFixed(2)
-            .replace(".", ",")
-            .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
-      }
+      const { id_orden, codigoOC } =
+        await this.ordenesService.createOrdenConDetalles(
+          newOrden,
+          productos,
+          id_solicitud
+        );
 
       const templateData = {
         codigooc: codigoOC.match(/OC-(\d+)_/)[1],
@@ -321,7 +290,7 @@ class OrdenesController {
           propina: parseFloat(propina || 0),
           total: parseFloat(total),
         },
-        fechaHoy: fechaHoySantiago,
+        fechaHoy: dayjs(fechaHoySantiago).format("DD-MM-YYYY"),
         defaultText,
         formatNumber,
       };
@@ -354,7 +323,9 @@ class OrdenesController {
 
         const pdfBuffer = Buffer.from(response.data);
 
-        const pdfBlobName = `OC-${id_orden}-${fechaHoySantiago}.pdf`;
+        const pdfBlobName = `OC-${id_orden}-${dayjs(fechaHoySantiago).format(
+          "DD-MM-YYYY"
+        )}.pdf`;
         const pdfUrl = await AzureBlobService.uploadBufferWithName(
           pdfBlobName,
           pdfBuffer,
@@ -382,6 +353,24 @@ class OrdenesController {
       res.redirect(`/ordenes-crear/${req.params.id}`);
     }
   };
+}
+
+function defaultText(value, fallback = "SIN DATO") {
+  return value && value.trim ? value.trim() : fallback;
+}
+
+function formatNumber(value, currency) {
+  if (value === null || value === 0) {
+    return null;
+  }
+  if (currency === "CLP$" || currency === "UF") {
+    return Math.round(value).toLocaleString("es-CL");
+  } else {
+    return value
+      .toFixed(2)
+      .replace(".", ",")
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
 }
 
 export default OrdenesController;

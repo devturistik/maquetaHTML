@@ -3,7 +3,7 @@ import { sql, poolPromise } from "../../config/database.js";
 
 class SolicitudesRepository {
   // Obtener todas las solicitudes no eliminadas
-  async getAll() {
+  async getAllWithOrdenes() {
     try {
       const pool = await poolPromise;
       const result = await pool.request().query(`
@@ -15,11 +15,14 @@ class SolicitudesRepository {
           s.usuario_solicitante,
           s.correo_solicitante,
           s.created_at,
-          e.nombre AS estatus
+          e.nombre AS estatus,
+          o.id_orden
         FROM
           oc.Solicitud s
         JOIN
           oc.Estatus e ON s.estatus_id = e.id_estatus
+        LEFT JOIN
+          oc.OrdenCompra o ON s.id_solicitud = o.id_solicitud
         WHERE
           s.eliminado = 0
         ORDER BY
@@ -27,7 +30,10 @@ class SolicitudesRepository {
       `);
       return result.recordset;
     } catch (error) {
-      console.error("Error al obtener solicitudes de la base de datos:", error);
+      console.error(
+        "Error al obtener solicitudes con órdenes de la base de datos:",
+        error
+      );
       throw error;
     }
   }

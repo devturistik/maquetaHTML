@@ -1,0 +1,121 @@
+<!-- views/orden/detalle.ejs -->
+<%- include('../partials/header', { title: 'Detalle de Orden de Compra' }) %>
+<%- include('../partials/navbar', { navbarText: 'Detalle de Orden de Compra: "' + orden.CODIGO + '"' }) %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<style>
+  .detail-container {
+    padding: 2rem;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+  }
+
+  .approval-level {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .approval-level h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #212529;
+  }
+
+  .approval-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 20px;
+    color: #fff;
+    background-color: #6c757d;
+  }
+
+  .approval-badge.pendiente {
+    background-color: #ffc107;
+  }
+
+  .approval-badge.aprobado {
+    background-color: #28a745;
+  }
+
+  .approval-badge.rechazado {
+    background-color: #dc3545;
+  }
+
+  .pdf-preview-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .pdf-preview {
+    width: 80%;
+    height: 600px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 768px) {
+    .pdf-preview {
+      width: 100%;
+      height: 400px;
+    }
+  }
+
+  .action-buttons {
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  .action-buttons a {
+    margin: 0 0.5rem;
+  }
+</style>
+
+<div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-orden-detalle detail-container">
+
+      <div class="mb-4">
+        <h2>Detalle de Orden de Compra</h2>
+      </div>
+
+      <div class="approval-level">
+        <h4>Nivel de Aprobación</h4>
+        <% 
+          let approvalClass = 'pendiente';
+          if (orden.NIVEL_APROBACION >= 3) {
+            approvalClass = 'aprobado';
+          } else if (orden.NIVEL_APROBACION < 0) {
+            approvalClass = 'rechazado';
+          }
+        %>
+        <span class="approval-badge <%= approvalClass %>">
+          <%= orden.NIVEL_APROBACION >= 3 ? 'Aprobado' : (orden.NIVEL_APROBACION < 0 ? 'Rechazado' : 'Pendiente') %>
+        </span>
+      </div>
+
+      <div class="pdf-preview-container">
+        <% if (orden.RUTA_ARCHIVO_PDF) { %>
+          <iframe src="<%= orden.RUTA_ARCHIVO_PDF.replace(/\"/g, '') %>" class="pdf-preview" frameborder="0"></iframe>
+        <% } else { %>
+          <p>No hay archivo PDF disponible para esta orden.</p>
+        <% } %>
+      </div>
+
+      <div class="action-buttons">
+        <a href="/ordenes" class="btn btn-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Regresar
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>

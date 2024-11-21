@@ -37,10 +37,24 @@ class SolicitudesController {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
+
       if (!solicitud) {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
       }
+      const ordenes = await this.solicitudesService.getOrdenesBySolicitudId(id);
+      const ordenesFormateadas = ordenes.map((orden) => ({
+        ...orden,
+        Encoded_id_orden: encodeBase64(orden.ID_ORDEN),
+        codigo: orden.CODIGO.match(/(?<=OC-)\d+/)[0],
+        ruta_archivo_pdf: orden.RUTA_ARCHIVO_PDF?.replace(/^"|"$/g, ""),
+        created_at: new Date(orden.CREATED_AT).toLocaleString("es-CL", {
+          timeZone: "UTC",
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+        estatus: orden.ESTATUS,
+      }));
 
       solicitud.id = encodeBase64(solicitud.id_solicitud);
       solicitud.archivos = JSON.parse(solicitud.archivos || "[]").filter(
@@ -49,12 +63,57 @@ class SolicitudesController {
 
       res.render("solicitud/detalle", {
         solicitud,
+        ordenes: ordenesFormateadas,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
       });
     } catch (error) {
       console.error("Error al obtener solicitud:", error);
       req.flash("errorMessage", "Error al obtener solicitud.");
+      res.redirect("/solicitudes");
+    }
+  };
+
+  viewOrdenesDeSolicitud = async (req, res) => {
+    try {
+      const id_solicitud = decodeBase64(req.params.id);
+      const solicitud = await this.solicitudesService.getSolicitudById(
+        id_solicitud
+      );
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes");
+      }
+      const ordenes = await this.solicitudesService.getOrdenesBySolicitudId(
+        id_solicitud
+      );
+      const ordenesFormateadas = ordenes.map((orden) => ({
+        ...orden,
+        Encoded_id_orden: encodeBase64(orden.ID_ORDEN),
+        codigo: orden.CODIGO.match(/(?<=OC-)\d+/)[0],
+        ruta_archivo_pdf: orden.RUTA_ARCHIVO_PDF?.replace(/^"|"$/g, ""),
+        created_at: new Date(orden.CREATED_AT).toLocaleString("es-CL", {
+          timeZone: "UTC",
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+        estatus: orden.ESTATUS,
+      }));
+      res.render("solicitud/ordenes", {
+        solicitud,
+        ordenes: ordenesFormateadas,
+        successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
+      });
+    } catch (error) {
+      console.error(
+        "Error al obtener las órdenes de la solicitud:",
+        error.message
+      );
+      req.flash(
+        "errorMessage",
+        "Error al obtener las órdenes de la solicitud."
+      );
       res.redirect("/solicitudes");
     }
   };
@@ -377,6 +436,38 @@ class SolicitudesController {
 
       let archivos = JSON.parse(solicitud.archivos || "[]").filter(
         (archivo) => archivo.eliminado === 0
+      );
+
+      archivos = await Promise.all(
+        archivos.map(async (archivo) => {
+          const extension = archivo.url.split(".").pop().toLowerCase();
+          const isPreviewable = [
+            "pdf",
+            "jpg",
+            "jpeg",
+            "png",
+            "doc",
+            "docx",
+            "xls",
+            "xlsx",
+            "ppt",
+            "pptx",
+          ].includes(extension);
+
+          if (isPreviewable) {
+            const url = new URL(archivo.url);
+            const blobName = decodeURIComponent(url.pathname.split("/").pop());
+
+            const sasUrl = AzureBlobService.generateSasUrl(blobName);
+
+            return {
+              ...archivo,
+              sasUrl,
+            };
+          } else {
+            return archivo;
+          }
+        })
       );
 
       res.render("solicitud/archivos", {

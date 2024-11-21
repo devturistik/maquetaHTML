@@ -21,12 +21,6 @@ router.get(
   ordenesController.getBancosPorProveedor
 );
 
-// Ruta API para obtener cuentas contables por empresa
-router.get(
-  "/api/empresas/:empresaId/cuentas-contables",
-  ordenesController.getCuentasContablesPorEmpresa
-);
-
 // Ruta API para obtener detalles de tipo de orden
 router.get(
   "/api/tipos-orden/:tipoOrdenId/detalles",

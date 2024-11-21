@@ -12,7 +12,7 @@ class OrdenesService {
 
   async getOrdenById(id) {
     try {
-      return await this.ordenesRepository.getById(id);
+      return await this.ordenesRepository.getOrdenById(id);
     } catch (error) {
       console.error("Error en OrdenesService.getOrdenById:", error.message);
       throw error;
@@ -47,23 +47,31 @@ class OrdenesService {
     return await this.ordenesRepository.getProductos();
   }
 
-  async getBancosByProveedor(proveedorId) {
-    return await this.ordenesRepository.getBancosByProveedor(proveedorId);
+  async getCuentasContables() {
+    return await this.ordenesRepository.getCuentasContables();
   }
 
-  async getCuentasContablesByEmpresa(empresaId) {
-    return await this.ordenesRepository.getCuentasContablesByEmpresa(empresaId);
+  async getBancosByProveedor(proveedorId) {
+    return await this.ordenesRepository.getBancosByProveedor(proveedorId);
   }
 
   async getDetallesTipoOrden(tipoOrdenId) {
     return await this.ordenesRepository.getDetallesTipoOrden(tipoOrdenId);
   }
 
-  async createOrden(newOrden) {
+  async createOrdenConDetalles(newOrden, productos, id_solicitud) {
     try {
-      return await this.ordenesRepository.createOrden(newOrden);
+      const result = await this.ordenesRepository.createOrdenConDetalles(
+        newOrden,
+        productos,
+        id_solicitud
+      );
+      return result;
     } catch (error) {
-      console.error("Error en OrdenesService.createOrden:", error.message);
+      console.error(
+        "Error en OrdenesService.createOrdenConDetalles:",
+        error.message
+      );
       throw error;
     }
   }

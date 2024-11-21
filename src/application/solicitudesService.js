@@ -1,10 +1,12 @@
 // src/application/solicitudesService.js
 import SolicitudesRepository from "../adapters/repository/solicitudesRepository.js";
+import OrdenesRepository from "../adapters/repository/ordenesRepository.js";
 import dayjs from "dayjs";
 
 class SolicitudesService {
   constructor() {
     this.solicitudesRepository = new SolicitudesRepository();
+    this.ordenesRepository = new OrdenesRepository();
   }
 
   // Validar datos de solicitud
@@ -21,7 +23,40 @@ class SolicitudesService {
 
   // Obtener todas las solicitudes
   async getAllSolicitudes() {
-    return await this.solicitudesRepository.getAll();
+    const solicitudesRaw = await this.solicitudesRepository.getAllWithOrdenes();
+
+    const solicitudesMap = {};
+
+    solicitudesRaw.forEach((solicitud) => {
+      const solicitudId = solicitud.id_solicitud;
+      if (!solicitudesMap[solicitudId]) {
+        solicitudesMap[solicitudId] = {
+          id_solicitud: solicitud.id_solicitud,
+          asunto: solicitud.asunto,
+          descripcion: solicitud.descripcion,
+          archivos: solicitud.archivos,
+          usuario_solicitante: solicitud.usuario_solicitante,
+          correo_solicitante: solicitud.correo_solicitante,
+          created_at: solicitud.created_at,
+          estatus: solicitud.estatus,
+          ordenes: [],
+        };
+      }
+      if (solicitud.id_orden) {
+        solicitudesMap[solicitudId].ordenes.push({
+          id_orden: solicitud.id_orden,
+          detalle: solicitud.detalle,
+        });
+      }
+    });
+
+    const solicitudes = Object.values(solicitudesMap);
+
+    return solicitudes;
+  }
+
+  async getOrdenesBySolicitudId(solicitudId) {
+    return await this.ordenesRepository.getOrdenesBySolicitudId(solicitudId);
   }
 
   // Obtener una solicitud por ID

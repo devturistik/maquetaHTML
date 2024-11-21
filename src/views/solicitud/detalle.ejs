@@ -93,7 +93,7 @@
             <% } %>
           </div>
 
-          <div class="row">
+          <div class="row mb-4">
             <div class="col-md-4">
               <h6 class="fw-bold text-primary">Estatus</h6>
               <p class="mb-0"><%= solicitud.estatus %></p>
@@ -108,6 +108,25 @@
                 <a href="mailto:<%= solicitud.correo_solicitante %>" class="text-decoration-none"><%= solicitud.correo_solicitante %></a>
               </p>
             </div>
+          </div>
+          <div class="row">
+            <h5 class="fw-bold text-primary">Órdenes Asociadas</h5>
+            <% if (ordenes && ordenes.length > 0) { %>
+              <ul class="list-group">
+                <% ordenes.forEach(orden => { %>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>
+                      Orden #<%= orden.codigo %> - <%= orden.estatus %>
+                    </span>
+                    <a href="/ordenes/<%= orden.Encoded_id_orden %>" class="btn btn-sm btn-outline-primary">
+                      Ver Orden
+                    </a>
+                  </li>
+                <% }) %>
+              </ul>
+            <% } else { %>
+              <p>No hay órdenes asociadas a esta solicitud.</p>
+            <% } %>
           </div>
         </div>
       </div>

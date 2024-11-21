@@ -1,8 +1,82 @@
-<!-- views/solicitudes.ejs -->
+<!-- views/solicitud/solicitudes.ejs -->
 <%- include('partials/header', { title: 'Solicitudes' }) %>
 <%- include('partials/navbar') %>
 <%- include('partials/sidebar') %>
 <%- include('partials/content-wrapper-open') %>
+
+<style>
+  .table td {
+    vertical-align: middle;
+  }
+  .id-column {
+    width: 50px;
+    max-width: 50px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .descripcion-column {
+    max-width: 100px;
+    word-wrap: break-word;
+    white-space: normal;
+  }
+
+  .btn-fixed-width {
+    width: 100px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 576px) {
+    .btn-fixed-width {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+
+    .btn-group-actions {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+  }
+
+  .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s;
+  }
+
+  .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+  }
+
+  .file-info i {
+    font-size: 1.5rem;
+    margin-right: 10px;
+  }
+
+  .btn-group-actions button,
+  .btn-group-actions a {
+    margin-left: 5px;
+  }
+
+  @media (max-width: 576px) {
+    .list-group-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .btn-group-actions {
+      margin-top: 10px;
+    }
+  }
+</style>
 
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
@@ -36,7 +110,7 @@
           <p class="mb-0">Solicitudes realizadas por los usuarios.</p>
         </div>
         <div>
-          <a href="/solicitudes-crear" class="btn btn-primary">
+          <a href="/solicitudes-crear" class="btn btn-primary d-flex align-items-center">
             <i class="fas fa-plus me-1"></i> Crear Nueva Solicitud
           </a>
         </div>
@@ -75,6 +149,7 @@
                   <th>Archivos</th>
                   <th>Creador</th>
                   <th>Estado</th>
+                  <th>Órdenes</th>
                   <th>Fecha Creación</th>
                   <th></th>
                 </tr>
@@ -98,9 +173,9 @@
                     }
                   %>
                   <tr>
-                    <td><%= solicitud.id_solicitud %></td>
+                    <td class="id-column"><%= solicitud.id_solicitud %></td>
                     <td><%= solicitud.asunto %></td>
-                    <td><%= solicitud.descripcion %></td>
+                    <td class="descripcion-column"><%= solicitud.descripcion %></td>
                     <td>
                       <% if (solicitud.hasFiles) { %>
                         <a href="/solicitudes-ver-archivos/<%= solicitud.id %>">Ver archivos</a>
@@ -116,64 +191,95 @@
                         </span>
                       <% } %>
                     </td>
+                    <td>
+                      <% if (solicitud.ordenes && solicitud.ordenes.length > 0) { %>
+                        <a href="/solicitudes/<%= solicitud.id %>/ordenes">
+                          <span>Ver OC (<%= solicitud.ordenes.length %>)</span>
+                        </a>
+                      <% } else { %>
+                        Sin OC
+                      <% } %>
+                    </td>
                     <td><%= solicitud.created_at ? solicitud.created_at : '' %></td>
                     <td>
-                      <div class="btn-group" role="group">
+                      <div class="btn-group btn-group-actions" role="group">
                         <a
                           href="/solicitudes/<%= solicitud.id %>"
                           class="btn btn-sm btn-outline-primary"
                           title="Ver"
+                          aria-label="Ver Solicitud <%= solicitud.id_solicitud %>"
                         >
                           <i class="fas fa-eye"></i>
                         </a>
+
                         <a
                           <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %>
                             class="btn btn-sm btn-outline-secondary disabled"
                             title="Editar"
+                            aria-label="Editar Solicitud <%= solicitud.id_solicitud %> (No disponible)"
                           <% } else { %>
                             href="/solicitudes-editar/<%= solicitud.id %>"
                             class="btn btn-sm btn-outline-secondary"
                             title="Editar"
+                            aria-label="Editar Solicitud <%= solicitud.id_solicitud %>"
                           <% } %>
                         >
                           <i class="fas fa-edit"></i>
                         </a>
+
                         <a
                           <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %>
                             class="btn btn-sm btn-outline-danger disabled"
                             title="Eliminar"
+                            aria-label="Eliminar Solicitud <%= solicitud.id_solicitud %> (No disponible)"
                           <% } else { %>
                             href="/solicitudes-eliminar/<%= solicitud.id %>"
                             class="btn btn-sm btn-outline-danger"
                             title="Eliminar"
+                            aria-label="Eliminar Solicitud <%= solicitud.id_solicitud %>"
                           <% } %>
                         >
                           <i class="fas fa-trash-alt"></i>
                         </a>
-                        <% if (estatusLower === 'abierta') { %>
+
+                        <% if (solicitud.ordenes && solicitud.ordenes.length > 0) { %>
                           <a
                             href="/ordenes-crear/<%= solicitud.id %>"
-                            class="btn btn-sm btn-primary"
-                            title="Crear Orden de Compra"
-                            style="white-space: nowrap;"
+                            class="btn btn-sm btn-primary btn-fixed-width"
+                            title="Crear otra Orden de Compra"
+                            aria-label="Crear otra Orden de Compra para Solicitud <%= solicitud.id_solicitud %>"
                           >
-                            Crear Orden
+                            Crear otra OC
                           </a>
-                        <% } else if (estatusLower === 'procesada') { %>
-                          <a
-                            href="/ordenes-crear/<%= solicitud.id %>"
-                            class="btn btn-sm btn-primary"
-                            title="Reanudar Orden de Compra"
-                            style="white-space: nowrap;"
-                          >
-                            Reanudar Orden
-                          </a>
+                        <% } else { %>
+                          <% if (estatusLower === 'abierta') { %>
+                            <a
+                              href="/ordenes-crear/<%= solicitud.id %>"
+                              class="btn btn-sm btn-primary btn-fixed-width"
+                              title="Crear Orden de Compra"
+                              aria-label="Crear Orden de Compra para Solicitud <%= solicitud.id_solicitud %>"
+                            >
+                              Crear OC
+                            </a>
+                          <% } else if (estatusLower === 'procesada') { %>
+                            <a
+                              href="/ordenes-crear/<%= solicitud.id %>" 
+                              class="btn btn-sm btn-primary btn-fixed-width"
+                              title="Reanudar Orden de Compra"
+                              aria-label="Reanudar Orden de Compra para Solicitud <%= solicitud.id_solicitud %>"
+                            >
+                              Reanudar OC
+                            </a>
+                          <% } %>
                         <% } %>
                       </div>
                     </td>
                   </tr>
                   <% }); %>
                 <% } else { %>
+                  <tr>
+                    <td colspan="9" class="text-center">No hay solicitudes disponibles.</td>
+                  </tr>
                 <% } %>
               </tbody>
             </table>
@@ -194,6 +300,7 @@
   $(document).ready(function () {
     var table = $("#table-solicitudes").DataTable({
       responsive: true,
+      autoWidth: false,
       language: {
         url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
         search: "",
@@ -201,7 +308,7 @@
       },
       pageLength: 10,
       lengthChange: false,
-      order: [[6, "desc"], [0, "desc"]],
+      order: [[7, "desc"], [0, "desc"]],
       columnDefs: [
         {
           targets: 5,
@@ -212,11 +319,29 @@
               return estatus;
             }
             return data;
-          }
+          },
+          responsivePriority: 2
         },
         {
-          targets: 7,
-          orderable: false
+          targets: 8,
+          orderable: false,
+          responsivePriority: 1
+        },
+        {
+          targets: 2,
+          responsivePriority: 5
+        },
+        {
+          targets: [3],
+          responsivePriority: 4
+        },
+        {
+          targets: [4],
+          responsivePriority: 3
+        },
+        {
+          targets: '_all',
+          responsivePriority: 6
         }
       ],
       initComplete: function () {

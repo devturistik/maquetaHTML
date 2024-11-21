@@ -1,0 +1,52 @@
+<%- include('partials/header', { title: 'Administración' }) %>
+<%- include('partials/navbar') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="mb-4">
+    <h4 class="mb-3">Administración de Tablas</h4>
+    <p class="mb-0">Selecciona una tabla para gestionar sus datos.</p>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    <% tablas.forEach(tabla => { %>
+      <div class="col">
+        <a href="<%= tabla.ruta %>" class="text-decoration-none text-reset">
+          <div class="card h-100">
+            <div class="card-body text-center">
+              <div class="mb-3">
+                <% if (tabla.nombre.toLowerCase().includes('proveedor')) { %>
+                  <i class="tf-icons ti ti-truck-delivery" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('banco')) { %>
+                  <i class="tf-icons ti ti-building-bank" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('plazo')) { %>
+                  <i class="tf-icons ti ti-clock" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('empresa')) { %>
+                  <i class="tf-icons ti ti-building" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('centro')) { %>
+                  <i class="tf-icons ti ti-calculator" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('tipo')) { %>
+                  <i class="tf-icons ti ti-file-description" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('moneda')) { %>
+                  <i class="tf-icons ti ti-currency-dollar" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('cuenta')) { %>
+                  <i class="tf-icons ti ti-wallet" style="font-size: 2rem;"></i>
+                <% } else if (tabla.nombre.toLowerCase().includes('producto')) { %>
+                  <i class="tf-icons ti ti-package" style="font-size: 2rem;"></i>
+                <% } else { %>
+                  <i class="tf-icons ti ti-database" style="font-size: 2rem;"></i>
+                <% } %>
+              </div>
+              <h5 class="card-title"><%= tabla.nombre %></h5>
+            </div>
+          </div>
+        </a>
+      </div>
+    <% }) %>
+  </div>
+</div>
+
+<%- include('partials/footer-text') %>
+<%- include('partials/footer') %>
+<%- include('partials/content-wrapper-close') %>

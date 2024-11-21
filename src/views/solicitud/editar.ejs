@@ -140,7 +140,7 @@
                 class="form-control d-none"
                 id="archivos"
                 name="archivos"
-                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx,.xls"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
                 multiple
                 aria-label="Subir Archivos"
                 onchange="handleFileSelect(this)"
@@ -149,7 +149,7 @@
                 <i class="fas fa-upload me-1"></i> Seleccionar archivos
               </button>
               <small class="form-text text-muted">
-                Formatos permitidos: PDF, DOC, DOCX, XLSX, XLS, JPG, JPEG, PNG (máximo 10 archivos y 10 MB en total)
+                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG, PNG (máximo 10 archivos y 10 MB en total)
               </small>
               <% if (errors && errors.archivos) { %>
                 <div class="invalid-feedback"><%= errors.archivos %></div>
@@ -192,7 +192,7 @@
     const files = Array.from(input.files);
     const maxFiles = 10;
     const maxSizeTotal = 10 * 1024 * 1024;
-    const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xlsx', 'xls'];
+    const allowedExtensions = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png"];
     const existingFilesCount = archivos.length;
 
     if (files.length + selectedFiles.length + existingFilesCount > maxFiles) {

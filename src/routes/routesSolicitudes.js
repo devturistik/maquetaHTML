@@ -15,6 +15,11 @@ router.get("/solicitudes/:id", solicitudesController.getSolicitudById);
 // Ruta para ver los archivos de una solicitud específica
 router.get("/solicitudes-ver-archivos/:id", solicitudesController.viewArchivos);
 
+router.get(
+  "/solicitudes/:id/ordenes",
+  solicitudesController.viewOrdenesDeSolicitud
+);
+
 // Ruta para descargar un archivo de una solicitud
 router.get(
   "/solicitudes/:id/descargar/:filename",

@@ -1,0 +1,117 @@
+<!-- views/perfil/datos.ejs -->
+
+<%- include('../partials/header', { title: 'Perfil de Usuario' }) %>
+<%- include('../partials/navbar') %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<style>
+  .profile-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .profile-initials {
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: #0d6efd; /* Color primario de Bootstrap */
+    color: white;
+    font-size: 2rem;
+    margin: 0 auto 15px auto;
+  }
+  .profile-info p {
+    font-size: 1rem;
+  }
+  .profile-section {
+    margin-bottom: 30px;
+  }
+  .profile-section h5 {
+    border-bottom: 1px solid #dee2e6;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  .list-group-item {
+    display: flex;
+    align-items: center;
+  }
+  .list-group-item i {
+    margin-right: 10px;
+  }
+</style>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="profile-header">
+    <div class="profile-initials">
+      <span><%= usuario.nombre.charAt(0).toUpperCase() %><%= usuario.apellido.charAt(0).toUpperCase() %></span>
+    </div>
+    <h3><%= usuario.nombre %> <%= usuario.apellido %></h3>
+    <p class="text-muted"><%= usuario.departamento %></p>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card profile-section">
+        <div class="card-body">
+          <h5><i class="fas fa-user me-2"></i>Información Personal</h5>
+          <p><strong>Nombre:</strong> <%= usuario.nombre %></p>
+          <p><strong>Apellido:</strong> <%= usuario.apellido %></p>
+          <p><strong>Departamento:</strong> <%= usuario.departamento %></p>
+          <p><strong>Correo:</strong> <%= usuario.correo %></p>
+          <p><strong>Activo:</strong> <%= usuario.activo ? 'Sí' : 'No' %></p>
+        </div>
+      </div>
+      
+      <div class="card profile-section">
+        <div class="card-body">
+          <h5><i class="fas fa-cogs me-2"></i>Sistemas</h5>
+          <% if (usuario.sistemas && usuario.sistemas.length > 0) { %>
+            <ul class="list-group list-group-flush">
+              <% usuario.sistemas.forEach(sistema => { %>
+                <li class="list-group-item">
+                  <i class="fas fa-laptop-code"></i> <%= sistema.nombre %>
+                </li>
+              <% }); %>
+            </ul>
+          <% } else { %>
+            <p>No tiene sistemas asignados.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card profile-section">
+        <div class="card-body">
+          <h5><i class="fas fa-user-shield me-2"></i>Roles y Permisos</h5>
+          <% if (usuario.roles && usuario.roles.length > 0) { %>
+            <% usuario.roles.forEach(rol => { %>
+              <div class="mb-4">
+                <h6><i class="fas fa-user-tag me-2"></i><%= rol.rol %></h6>
+                <% if (rol.permisos && rol.permisos.length > 0) { %>
+                  <ul class="list-group list-group-flush">
+                    <% rol.permisos.forEach(permiso => { %>
+                      <li class="list-group-item">
+                        <i class="fas fa-check-circle text-success"></i> <%= permiso.permiso %>
+                      </li>
+                    <% }); %>
+                  </ul>
+                <% } else { %>
+                  <p>No tiene permisos asignados.</p>
+                <% } %>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <p>No tiene roles asignados.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>

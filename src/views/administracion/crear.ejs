@@ -1,0 +1,66 @@
+<%- include('../partials/header', { title: 'Crear ' + tabla }) %>
+<%- include('../partials/navbar') %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Crear Registro en <%= tabla %></h4>
+  <div class="card">
+    <div class="card-body">
+      <form action="/administracion/<%= tabla %>/crear" method="POST" novalidate>
+        <% columnas.forEach(columna => { %>
+          <% 
+            const nombreColumna = columna.COLUMN_NAME;
+            const tipoDato = columna.DATA_TYPE;
+            const esAutoincremental = columna.IS_IDENTITY === 'YES';
+            const esGenerada = columna.IS_COMPUTED === 'YES';
+            const esNoNulo = columna.IS_NULLABLE === 'NO';
+            const omitirColumnas = ['Id', 'FechaCreacion', 'FechaActualizacion', 'Eliminado', 'FechaEliminacion', 'CreatedAt', 'UpdatedAt', 'Deleted'];
+
+            if (!omitirColumnas.includes(nombreColumna) && !esAutoincremental && !esGenerada) {
+          %>
+            <div class="mb-3">
+              <label for="<%= nombreColumna %>" class="form-label"><%= nombreColumna %><%= esNoNulo ? ' *' : '' %></label>
+              <% if (tipoDato.includes('int') || tipoDato.includes('decimal')) { %>
+                <input type="number" class="form-control" id="<%= nombreColumna %>" name="<%= nombreColumna %>" <%= esNoNulo ? 'required' : '' %>>
+              <% } else if (tipoDato.includes('date') || tipoDato.includes('datetime')) { %>
+                <input type="date" class="form-control" id="<%= nombreColumna %>" name="<%= nombreColumna %>" <%= esNoNulo ? 'required' : '' %>>
+              <% } else if (tipoDato.includes('bit')) { %>
+                <select class="form-select" id="<%= nombreColumna %>" name="<%= nombreColumna %>" <%= esNoNulo ? 'required' : '' %>>
+                  <option value="">Seleccione una opción</option>
+                  <option value="1">Sí</option>
+                  <option value="0">No</option>
+                </select>
+              <% } else { %>
+                <input type="text" class="form-control" id="<%= nombreColumna %>" name="<%= nombreColumna %>" <%= esNoNulo ? 'required' : '' %>>
+              <% } %>
+            </div>
+          <% } %>
+        <% }) %>
+        <button type="submit" class="btn btn-primary">Guardar</button>
+        <a href="/administracion/<%= tabla %>" class="btn btn-secondary">Cancelar</a>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>
+
+<script>
+  (function () {
+    'use strict'
+    const forms = document.querySelectorAll('form')
+
+    Array.from(forms).forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!form.checkValidity()) {
+          event.preventDefault()
+          event.stopPropagation()
+          form.classList.add('was-validated')
+        }
+      }, false)
+    })
+  })()
+</script>

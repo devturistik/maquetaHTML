@@ -1,67 +1,31 @@
-<%- include('partials/header', { title: 'Órdenes' }) %>
-<%- include('partials/navbar') %>
-<%- include('partials/sidebar') %>
-<%- include('partials/content-wrapper-open') %>
+<%- include('../partials/header', { title: 'Órdenes de la Solicitud' }) %>
+<%- include('../partials/navbar') %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
 
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
-    <div class="app-ordenes-lista">
-      <% if (successMessage && successMessage.length > 0) { %>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= successMessage %>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Cerrar"
-        ></button>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+      <div>
+        <h4>Órdenes asociadas a la Solicitud #<%= solicitud.id_solicitud %></h4>
       </div>
-      <% } %>
-      <% if (errorMessage && errorMessage.length > 0) { %>
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= errorMessage %>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Cerrar"
-        ></button>
+      <div>
+        <a href="/solicitudes" class="btn btn-secondary">
+          <i class="fas fa-arrow-left me-1"></i> Volver a Solicitudes
+        </a>
       </div>
-      <% } %>
+    </div>
 
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div>
-          <h4 class="mb-1">Lista de Órdenes</h4>
-          <p class="mb-0">Órdenes creadas basadas en las solicitudes de los usuarios.</p>
-        </div>
-      </div>
-
-      <div style="display: none;">
-        <select id="estatus-filter" class="form-select" style="width: 200px;">
-          <option value="">Sin filtro</option>
-          <%
-            const estatusSet = new Set();
-            ordenes.forEach(orden => {
-              let estatusDisplayOption = orden.estatus;
-              estatusSet.add(estatusDisplayOption);
-            });
-            const estatusList = Array.from(estatusSet);
-            estatusList.forEach(estatus => { %>
-              <option value="<%= estatus %>"><%= estatus %></option>
-          <% }); %>
-        </select>
-      </div>
-
+    <% if (ordenes && ordenes.length > 0) { %>
       <div class="card">
         <div class="card-body">
           <div class="table-responsive">
-            <table id="table-ordenes" class="table table-hover w-100">
+            <table id="table-ordenes-solicitud" class="table table-hover w-100">
               <thead>
                 <tr>
                   <th>OC</th>
-                  <th>Solicitud</th>
                   <th>Creador OC</th>
-                  <th>Correo creador OC</th>
+                  <th>Correo Creador</th>
                   <th>PDF OC</th>
                   <th>Estado</th>
                   <th>Fecha Creación</th>
@@ -69,8 +33,7 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (ordenes.length > 0) { %>
-                  <% ordenes.forEach(orden => { %>
+                <% ordenes.forEach(orden => { %>
                   <%
                     let estatusLower = orden.estatus.toLowerCase();
                     let estatusClass = '';
@@ -91,14 +54,11 @@
                   %>
                   <tr>
                     <td><%= orden.codigo %></td>
-                    <td>
-                      <a href="/solicitudes/<%= orden.Encoded_id_solicitud %>"><%= orden.id_solicitud %></a>
-                    </td>
-                    <td><%= orden.usuario_creador %></td>
-                    <td><%= orden.correo_creador %></td>
+                    <td><%= orden.USUARIO_CREADOR %></td>
+                    <td><%= orden.CORREO_CREADOR %></td>
                     <td>
                       <% if (orden.ruta_archivo_pdf) { %>
-                      <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" rel="noreferrer">VER PDF</a>
+                        <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" rel="noreferrer">VER PDF</a>
                       <% } else { %>
                         Sin PDF
                       <% } %>
@@ -123,30 +83,25 @@
                       </div>
                     </td>
                   </tr>
-                  <% }) %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="8" class="text-center">No hay órdenes disponibles.</td>
-                  </tr>
-                <% } %>
+                <% }) %>
               </tbody>
             </table>
           </div>
         </div>
       </div>
-    </div>
+    <% } else { %>
+      <p>No hay órdenes asociadas a esta solicitud.</p>
+    <% } %>
   </div>
-
-  <div class="content-backdrop fade"></div>
 </div>
 
-<%- include('partials/footer-text') %>
-<%- include('partials/footer') %>
-<%- include('partials/content-wrapper-close') %>
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>
 
 <script>
   $(document).ready(function () {
-    var table = $("#table-ordenes").DataTable({
+    var table = $("#table-ordenes-solicitud").DataTable({
       responsive: true,
       language: {
         url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
@@ -155,10 +110,10 @@
       },
       pageLength: 10,
       lengthChange: false,
-      order: [[0, "desc"]],
+      order: [[0, "asc"]],
       columnDefs: [
         {
-          targets: 5,
+          targets: 4,
           render: function (data, type, row, meta) {
             var cell = $('<div>').html(data);
             var estatus = cell.data('filter') || cell.text();
@@ -169,13 +124,12 @@
           }
         },
         {
-          targets: 7,
+          targets: 6,
           orderable: false
         }
       ],
       initComplete: function () {
-        var estatusFilter = $('#estatus-filter').detach();
-        var dataTableFilter = $('#table-ordenes_filter');
+        var dataTableFilter = $('#table-ordenes-solicitud_filter');
         var searchInput = dataTableFilter.find('input').detach();
         dataTableFilter.empty();
 
@@ -186,15 +140,9 @@
 
         dataTableFilter.append($('<div class="d-flex align-items-center"></div>')
           .append(searchInputGroup)
-          .append(estatusFilter.css('margin-left', '10px'))
         );
         dataTableFilter.css('float', 'left');
       }
-    });
-
-    $('#estatus-filter').on('change', function () {
-      var estatus = $(this).val();
-      table.column(5).search(estatus).draw();
     });
   });
 </script>

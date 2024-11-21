@@ -70,21 +70,26 @@
                   if (extension === 'pdf') {
                     iconClass = 'fas fa-file-pdf text-danger';
                     isPreviewable = true;
-                    previewContent = `<iframe src="${archivo.url}" type="application/pdf"></iframe>`;
+                    previewContent = `<iframe src="${archivo.sasUrl || archivo.url}" type="application/pdf"></iframe>`;
                   } else if (['jpg', 'jpeg', 'png'].includes(extension)) {
                     iconClass = 'fas fa-file-image text-info';
                     isPreviewable = true;
-                    previewContent = `<img src="${archivo.url}" alt="${archivo.url.split('/').pop()}" class="img-fluid mt-2">`;
+                    previewContent = `<img src="${archivo.sasUrl || archivo.url}" alt="${archivo.url.split('/').pop()}" class="img-fluid mt-2">`;
                   } else if (['doc', 'docx'].includes(extension)) {
                     iconClass = 'fas fa-file-word text-word';
                     isPreviewable = true;
-                    const encodedUrl = encodeURIComponent(archivo.url);
-                    previewContent = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}" type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"></iframe>`;
+                    const fileUrl = archivo.sasUrl || archivo.url;
+                    previewContent = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${fileUrl}" type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"></iframe>`;
                   } else if (['xlsx', 'xls'].includes(extension)) {
                     iconClass = 'fas fa-file-excel text-success';
                     isPreviewable = true;
-                    const encodedUrl = encodeURIComponent(archivo.url);
-                    previewContent = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></iframe>`;
+                    const fileUrl = archivo.sasUrl || archivo.url;
+                    previewContent = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${fileUrl}" type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></iframe>`;
+                  } else if (['ppt', 'pptx'].includes(extension)) {
+                    iconClass = 'fas fa-file-powerpoint text-danger';
+                    isPreviewable = true;
+                    const fileUrl = archivo.sasUrl || archivo.url;
+                    previewContent = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${fileUrl}" type="application/vnd.openxmlformats-officedocument.presentationml.presentation"></iframe>`;
                   }
                 %>
                 <li class="list-group-item">

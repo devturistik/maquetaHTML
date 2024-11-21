@@ -41,6 +41,64 @@
   .moneda-symbol {
     font-weight: bold;
   }
+
+  /* Clase para botones de ancho fijo */
+  .btn-fixed-width {
+    width: 150px; /* Ajusta este valor según tus necesidades */
+    text-align: center;
+    white-space: nowrap; /* Evita que el texto se divida en varias líneas */
+  }
+
+  /* Responsividad: Ajusta el ancho en pantallas pequeñas */
+  @media (max-width: 576px) {
+    .btn-fixed-width {
+      width: 100%; /* Los botones ocuparán el 100% del contenedor en móviles */
+      margin-bottom: 5px; /* Espaciado entre botones si se apilan */
+    }
+
+    /* Ajustar la disposición de los botones */
+    .btn-group-actions {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+  }
+
+  .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s;
+  }
+
+  .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .file-info {
+    display: flex;
+    align-items: center;
+  }
+
+  .file-info i {
+    font-size: 1.5rem;
+    margin-right: 10px;
+  }
+
+  .btn-group-actions button,
+  .btn-group-actions a {
+    margin-left: 5px;
+  }
+
+  #file-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #file-list li .btn-danger {
+    margin-left: 10px;
+  }
 </style>
 
 <div class="content-wrapper">
@@ -133,26 +191,29 @@
 
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-cuenta-contable">Cuenta Contable <span class="text-danger">*</span></label>
-            <select id="orden-cuenta-contable" class="form-select select2" name="id_cuentaContable" required disabled>
+            <select id="orden-cuenta-contable" class="form-select select2" name="id_cuentaContable" required>
               <option value="">Seleccione una cuenta contable</option>
+              <% cuentascontables.forEach(cuenta => { %>
+                <option value="<%= cuenta.ID_CUENTA %>"><%= cuenta.NOMBRE_CUENTA %> | <%= cuenta.CODIGO %></option>
+              <% }); %>
             </select>
           </div>
 
           <div class="col-md-6 mb-3">
-            <label class="form-label" for="orden-archivos">Subir Cotizacion</label>
+            <label class="form-label" for="orden-archivos">Subir Cotización</label>
             <input
               type="file"
               class="form-control d-none"
               id="orden-archivos"
               name="cotizacion"
-              accept=".pdf,.jpg,.jpeg,.png,.docx"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
               multiple
               aria-label="Subir Archivos"
               onchange="handleFileSelect(this)"
             />
             <div class="mb-2">
               <small class="form-text text-muted">
-                Formatos permitidos: PDF, JPG, JPEG, PNG, DOCX (máximo 10 archivos y 10 MB en total)
+                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG, PNG (máximo 10 archivos y 10 MB en total)
               </small>
             </div>
             <div class="mb-2">
@@ -307,6 +368,8 @@
     let useIntegers = false;
     let appliedDetails = [];
 
+    let selectedFiles = [];
+
     function formatNumber(number, useIntegers) {
       if (number === undefined || number === null || isNaN(number)) {
         return '0';
@@ -442,45 +505,6 @@
       }
     });
 
-    $('#orden-empresa').on('change', function() {
-      var empresaId = $(this).val();
-      var $cuentaContableSelect = $('#orden-cuenta-contable');
-
-      if (empresaId) {
-        $cuentaContableSelect.prop('disabled', true).html('<option> Cargando cuentas contables...</option>');
-        updateSelect2($cuentaContableSelect);
-
-        $.ajax({
-          url: `/api/empresas/${empresaId}/cuentas-contables`,
-          method: 'GET',
-          dataType: 'json',
-          success: function(cuentasContables) {
-            $cuentaContableSelect.empty();
-            if (cuentasContables.length > 0) {
-              $cuentaContableSelect.append('<option value="">Seleccione una cuenta contable</option>');
-              cuentasContables.forEach(function(cuenta) {
-                $cuentaContableSelect.append(`<option value="${cuenta.ID_CUENTA}">${cuenta.NOMBRE_CUENTA} | ${cuenta.CODIGO}</option>`);
-              });
-              $cuentaContableSelect.prop('disabled', false);
-            } else {
-              $cuentaContableSelect.append('<option value="no-cuentas" disabled selected>No hay cuentas contables para esta empresa</option>');
-              $cuentaContableSelect.prop('disabled', false);
-            }
-            updateSelect2($cuentaContableSelect);
-          },
-          error: function(xhr, status, error) {
-            console.error("Error al cargar cuentas contables:", error);
-            $cuentaContableSelect.empty().append('<option value="">Error al cargar cuentas contables</option>').prop('disabled', true);
-            updateSelect2($cuentaContableSelect);
-            alert('Hubo un error al cargar las cuentas contables. Por favor, intenta nuevamente.');
-          }
-        });
-      } else {
-        $cuentaContableSelect.empty().append('<option value="">Seleccione una cuenta contable</option>').prop('disabled', true);
-        updateSelect2($cuentaContableSelect);
-      }
-    });
-
     $('#orden-tipo').on('change', function() {
       let tipoOrdenId = $(this).val();
       appliedDetails = [];
@@ -593,28 +617,28 @@
         .attr('data-producto-id', productoId)
         .attr('data-unidad', productoUnidad)
         .html(`
-        <td>${productoDesc}</td>
-        <td>
-          <input type="number" class="form-control cantidad" min="1" value="1" required>
-        </td>
-        <td>
-          <div class="input-group">
-            <span class="input-group-text moneda-symbol">${currentMonedaAbrev}</span>
-            <input type="number" class="form-control valor-unitario" min="${useIntegers ? '0' : '0.01'}" step="${useIntegers ? '1' : '0.01'}" value="0.00" required>
-          </div>
-        </td>
-        <td>
-          <span class="moneda-symbol">${currentMonedaAbrev}</span>
-          <span class="valor-total">0</span>
-          <input type="hidden" class="valor-total-data" data-value="0">
-        </td>
-        <td>
-          <button type="button" class="btn btn-danger btn-sm eliminar-producto">
-            <i class="fas fa-trash-alt"></i>
-          </button>
-        </td>
-      `);
-    $('#productos-tbody').append(tr);
+          <td>${productoDesc}</td>
+          <td>
+            <input type="number" class="form-control cantidad" min="1" value="1" required>
+          </td>
+          <td>
+            <div class="input-group">
+              <span class="input-group-text moneda-symbol">${currentMonedaAbrev}</span>
+              <input type="number" class="form-control valor-unitario" min="${useIntegers ? '0' : '0.01'}" step="${useIntegers ? '1' : '0.01'}" value="0.00" required>
+            </div>
+          </td>
+          <td>
+            <span class="moneda-symbol">${currentMonedaAbrev}</span>
+            <span class="valor-total">0</span>
+            <input type="hidden" class="valor-total-data" data-value="0">
+          </td>
+          <td>
+            <button type="button" class="btn btn-danger btn-sm eliminar-producto">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </td>
+        `);
+      $('#productos-tbody').append(tr);
       calcularTotales();
     });
 
@@ -637,19 +661,78 @@
     });
 
     window.handleFileSelect = function(input) {
-      const fileList = input.files;
+      const files = Array.from(input.files);
+
+      if ((selectedFiles.length + files.length) > 10) {
+        alert('Máximo 10 archivos permitidos.');
+        return;
+      }
+
+      let totalSize = selectedFiles.reduce((acc, file) => acc + file.size, 0);
+      files.forEach(file => {
+        totalSize += file.size;
+      });
+      if (totalSize > 10 * 1024 * 1024) { // 10 MB
+        alert('El tamaño total de los archivos no debe exceder 10 MB.');
+        return;
+      }
+
+      files.forEach(file => {
+        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
+          selectedFiles.push(file);
+        }
+      });
+
+      updateFileList();
+      input.value = '';
+    };
+
+    function updateFileList() {
       const fileListEl = $('#file-list');
       fileListEl.empty();
 
-      if (fileList.length > 0) {
-        Array.from(fileList).forEach(file => {
-          let li = $('<li>').addClass('list-group-item').text(file.name);
+      if (selectedFiles.length > 0) {
+        $('#clear-files').show();
+        selectedFiles.forEach((file, index) => {
+          let li = $('<li>').addClass('list-group-item d-flex justify-content-between align-items-center');
+          li.text(file.name + ' (' + formatBytes(file.size) + ')');
+          let removeBtn = $('<button>')
+            .addClass('btn btn-sm btn-danger')
+            .attr('type', 'button')
+            .attr('aria-label', 'Eliminar ' + file.name)
+            .html('<i class="fas fa-trash-alt"></i>')
+            .on('click', function() {
+              removeFile(index);
+            });
+          li.append(removeBtn);
           fileListEl.append(li);
         });
+      } else {
+        $('#clear-files').hide();
       }
-    };
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      updateFileList();
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
 
     $('#submit-btn').on('click', function (e) {
+      if ($('#productos-tbody tr').length === 0) {
+        alert('Por favor, agrega al menos un producto.');
+        e.preventDefault();
+        return;
+      }
+
       const productos = [];
       $('#productos-tbody tr').each(function () {
         productos.push({
@@ -678,6 +761,10 @@
       $('#hidden-propina').val(extractNumericValue($('#propina').text()));
       $('#hidden-total').val(extractNumericValue($('#total').text()));
       $('#hidden-productos').val(JSON.stringify(productos));
+
+      const dt = new DataTransfer();
+      selectedFiles.forEach(file => dt.items.add(file));
+      $('#orden-archivos')[0].files = dt.files;
     });
   });
 </script>

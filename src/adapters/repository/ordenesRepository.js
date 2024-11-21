@@ -1,13 +1,22 @@
 // src/adapters/repository/ordenesRepository.js
 import { sql, poolPromise } from "../../config/database.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class OrdenesRepository {
   async getAllOrdenes() {
     const query = `
       SELECT
-        *
+        *,
+        e.nombre AS estatus
       FROM
-        oc.OrdenCompra
+        oc.OrdenCompra o
+      JOIN
+        oc.Estatus e ON o.estatus_id = e.id_estatus
       ORDER BY
         ID_ORDEN ASC
     `;
@@ -17,6 +26,86 @@ class OrdenesRepository {
       return result.recordset;
     } catch (error) {
       console.error("Error al obtener ordenes:", error.message);
+      throw error;
+    }
+  }
+
+  async getOrdenById(id) {
+    const query = `
+      SELECT
+        o.ID_ORDEN,
+        o.CODIGO,
+        o.SUBTOTAL,
+        o.TOTAL,
+        o.IMPUESTO,
+        o.RETENCION,
+        o.USUARIO_CREADOR,
+        o.CORREO_CREADOR,
+        o.NOTA_CREADOR,
+        o.RUTA_ARCHIVO_PDF,
+        o.DOCUMENTOS_COTIZACION,
+        o.NIVEL_APROBACION,
+        o.JUSTIFICACION_RECHAZO,
+        o.TOTAL_LOCAL,
+        o.ID_CENTRO_COSTO,
+        o.ID_MONEDA,
+        o.ID_EMPRESA,
+        o.ID_SOLICITUD,
+        o.ID_PROVEEDOR,
+        o.ID_TIPO_ORDEN,
+        o.ID_PLAZO,
+        o.CREATED_AT,
+        e.nombre AS estatus
+      FROM
+        oc.OrdenCompra o
+      JOIN
+        oc.Estatus e ON o.estatus_id = e.id_estatus
+      WHERE
+        o.ID_ORDEN = @ID
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      return result.recordset[0];
+    } catch (error) {
+      console.error("Error al obtener la orden:", error.message);
+      throw error;
+    }
+  }
+
+  async getOrdenesBySolicitudId(solicitudId) {
+    const query = `
+      SELECT
+        o.ID_ORDEN,
+        o.CODIGO,
+        o.SUBTOTAL,
+        o.TOTAL,
+        o.IMPUESTO,
+        o.RETENCION,
+        o.USUARIO_CREADOR,
+        o.CORREO_CREADOR,
+        o.NOTA_CREADOR,
+        o.RUTA_ARCHIVO_PDF,
+        o.DOCUMENTOS_COTIZACION,
+        o.NIVEL_APROBACION,
+        o.JUSTIFICACION_RECHAZO,
+        o.TOTAL_LOCAL,
+        o.CREATED_AT,
+        e.NOMBRE AS ESTATUS
+      FROM oc.OrdenCompra o
+      JOIN oc.Estatus e
+      ON o.estatus_id = e.id_estatus
+      WHERE ID_SOLICITUD = @ID_SOLICITUD
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("ID_SOLICITUD", sql.Int, solicitudId)
+        .query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener órdenes por solicitud:", error.message);
       throw error;
     }
   }
@@ -92,7 +181,7 @@ class OrdenesRepository {
   async getCentrosDeCosto() {
     const query = `
       SELECT
-        ID_CENTRO_COSTO, NOMBRE, ENCARGADO, CORREO_ENCARGADO, PRESUPUESTO
+        ID_CENTRO_COSTO, NOMBRE
       FROM
         oc.CentroCosto
       WHERE
@@ -169,6 +258,27 @@ class OrdenesRepository {
     }
   }
 
+  async getCuentasContables() {
+    const query = `
+      SELECT
+        ID_CUENTA,
+        NOMBRE_CUENTA,
+        CODIGO
+      FROM
+        oc.Cuentas
+      ORDER BY
+        NOMBRE_CUENTA
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener cuentas contables:", error.message);
+      throw error;
+    }
+  }
+
   async getBancosByProveedor(proveedorId) {
     const query = `
       SELECT
@@ -198,35 +308,6 @@ class OrdenesRepository {
       return result.recordset;
     } catch (error) {
       console.error("Error al obtener bancos por proveedor:", error.message);
-      throw error;
-    }
-  }
-
-  async getCuentasContablesByEmpresa(empresaId) {
-    const query = `
-      SELECT
-        ID_CUENTA,
-        NOMBRE_CUENTA,
-        CODIGO
-      FROM
-        oc.Cuentas
-      WHERE
-        ID_EMPRESA = @ID_EMPRESA
-      ORDER BY
-        NOMBRE_CUENTA
-    `;
-    try {
-      const pool = await poolPromise;
-      const result = await pool
-        .request()
-        .input("ID_EMPRESA", sql.Int, empresaId)
-        .query(query);
-      return result.recordset;
-    } catch (error) {
-      console.error(
-        "Error al obtener cuentas contables por empresa:",
-        error.message
-      );
       throw error;
     }
   }
@@ -261,75 +342,87 @@ class OrdenesRepository {
     }
   }
 
-  async createOrden(newOrden) {
-    const query = `
-      INSERT INTO oc.OrdenCompra(
-        CODIGO,
-        SUBTOTAL,
-        TOTAL,
-        IMPUESTO,
-        RETENCION,
-        USUARIO_CREADOR,
-        CORREO_CREADOR,
-        NOTA_CREADOR,
-        DOCUMENTOS_COTIZACION,
-        NIVEL_APROBACION,
-        TOTAL_LOCAL,
-        ID_MONEDA,
-        ID_EMPRESA,
-        ID_SOLICITUD,
-        ID_PROVEEDOR,
-        ID_TIPO_ORDEN,
-        ID_PLAZO,
-        FECHA_VENCIMIENTO
-      )
-      OUTPUT INSERTED.ID_ORDEN AS id_orden
-      VALUES(
-        @CODIGO,
-        @SUBTOTAL,
-        @TOTAL,
-        @IMPUESTO,
-        @RETENCION,
-        @USUARIO_CREADOR,
-        @CORREO_CREADOR,
-        @NOTA_CREADOR,
-        @DOCUMENTOS_COTIZACION,
-        @NIVEL_APROBACION,
-        @TOTAL_LOCAL,
-        @ID_MONEDA,
-        @ID_EMPRESA,
-        @ID_SOLICITUD,
-        @ID_PROVEEDOR,
-        @ID_TIPO_ORDEN,
-        @ID_PLAZO,
-        @FECHA_VENCIMIENTO
-      )
-    `;
+  async createOrdenConDetalles(newOrden, productos, id_solicitud) {
+    const pool = await poolPromise;
+    const transaction = new sql.Transaction(pool);
+
     try {
-      const pool = await poolPromise;
-      const result = await pool
-        .request()
+      await transaction.begin();
+
+      const requestOrden = new sql.Request(transaction);
+      const queryOrden = `
+        INSERT INTO oc.OrdenCompra(
+          CODIGO,
+          SUBTOTAL,
+          TOTAL,
+          IMPUESTO,
+          RETENCION,
+          USUARIO_CREADOR,
+          CORREO_CREADOR,
+          NOTA_CREADOR,
+          DOCUMENTOS_COTIZACION,
+          NIVEL_APROBACION,
+          TOTAL_LOCAL,
+          ID_CENTRO_COSTO,
+          ID_MONEDA,
+          ID_EMPRESA,
+          ID_SOLICITUD,
+          ID_PROVEEDOR,
+          ID_TIPO_ORDEN,
+          ID_PLAZO,
+          FECHA_VENCIMIENTO,
+          ESTATUS_ID,
+          CREATED_AT
+        )
+        OUTPUT INSERTED.ID_ORDEN AS id_orden
+        VALUES (
+          @CODIGO,
+          @SUBTOTAL,
+          @TOTAL,
+          @IMPUESTO,
+          @RETENCION,
+          @USUARIO_CREADOR,
+          @CORREO_CREADOR,
+          @NOTA_CREADOR,
+          @DOCUMENTOS_COTIZACION,
+          @NIVEL_APROBACION,
+          @TOTAL_LOCAL,
+          @ID_CENTRO_COSTO,
+          @ID_MONEDA,
+          @ID_EMPRESA,
+          @ID_SOLICITUD,
+          @ID_PROVEEDOR,
+          @ID_TIPO_ORDEN,
+          @ID_PLAZO,
+          @FECHA_VENCIMIENTO,
+          @ESTATUS_ID,
+          @CREATED_AT
+        )
+      `;
+
+      const requestEstatus = new sql.Request(transaction);
+      const defaultStatusResult = await requestEstatus.query(
+        `SELECT id_estatus FROM oc.Estatus WHERE nombre = 'pendiente'`
+      );
+      const defaultStatus = defaultStatusResult.recordset[0].id_estatus;
+
+      const resultOrden = await requestOrden
         .input("CODIGO", sql.NVarChar, newOrden.codigo)
-        .input("SUBTOTAL", sql.Decimal, newOrden.subtotal)
-        .input("TOTAL", sql.Decimal, newOrden.total)
-        .input("IMPUESTO", sql.Decimal, newOrden.impuesto)
-        .input("RETENCION", sql.Decimal, newOrden.retencion)
+        .input("SUBTOTAL", sql.Decimal(18, 2), newOrden.subtotal)
+        .input("TOTAL", sql.Decimal(18, 2), newOrden.total)
+        .input("IMPUESTO", sql.Decimal(18, 2), newOrden.impuesto)
+        .input("RETENCION", sql.Decimal(18, 2), newOrden.retencion)
         .input("USUARIO_CREADOR", sql.NVarChar, newOrden.usuario_creador)
         .input("CORREO_CREADOR", sql.NVarChar, newOrden.correo_creador)
         .input("NOTA_CREADOR", sql.NVarChar, newOrden.nota_creador)
-        .input("RUTA_ARCHIVO_PDF", sql.NVarChar, newOrden.ruta_archivo_pdf)
         .input(
           "DOCUMENTOS_COTIZACION",
           sql.NVarChar,
           newOrden.documentos_cotizacion
         )
         .input("NIVEL_APROBACION", sql.TinyInt, newOrden.nivel_aprobacion)
-        .input(
-          "JUSTIFICACION_RECHAZO",
-          sql.NVarChar,
-          newOrden.justificacion_rechazo
-        )
-        .input("TOTAL_LOCAL", sql.Decimal, newOrden.total_local)
+        .input("TOTAL_LOCAL", sql.Decimal(18, 2), newOrden.total_local)
+        .input("ID_CENTRO_COSTO", sql.Int, newOrden.id_centro_costo)
         .input("ID_MONEDA", sql.Int, newOrden.id_moneda)
         .input("ID_EMPRESA", sql.Int, newOrden.id_empresa)
         .input("ID_SOLICITUD", sql.Int, newOrden.id_solicitud)
@@ -337,10 +430,63 @@ class OrdenesRepository {
         .input("ID_TIPO_ORDEN", sql.Int, newOrden.id_tipo_orden)
         .input("ID_PLAZO", sql.Int, newOrden.id_plazo)
         .input("FECHA_VENCIMIENTO", sql.Date, newOrden.fecha_vencimiento)
-        .query(query);
-      return result.recordset[0].id_orden;
+        .input("ESTATUS_ID", sql.Int, defaultStatus)
+        .input("CREATED_AT", sql.DateTime, newOrden.fecha_creacion)
+        .query(queryOrden);
+
+      const id_orden = resultOrden.recordset[0].id_orden;
+
+      const codigoOC = generateCodigoOrden(id_orden);
+      const requestCodigo = new sql.Request(transaction);
+      await requestCodigo
+        .input("CODIGO", sql.NVarChar, codigoOC)
+        .input("ID_ORDEN", sql.Int, id_orden).query(`
+          UPDATE oc.OrdenCompra
+          SET CODIGO = @CODIGO
+          WHERE ID_ORDEN = @ID_ORDEN
+        `);
+
+      for (const producto of productos) {
+        const requestDetalle = new sql.Request(transaction);
+        await requestDetalle
+          .input("ID_SOLICITUD", sql.Int, id_solicitud)
+          .input("ID_ORDEN_COMPRA", sql.Int, id_orden)
+          .input("ID_PRODUCTO", sql.Int, producto.id_producto)
+          .input("PRECIO", sql.Decimal(18, 2), producto.valorUnitario)
+          .input("CANTIDAD", sql.Decimal(18, 2), producto.cantidad)
+          .input("TOTAL_DETALLE", sql.Decimal(18, 2), producto.valorTotal)
+          .input("CANT_X_RECIBIR", sql.Decimal(18, 2), producto.cantidad)
+          .query(`
+            INSERT INTO oc.DetalleOrdenCompra (
+              ID_SOLICITUD,
+              ID_ORDEN_COMPRA,
+              ID_PRODUCTO,
+              PRECIO,
+              CANTIDAD,
+              TOTAL_DETALLE,
+              CANT_X_RECIBIR
+            )
+            VALUES (
+              @ID_SOLICITUD,
+              @ID_ORDEN_COMPRA,
+              @ID_PRODUCTO,
+              @PRECIO,
+              @CANTIDAD,
+              @TOTAL_DETALLE,
+              @CANT_X_RECIBIR
+            )
+          `);
+      }
+
+      await transaction.commit();
+
+      return { id_orden, codigoOC };
     } catch (error) {
-      console.error("Error en ordenesRepository.createOrden:", error.message);
+      await transaction.rollback();
+      console.error(
+        "Error en OrdenesRepository.createOrdenConDetalles:",
+        error.message
+      );
       throw error;
     }
   }
@@ -490,8 +636,7 @@ class OrdenesRepository {
   async getCentroCostoById(id) {
     const query = `
       SELECT
-        NOMBRE,
-        ENCARGADO
+        NOMBRE
       FROM
         oc.CentroCosto
       WHERE
@@ -616,6 +761,14 @@ class OrdenesRepository {
       throw error;
     }
   }
+}
+
+function generateCodigoOrden(id_orden) {
+  const fecha = new Date();
+  const anio = fecha.getFullYear();
+  const mes = ("0" + (fecha.getMonth() + 1)).slice(-2);
+  const dia = ("0" + fecha.getDate()).slice(-2);
+  return `OC-${id_orden}_${anio}${mes}${dia}`;
 }
 
 export default OrdenesRepository;
