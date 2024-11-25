@@ -24,7 +24,6 @@ class SolicitudesService {
   // Obtener todas las solicitudes
   async getAllSolicitudes() {
     const solicitudesRaw = await this.solicitudesRepository.getAllWithOrdenes();
-
     const solicitudesMap = {};
 
     solicitudesRaw.forEach((solicitud) => {

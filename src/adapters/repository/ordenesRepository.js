@@ -11,7 +11,22 @@ class OrdenesRepository {
   async getAllOrdenes() {
     const query = `
       SELECT
-        *,
+        o.id_orden,
+        o.codigo,
+        o.subtotal,
+        o.total,
+        o.impuesto,
+        o.retencion,
+        o.usuario_creador,
+        o.correo_creador,
+        o.nota_creador,
+        o.ruta_archivo_pdf,
+        o.documentos_cotizacion,
+        o.nivel_aprobacion,
+        o.justificacion_rechazo,
+        o.total_local,
+        o.id_solicitud,
+        o.created_at,
         e.nombre AS estatus
       FROM
         oc.OrdenCompra o
@@ -295,7 +310,7 @@ class OrdenesRepository {
       WHERE
         pb.ID_PROVEEDOR = @ID_PROVEEDOR
       AND pb.ELIMINADO = 0
-      AND b.ELIMINADO = 0
+      AND b.ESTATUS = 1
       ORDER BY
         b.NOMBRE_BANCO
     `;

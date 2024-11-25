@@ -26,6 +26,7 @@ class OrdenesController {
   getAllOrdenes = async (req, res) => {
     try {
       const ordenes = await this.ordenesService.getAllOrdenes();
+      console.log(ordenes);
       res.render("ordenes", {
         ordenes: ordenes.map((orden) => ({
           ...orden,
