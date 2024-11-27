@@ -9,14 +9,14 @@ class SolicitudesController {
     this.solicitudesService = new SolicitudesService();
   }
 
-  // Obtener todas las solicitudes
   getAllSolicitudes = async (req, res) => {
     try {
       const solicitudes = await this.solicitudesService.getAllSolicitudes();
+
       res.render("solicitudes", {
         solicitudes: solicitudes.map((solicitud) => ({
           ...solicitud,
-          id: encodeBase64(solicitud.id_solicitud),
+          id: encodeBase64(solicitud.id_solicitud.toString()),
           hasFiles:
             solicitud.archivos &&
             JSON.parse(solicitud.archivos).some((a) => a.eliminado === 0),
@@ -32,7 +32,6 @@ class SolicitudesController {
     }
   };
 
-  // Obtener una solicitud por ID
   getSolicitudById = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
@@ -42,25 +41,21 @@ class SolicitudesController {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
       }
-      const ordenes = await this.solicitudesService.getOrdenesBySolicitudId(id);
-      const ordenesFormateadas = ordenes.map((orden) => ({
+      const ordenesFormateadas = solicitud.ordenes.map((orden) => ({
         ...orden,
-        Encoded_id_orden: encodeBase64(orden.ID_ORDEN),
-        codigo: orden.CODIGO.match(/(?<=OC-)\d+/)[0],
-        ruta_archivo_pdf: orden.RUTA_ARCHIVO_PDF?.replace(/^"|"$/g, ""),
-        created_at: new Date(orden.CREATED_AT).toLocaleString("es-CL", {
+        Encoded_id_orden: encodeBase64(orden.id_orden),
+        ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
+        created_at: new Date(orden.created_at).toLocaleString("es-CL", {
           timeZone: "UTC",
           dateStyle: "short",
           timeStyle: "short",
         }),
-        estatus: orden.ESTATUS,
       }));
 
       solicitud.id = encodeBase64(solicitud.id_solicitud);
       solicitud.archivos = JSON.parse(solicitud.archivos || "[]").filter(
         (archivo) => archivo.eliminado === 0
       );
-
       res.render("solicitud/detalle", {
         solicitud,
         ordenes: ordenesFormateadas,
@@ -89,15 +84,13 @@ class SolicitudesController {
       );
       const ordenesFormateadas = ordenes.map((orden) => ({
         ...orden,
-        Encoded_id_orden: encodeBase64(orden.ID_ORDEN),
-        codigo: orden.CODIGO.match(/(?<=OC-)\d+/)[0],
-        ruta_archivo_pdf: orden.RUTA_ARCHIVO_PDF?.replace(/^"|"$/g, ""),
-        created_at: new Date(orden.CREATED_AT).toLocaleString("es-CL", {
+        Encoded_id_orden: encodeBase64(orden.id_orden),
+        ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
+        created_at: new Date(orden.created_at).toLocaleString("es-CL", {
           timeZone: "UTC",
           dateStyle: "short",
           timeStyle: "short",
         }),
-        estatus: orden.ESTATUS,
       }));
       res.render("solicitud/ordenes", {
         solicitud,
@@ -118,7 +111,6 @@ class SolicitudesController {
     }
   };
 
-  // Renderizar el formulario de creación
   renderCreateForm = (req, res) => {
     res.render("solicitud/crear", {
       errors: {},
@@ -129,7 +121,6 @@ class SolicitudesController {
     });
   };
 
-  // Crear una nueva solicitud
   createSolicitud = async (req, res) => {
     try {
       const { asunto, descripcion } = req.body;
@@ -199,7 +190,6 @@ class SolicitudesController {
     }
   };
 
-  // Renderizar el formulario de edición
   renderEditForm = async (req, res) => {
     try {
       const encodedId = req.params.id;
@@ -211,7 +201,13 @@ class SolicitudesController {
         return res.redirect("/solicitudes");
       }
 
-      if (solicitud.estatus.toLowerCase() === "editando") {
+      const lockTimeoutMinutes = 5;
+      const now = dayjs();
+      const lockedAt = dayjs(solicitud.locked_at);
+      if (
+        solicitud.estatus.toLowerCase() === "editando" &&
+        now.diff(lockedAt, "minute") < lockTimeoutMinutes
+      ) {
         req.flash(
           "errorMessage",
           "La solicitud está siendo editada por otro usuario."
@@ -219,10 +215,10 @@ class SolicitudesController {
         return res.redirect("/solicitudes");
       }
 
-      await this.solicitudesService.updateEstatus(id, "editando");
+      await this.solicitudesService.updateEstatus(id, "editando", new Date());
 
       solicitud.estatus = "editando";
-      solicitud.locked_at = dayjs().format();
+      solicitud.locked_at = new Date();
 
       solicitud.archivos = JSON.parse(solicitud.archivos || "[]");
       solicitud.id = encodeBase64(solicitud.id_solicitud);
@@ -240,14 +236,12 @@ class SolicitudesController {
     }
   };
 
-  // Actualizar una solicitud existente
   updateSolicitud = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
       const { asunto, descripcion, deletedFiles } = req.body;
       const archivosNuevos = req.files || [];
 
-      // Obtener la solicitud existente
       const solicitudExistente = await this.solicitudesService.getSolicitudById(
         id
       );
@@ -258,7 +252,6 @@ class SolicitudesController {
 
       let archivosActuales = JSON.parse(solicitudExistente.archivos || "[]");
 
-      // Marcar archivos eliminados
       if (deletedFiles) {
         const filesToDelete = JSON.parse(deletedFiles);
         archivosActuales = archivosActuales.map((archivo) => {
@@ -267,20 +260,8 @@ class SolicitudesController {
           }
           return archivo;
         });
-
-        // Eliminar archivos de Azure Blob Storage
-        // const deletePromises = archivosActuales
-        //   .filter((archivo) => archivo.eliminado === 1)
-        //   .map((archivo) =>
-        //     AzureBlobService.deleteBlob(archivo.url).catch((err) => {
-        //       console.error(`Error al eliminar archivo ${archivo.url}:`, err);
-        //     })
-        //   );
-
-        // await Promise.all(deletePromises);
       }
 
-      // Subir nuevos archivos
       if (archivosNuevos.length > 0) {
         const fechaActual = dayjs().format("DDMMYYYY");
         const archivosParaSubir = archivosNuevos.map((file) => ({
@@ -299,14 +280,12 @@ class SolicitudesController {
         archivosActuales = [...archivosActuales, ...nuevosArchivos];
       }
 
-      // Actualizar la solicitud
       const solicitudData = {
         asunto,
         descripcion,
         archivos: archivosActuales,
       };
 
-      // Validación de datos de entrada
       const validationErrors =
         this.solicitudesService.validateSolicitudData(solicitudData);
       if (validationErrors) {
@@ -354,7 +333,7 @@ class SolicitudesController {
     try {
       const encodedId = req.params.id;
       const id = decodeBase64(encodedId);
-      await this.solicitudesService.releaseLock(id);
+      await this.solicitudesService.updateEstatus(id, "abierta");
       res.status(200).json({ message: "Bloqueo liberado." });
     } catch (error) {
       console.error("Error al liberar el bloqueo de edición:", error);
@@ -364,7 +343,18 @@ class SolicitudesController {
     }
   };
 
-  // Renderizar el formulario de eliminación
+  cancelarEdicion = async (req, res) => {
+    try {
+      const id = decodeBase64(req.params.id);
+      await this.solicitudesService.updateEstatus(id, "abierta");
+      req.flash("successMessage", "Edición cancelada.");
+      res.redirect("/solicitudes");
+    } catch (error) {
+      req.flash("errorMessage", "Error al cancelar la edición.");
+      res.redirect("/solicitudes");
+    }
+  };
+
   renderDeleteForm = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
@@ -393,7 +383,6 @@ class SolicitudesController {
     }
   };
 
-  // Eliminar una solicitud
   deleteSolicitud = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
@@ -424,7 +413,6 @@ class SolicitudesController {
     }
   };
 
-  // Ver los archivos adjuntos de una solicitud
   viewArchivos = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
@@ -472,6 +460,7 @@ class SolicitudesController {
 
       res.render("solicitud/archivos", {
         solicitudId: encodeBase64(solicitud.id_solicitud),
+        solicitud: solicitud,
         archivos,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
@@ -528,7 +517,6 @@ class SolicitudesController {
         return res.redirect("back");
       }
 
-      // Redirigir al usuario a la URL SAS para iniciar la descarga
       res.redirect(sasUrl);
     } catch (error) {
       console.error("Error al descargar el archivo:", error);

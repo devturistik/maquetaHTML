@@ -41,6 +41,13 @@
                       <% }) %>
                     </select>
                   <% } %>
+                <% } else if (tabla === 'DetalleTipoOrden' && columna.nombre === 'ID_TIPO_ORDEN') { %>
+                  <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
+                    <option value="">Seleccione un Tipo de Orden</option>
+                    <% tiposOrden.forEach(tipo => { %>
+                      <option value="<%= tipo.ID_TIPO %>"><%= tipo.NOMBRE %></option>
+                    <% }) %>
+                  </select>
                 <% } else { %>
                   <!-- Opciones para otras tablas si es necesario -->
                 <% } %>
@@ -50,18 +57,18 @@
                   class="form-control" 
                   id="<%= columna.nombre %>" 
                   name="<%= columna.nombre %>" 
-                  value="<%= columna.inputType === 'date' ? '' : '' %>" 
+                  value="" 
                   <%= columna.editable ? 'required' : 'readonly' %>
                 >
               <% } %>
             </div>
           <% } else { %>
-            <!-- Campos ocultos para columnas como ID_PROVEEDOR_BANCO -->
+            <!-- Campos ocultos para columnas como IDs -->
             <input 
               type="hidden" 
               id="<%= columna.nombre %>" 
               name="<%= columna.nombre %>" 
-              value="<%= columna.inputType === 'hidden' ? '' : '' %>"
+              value=""
             >
           <% } %>
         <% }) %>

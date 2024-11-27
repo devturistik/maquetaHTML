@@ -1,4 +1,3 @@
-<!-- views/administracion/lista.ejs -->
 <%- include('../partials/header', { title: 'Administración - ' + tabla }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
@@ -26,9 +25,14 @@
       <a href="/administracion" class="btn btn-secondary me-2">
         <i class="fas fa-arrow-left me-1"></i> Regresar
       </a>
-      <a href="/administracion/<%= tabla %>/crear" class="btn btn-primary">
+      <a href="/administracion/<%= tabla %>/crear" class="btn btn-primary me-2">
         <i class="fas fa-plus me-1"></i> Crear Nuevo
       </a>
+      <% if (tabla === 'Proveedor' || tabla === 'TipoOrden') { %>
+        <a href="/administracion/<%= tabla %>/relacionar" class="btn btn-info">
+          <i class="fas fa-link me-1"></i> Establecer Relaciones
+        </a>
+      <% } %>
     </div>
   </div>
 
@@ -38,15 +42,11 @@
         <table id="tabla-registros" class="table table-hover w-100">
           <thead>
             <tr>
-              <% if (registros.length > 0) { %>
-                <% if (columnas && Array.isArray(columnas)) { %>
-                  <% columnas.forEach(columna => { %>
-                    <th><%= columna.nombre.charAt(0).toUpperCase() + columna.nombre.slice(1).toLowerCase() %></th>
-                  <% }) %>
-                  <th>Acciones</th>
-                <% } else { %>
-                  <th>Columnas no definidas</th>
-                <% } %>
+              <% if (columnas && Array.isArray(columnas)) { %>
+                <% columnas.forEach(columna => { %>
+                  <th><%= columna.nombre %></th>
+                <% }) %>
+                <th>Acciones</th>
               <% } else { %>
                 <th>No hay registros</th>
               <% } %>
@@ -57,23 +57,13 @@
               <% registros.forEach(registro => { %>
                 <tr>
                   <% columnas.forEach(columna => { %>
-                    <% 
-                      let valor = registro[columna.nombre];
-                      // Formatear el valor según el tipo
-                      if (columna.tipo.toLowerCase() === 'datetime' && valor) {
-                        valor = new Date(valor).toLocaleString('es-ES', { 
-                          year: 'numeric', 
-                          month: '2-digit', 
-                          day: '2-digit', 
-                          hour: '2-digit', 
-                          minute: '2-digit',
-                          second: '2-digit'
-                        });
-                      } else if (columna.tipo.toLowerCase() === 'bit') {
-                        valor = valor === 1 || valor === '1' ? 'Sí' : 'No';
-                      }
-                    %>
-                    <td><%= valor === null ? 'null' : valor %></td>
+                    <td>
+                      <% if (columna.nombre === 'Bancos_Asociados' || columna.nombre === 'Detalles_Asociados') { %>
+                        <%= registro[columna.nombre] %>
+                      <% } else { %>
+                        <%= registro[columna.nombre] === null ? 'NULL' : registro[columna.nombre] %>
+                      <% } %>
+                    </td>
                   <% }) %>
                   <td>
                     <div class="btn-group" role="group">

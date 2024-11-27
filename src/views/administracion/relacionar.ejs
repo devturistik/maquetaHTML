@@ -1,0 +1,62 @@
+<%- include('../partials/header', { title: 'Establecer Relaciones - ' + tabla }) %>
+<%- include('../partials/navbar') %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Establecer Relaciones para <%= tabla %></h4>
+  <form action="/administracion/<%= tabla %>/relacionar" method="POST">
+    <div class="mb-3">
+      <label for="idPrincipal" class="form-label">
+        Selecciona <%= tabla === 'Proveedor' ? 'Proveedor' : 'Tipo de Orden' %>
+      </label>
+      <select class="form-select" id="idPrincipal" name="idPrincipal" required>
+        <% entidadesPrincipales.forEach(entidad => { %>
+          <option value="<%= entidad.ID_PROVEEDOR || entidad.ID_TIPO %>">
+            <%= entidad.NOMBRE_PROVEEDOR || entidad.NOMBRE %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+    <% if (tabla === 'Proveedor') { %>
+      <div class="mb-3">
+        <label for="idRelacionado" class="form-label">Selecciona Banco</label>
+        <select class="form-select" id="idRelacionado" name="idRelacionado" required>
+          <% entidadesRelacionadas.forEach(entidad => { %>
+            <option value="<%= entidad.ID_BANCO %>"><%= entidad.NOMBRE_BANCO %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label for="NUMERO_CUENTA" class="form-label">Número de Cuenta</label>
+        <input type="text" class="form-control" id="NUMERO_CUENTA" name="NUMERO_CUENTA" required>
+      </div>
+      <div class="mb-3">
+        <label for="TIPO_CUENTA" class="form-label">Tipo de Cuenta</label>
+        <input type="text" class="form-control" id="TIPO_CUENTA" name="TIPO_CUENTA" required>
+      </div>
+      <div class="mb-3">
+        <label for="CORREO_BANCO" class="form-label">Correo del Banco</label>
+        <input type="email" class="form-control" id="CORREO_BANCO" name="CORREO_BANCO" required>
+      </div>
+    <% } else if (tabla === 'TipoOrden') { %>
+      <div class="mb-3">
+        <label for="NOMBRE_DETALLE" class="form-label">Nombre del Detalle</label>
+        <input type="text" class="form-control" id="NOMBRE_DETALLE" name="NOMBRE_DETALLE" required>
+      </div>
+      <div class="mb-3">
+        <label for="CANTIDAD" class="form-label">Cantidad</label>
+        <input type="number" step="0.01" class="form-control" id="CANTIDAD" name="CANTIDAD" required>
+      </div>
+      <div class="mb-3">
+        <label for="TIPO_DETALLE" class="form-label">Tipo de Detalle</label>
+        <input type="text" class="form-control" id="TIPO_DETALLE" name="TIPO_DETALLE" required>
+      </div>
+    <% } %>
+    <button type="submit" class="btn btn-primary">Establecer Relación</button>
+  </form>
+</div>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>

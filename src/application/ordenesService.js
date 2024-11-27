@@ -10,9 +10,9 @@ class OrdenesService {
     return await this.ordenesRepository.getAllOrdenes();
   }
 
-  async getOrdenById(id) {
+  async getOrdenById(id_orden) {
     try {
-      return await this.ordenesRepository.getOrdenById(id);
+      return await this.ordenesRepository.getOrdenById(id_orden);
     } catch (error) {
       console.error("Error en OrdenesService.getOrdenById:", error.message);
       throw error;

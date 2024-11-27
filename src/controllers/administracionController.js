@@ -26,12 +26,11 @@ class AdministracionController {
         return res.status(403).send("Acceso prohibido.");
       }
 
-      const registros = await this.administracionService.obtenerRegistros(
-        tabla
-      );
-      const metadatos = await this.administracionService.obtenerMetadatos(
-        tabla
-      );
+      let registros;
+      let metadatos = await this.administracionService.obtenerMetadatos(tabla);
+
+      registros = await this.administracionService.obtenerRegistros(tabla);
+
       const columnasVisibles = metadatos.columns;
 
       res.render("administracion/lista", {
@@ -62,10 +61,13 @@ class AdministracionController {
 
       let proveedores = [];
       let bancos = [];
+      let tiposOrden = [];
 
       if (tabla === "ProveedorBanco") {
         proveedores = await this.administracionService.obtenerProveedores();
         bancos = await this.administracionService.obtenerBancos();
+      } else if (tabla === "DetalleTipoOrden") {
+        tiposOrden = await this.administracionService.obtenerTiposOrden();
       }
 
       res.render("administracion/crear", {
@@ -73,6 +75,7 @@ class AdministracionController {
         columnas: columnasFormulario,
         proveedores,
         bancos,
+        tiposOrden,
       });
     } catch (error) {
       console.error(
@@ -100,6 +103,10 @@ class AdministracionController {
             return body(col.nombre)
               .isInt()
               .withMessage(`${col.nombre} debe ser un número entero.`);
+          case "decimal":
+            return body(col.nombre)
+              .isDecimal()
+              .withMessage(`${col.nombre} debe ser un número decimal.`);
           case "varchar":
           case "nvarchar":
             return body(col.nombre)
@@ -134,12 +141,17 @@ class AdministracionController {
           tabla === "ProveedorBanco"
             ? await this.administracionService.obtenerBancos()
             : [];
+        const tiposOrden =
+          tabla === "DetalleTipoOrden"
+            ? await this.administracionService.obtenerTiposOrden()
+            : [];
         return res.status(400).render("administracion/crear", {
           tabla,
           columnas: columnas,
           errores: errors.array(),
           proveedores,
           bancos,
+          tiposOrden,
         });
       }
 
@@ -193,10 +205,13 @@ class AdministracionController {
 
       let proveedores = [];
       let bancos = [];
+      let tiposOrden = [];
 
       if (tabla === "ProveedorBanco") {
         proveedores = await this.administracionService.obtenerProveedores();
         bancos = await this.administracionService.obtenerBancos();
+      } else if (tabla === "DetalleTipoOrden") {
+        tiposOrden = await this.administracionService.obtenerTiposOrden();
       }
 
       res.render("administracion/editar", {
@@ -206,6 +221,7 @@ class AdministracionController {
         idColumna: metadatos.id,
         proveedores,
         bancos,
+        tiposOrden,
       });
     } catch (error) {
       console.error(`Error al obtener registro de la tabla ${tabla}:`, error);
@@ -230,6 +246,10 @@ class AdministracionController {
             return body(col.nombre)
               .isInt()
               .withMessage(`${col.nombre} debe ser un número entero.`);
+          case "decimal":
+            return body(col.nombre)
+              .isDecimal()
+              .withMessage(`${col.nombre} debe ser un número decimal.`);
           case "varchar":
           case "nvarchar":
             return body(col.nombre)
@@ -268,6 +288,10 @@ class AdministracionController {
           tabla === "ProveedorBanco"
             ? await this.administracionService.obtenerBancos()
             : [];
+        const tiposOrden =
+          tabla === "DetalleTipoOrden"
+            ? await this.administracionService.obtenerTiposOrden()
+            : [];
         return res.status(400).render("administracion/editar", {
           tabla,
           registro,
@@ -276,6 +300,7 @@ class AdministracionController {
           idColumna: metadatos.id,
           proveedores,
           bancos,
+          tiposOrden,
         });
       }
 
@@ -315,15 +340,14 @@ class AdministracionController {
         return res.status(500).send("Metadatos de la tabla no encontrados.");
       }
 
-      const columnaEliminado = metadatos.columns.find(
-        (col) => col.nombre.toUpperCase() === "ELIMINADO"
-      );
+      const columnas = metadatos.columns.map((col) => col.nombre.toUpperCase());
 
-      const columnaEstatus = metadatos.columns.find((col) =>
+      const tieneEliminado = columnas.includes("ELIMINADO");
+      const columnasEstatus = metadatos.columns.filter((col) =>
         col.nombre.toUpperCase().includes("ESTATUS")
       );
 
-      if (columnaEliminado) {
+      if (tieneEliminado) {
         await this.administracionService.eliminarLogico(
           tabla,
           id,
@@ -331,13 +355,15 @@ class AdministracionController {
           1
         );
         res.redirect(`/administracion/${tabla}`);
-      } else if (columnaEstatus) {
-        await this.administracionService.eliminarLogico(
-          tabla,
-          id,
-          columnaEstatus.nombre,
-          0
-        );
+      } else if (columnasEstatus.length > 0) {
+        for (const col of columnasEstatus) {
+          await this.administracionService.eliminarLogico(
+            tabla,
+            id,
+            col.nombre,
+            0
+          );
+        }
         res.redirect(`/administracion/${tabla}`);
       } else {
         res.render("administracion/confirmarEliminacion", {
@@ -365,6 +391,84 @@ class AdministracionController {
     } catch (error) {
       console.error(
         `Error al eliminar físicamente registro de la tabla ${tabla}:`,
+        error
+      );
+      res.status(500).send("Error interno del servidor");
+    }
+  };
+
+  mostrarFormularioRelacionar = async (req, res) => {
+    const tabla = req.params.tabla;
+    try {
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      let entidadesPrincipales = [];
+      let entidadesRelacionadas = [];
+
+      if (tabla === "Proveedor") {
+        entidadesPrincipales =
+          await this.administracionService.obtenerProveedores();
+        entidadesRelacionadas =
+          await this.administracionService.obtenerBancos();
+      } else if (tabla === "TipoOrden") {
+        entidadesPrincipales =
+          await this.administracionService.obtenerTiposOrden();
+        entidadesRelacionadas =
+          await this.administracionService.obtenerDetallesTipoOrden();
+      }
+
+      res.render("administracion/relacionar", {
+        tabla,
+        entidadesPrincipales,
+        entidadesRelacionadas,
+      });
+    } catch (error) {
+      console.error(
+        `Error al mostrar formulario de relación para la tabla ${tabla}:`,
+        error
+      );
+      res.status(500).send("Error interno del servidor");
+    }
+  };
+
+  establecerRelacion = async (req, res) => {
+    const tabla = req.params.tabla;
+    const { idPrincipal } = req.body;
+    try {
+      if (!this.administracionService.tablasPermitidas.includes(tabla)) {
+        return res.status(403).send("Acceso prohibido.");
+      }
+
+      if (tabla === "Proveedor") {
+        const { idRelacionado, NUMERO_CUENTA, TIPO_CUENTA, CORREO_BANCO } =
+          req.body;
+        await this.administracionService.establecerRelacionProveedorBanco(
+          idPrincipal,
+          idRelacionado,
+          {
+            NUMERO_CUENTA,
+            TIPO_CUENTA,
+            CORREO_BANCO,
+          }
+        );
+      } else if (tabla === "TipoOrden") {
+        const { NOMBRE_DETALLE, CANTIDAD, TIPO_DETALLE } = req.body;
+        await this.administracionService.establecerRelacionTipoOrden(
+          idPrincipal,
+          {
+            NOMBRE_DETALLE,
+            CANTIDAD,
+            TIPO_DETALLE,
+          }
+        );
+      }
+
+      res.redirect(`/administracion/${tabla}`);
+    } catch (error) {
+      console.error(
+        `Error al establecer relación en la tabla ${tabla}:`,
         error
       );
       res.status(500).send("Error interno del servidor");

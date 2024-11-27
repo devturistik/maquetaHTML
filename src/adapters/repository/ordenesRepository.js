@@ -31,9 +31,11 @@ class OrdenesRepository {
       FROM
         oc.OrdenCompra o
       JOIN
-        oc.Estatus e ON o.estatus_id = e.id_estatus
+        oc.Estatus e
+      ON
+        o.estatus_id = e.id_estatus
       ORDER BY
-        ID_ORDEN ASC
+        id_orden ASC
     `;
     try {
       const pool = await poolPromise;
@@ -45,42 +47,45 @@ class OrdenesRepository {
     }
   }
 
-  async getOrdenById(id) {
+  async getOrdenById(id_orden) {
     const query = `
       SELECT
-        o.ID_ORDEN,
-        o.CODIGO,
-        o.SUBTOTAL,
-        o.TOTAL,
-        o.IMPUESTO,
-        o.RETENCION,
-        o.USUARIO_CREADOR,
-        o.CORREO_CREADOR,
-        o.NOTA_CREADOR,
-        o.RUTA_ARCHIVO_PDF,
-        o.DOCUMENTOS_COTIZACION,
-        o.NIVEL_APROBACION,
-        o.JUSTIFICACION_RECHAZO,
-        o.TOTAL_LOCAL,
-        o.ID_CENTRO_COSTO,
-        o.ID_MONEDA,
-        o.ID_EMPRESA,
-        o.ID_SOLICITUD,
-        o.ID_PROVEEDOR,
-        o.ID_TIPO_ORDEN,
-        o.ID_PLAZO,
-        o.CREATED_AT,
+        o.id_orden,
+        o.codigo,
+        o.subtotal,
+        o.total,
+        o.impuesto,
+        o.retencion,
+        o.usuario_creador,
+        o.correo_creador,
+        o.nota_creador,
+        o.ruta_archivo_pdf,
+        o.documentos_cotizacion,
+        o.nivel_aprobacion,
+        o.justificacion_rechazo,
+        o.total_local,
+        o.id_centro_costo,
+        o.id_moneda,
+        o.id_empresa,
+        o.id_solicitud,
+        o.id_proveedor,
+        o.id_tipo_orden,
+        o.id_plazo,
+        o.created_at,
         e.nombre AS estatus
       FROM
         oc.OrdenCompra o
       JOIN
         oc.Estatus e ON o.estatus_id = e.id_estatus
       WHERE
-        o.ID_ORDEN = @ID
+        o.id_orden = @ID_ORDEN
     `;
     try {
       const pool = await poolPromise;
-      const result = await pool.request().input("ID", sql.Int, id).query(query);
+      const result = await pool
+        .request()
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(query);
       return result.recordset[0];
     } catch (error) {
       console.error("Error al obtener la orden:", error.message);
@@ -91,26 +96,30 @@ class OrdenesRepository {
   async getOrdenesBySolicitudId(solicitudId) {
     const query = `
       SELECT
-        o.ID_ORDEN,
-        o.CODIGO,
-        o.SUBTOTAL,
-        o.TOTAL,
-        o.IMPUESTO,
-        o.RETENCION,
-        o.USUARIO_CREADOR,
-        o.CORREO_CREADOR,
-        o.NOTA_CREADOR,
-        o.RUTA_ARCHIVO_PDF,
-        o.DOCUMENTOS_COTIZACION,
-        o.NIVEL_APROBACION,
-        o.JUSTIFICACION_RECHAZO,
-        o.TOTAL_LOCAL,
-        o.CREATED_AT,
-        e.NOMBRE AS ESTATUS
-      FROM oc.OrdenCompra o
-      JOIN oc.Estatus e
-      ON o.estatus_id = e.id_estatus
-      WHERE ID_SOLICITUD = @ID_SOLICITUD
+        o.id_orden,
+        o.codigo,
+        o.subtotal,
+        o.total,
+        o.impuesto,
+        o.retencion,
+        o.usuario_creador,
+        o.correo_creador,
+        o.nota_creador,
+        o.ruta_archivo_pdf,
+        o.documentos_cotizacion,
+        o.nivel_aprobacion,
+        o.justificacion_rechazo,
+        o.total_local,
+        o.created_at,
+        e.nombre AS estatus
+      FROM
+        oc.OrdenCompra o
+      JOIN
+        oc.Estatus e
+      ON
+        o.estatus_id = e.id_estatus
+      WHERE
+        o.id_solicitud = @ID_SOLICITUD
     `;
     try {
       const pool = await poolPromise;
@@ -128,17 +137,19 @@ class OrdenesRepository {
   async getProveedores() {
     const query = `
       SELECT
-        ID_PROVEEDOR,
-        NOMBRE_PROVEEDOR,
-        DOCUMENTO_PROVEEDOR,
-        TELEFONO_PRINCIPAL,
-        CORREO_PRINCIPAL
+        id_proveedor,
+        nombre_proveedor,
+        documento_proveedor,
+        telefono_principal,
+        correo_principal
       FROM
         oc.Proveedor
       WHERE
-        ESTATUS_PROVEEDOR = 1 AND ELIMINADO = 0
+        estatus_proveedor = 1
+      AND
+        eliminado = 0
       ORDER BY
-        NOMBRE_PROVEEDOR
+        nombre_proveedor
     `;
     try {
       const pool = await poolPromise;
@@ -153,14 +164,14 @@ class OrdenesRepository {
   async getPlazosDePago() {
     const query = `
       SELECT
-        ID_FORMA_PAGO, NOMBRE
+        id_forma_pago,
+        nombre
       FROM
         oc.PlazoPago
       WHERE
-        ELIMINADO = 0
-        AND ESTATUS_FORMA_PAGO = 1
+        estatus_forma_pago = 1
       ORDER BY
-        NOMBRE
+        nombre
     `;
     try {
       const pool = await poolPromise;
@@ -175,13 +186,16 @@ class OrdenesRepository {
   async getEmpresas() {
     const query = `
       SELECT
-        ID_EMPRESA, NOMBRE
+        id_empresa,
+        nombre,
+        documento,
+        direccion
       FROM
         oc.Empresa
       WHERE
-        ELIMINADO = 0
+        eliminado = 0
       ORDER BY
-        NOMBRE
+        nombre
     `;
     try {
       const pool = await poolPromise;
@@ -196,13 +210,14 @@ class OrdenesRepository {
   async getCentrosDeCosto() {
     const query = `
       SELECT
-        ID_CENTRO_COSTO, NOMBRE
+        id_centro_costo,
+        nombre
       FROM
         oc.CentroCosto
       WHERE
-        ESTATUS = 1
+        estatus = 1
       ORDER BY
-        NOMBRE
+        nombre
     `;
     try {
       const pool = await poolPromise;
@@ -217,7 +232,8 @@ class OrdenesRepository {
   async getTiposDeOrden() {
     const query = `
       SELECT
-        id_tipo, nombre
+        id_tipo,
+        nombre
       FROM
         oc.TipoOrden
       ORDER BY
@@ -236,11 +252,14 @@ class OrdenesRepository {
   async getMonedas() {
     const query = `
       SELECT
-        ID_MONEDA, ABREV, NOMBRE, CAMBIO
+        id_moneda,
+        abrev,
+        nombre,
+        cambio
       FROM
         oc.Monedas
       ORDER BY
-        NOMBRE
+        nombre
     `;
     try {
       const pool = await poolPromise;
@@ -255,13 +274,15 @@ class OrdenesRepository {
   async getProductos() {
     const query = `
       SELECT
-        ID_PRODUCTO, DESCRIPCION, UNIDAD
+        id_producto,
+        descripcion,
+        unidad
       FROM
         oc.Producto
       WHERE
-        ELIMINADO = 0
+        estatus_producto = 1
       ORDER BY
-        DESCRIPCION
+        descripcion
     `;
     try {
       const pool = await poolPromise;
@@ -276,13 +297,13 @@ class OrdenesRepository {
   async getCuentasContables() {
     const query = `
       SELECT
-        ID_CUENTA,
-        NOMBRE_CUENTA,
-        CODIGO
+        id_cuenta,
+        nombre_cuenta,
+        codigo
       FROM
         oc.Cuentas
       ORDER BY
-        NOMBRE_CUENTA
+        nombre_cuenta
     `;
     try {
       const pool = await poolPromise;
@@ -297,22 +318,21 @@ class OrdenesRepository {
   async getBancosByProveedor(proveedorId) {
     const query = `
       SELECT
-        b.ID_BANCO,
-        b.NOMBRE_BANCO,
-        pb.TIPO_CUENTA,
-        pb.NUMERO_CUENTA
+        b.id_banco,
+        b.nombre_banco,
+        pb.tipo_cuenta,
+        pb.numero_cuenta
       FROM
         oc.ProveedorBanco pb
       JOIN
         oc.Banco b
       ON
-        pb.ID_BANCO = b.ID_BANCO
+        pb.id_banco = b.id_banco
       WHERE
-        pb.ID_PROVEEDOR = @ID_PROVEEDOR
-      AND pb.ELIMINADO = 0
-      AND b.ESTATUS = 1
+        pb.id_proveedor = @ID_PROVEEDOR
+      AND b.estatus = 1
       ORDER BY
-        b.NOMBRE_BANCO
+        b.nombre_banco
     `;
     try {
       const pool = await poolPromise;
@@ -330,16 +350,17 @@ class OrdenesRepository {
   async getDetallesTipoOrden(tipoOrdenId) {
     const query = `
       SELECT
-        NOMBRE_DETALLE,
-        CANTIDAD,
-        TIPO_DETALLE
+        nombre_detalle,
+        cantidad,
+        tipo_detalle
       FROM
         oc.DetalleTipoOrden
       WHERE
-        ID_TIPO_ORDEN = @ID_TIPO_ORDEN
-        AND ACTIVO = 1
+        id_tipo_orden = @ID_TIPO_ORDEN
+      AND
+        activo = 1
       ORDER BY
-        NOMBRE_DETALLE
+        nombre_detalle
     `;
     try {
       const pool = await poolPromise;
@@ -367,27 +388,28 @@ class OrdenesRepository {
       const requestOrden = new sql.Request(transaction);
       const queryOrden = `
         INSERT INTO oc.OrdenCompra(
-          CODIGO,
-          SUBTOTAL,
-          TOTAL,
-          IMPUESTO,
-          RETENCION,
-          USUARIO_CREADOR,
-          CORREO_CREADOR,
-          NOTA_CREADOR,
-          DOCUMENTOS_COTIZACION,
-          NIVEL_APROBACION,
-          TOTAL_LOCAL,
-          ID_CENTRO_COSTO,
-          ID_MONEDA,
-          ID_EMPRESA,
-          ID_SOLICITUD,
-          ID_PROVEEDOR,
-          ID_TIPO_ORDEN,
-          ID_PLAZO,
-          FECHA_VENCIMIENTO,
-          ESTATUS_ID,
-          CREATED_AT
+          codigo,
+          subtotal,
+          total,
+          impuesto,
+          retencion,
+          usuario_creador,
+          correo_creador,
+          nota_creador,
+          documentos_cotizacion,
+          nivel_aprobacion,
+          total_local,
+          id_centro_costo,
+          id_moneda,
+          id_empresa,
+          id_solicitud,
+          id_proveedor,
+          id_tipo_orden,
+          id_plazo,
+          id_cuenta_contable,
+          fecha_vencimiento,
+          estatus_id,
+          created_at
         )
         OUTPUT INSERTED.ID_ORDEN AS id_orden
         VALUES (
@@ -409,6 +431,7 @@ class OrdenesRepository {
           @ID_PROVEEDOR,
           @ID_TIPO_ORDEN,
           @ID_PLAZO,
+          @ID_CUENTA_CONTABLE,
           @FECHA_VENCIMIENTO,
           @ESTATUS_ID,
           @CREATED_AT
@@ -444,6 +467,7 @@ class OrdenesRepository {
         .input("ID_PROVEEDOR", sql.Int, newOrden.id_proveedor)
         .input("ID_TIPO_ORDEN", sql.Int, newOrden.id_tipo_orden)
         .input("ID_PLAZO", sql.Int, newOrden.id_plazo)
+        .input("ID_CUENTA_CONTABLE", sql.Int, newOrden.id_cuenta_contable)
         .input("FECHA_VENCIMIENTO", sql.Date, newOrden.fecha_vencimiento)
         .input("ESTATUS_ID", sql.Int, defaultStatus)
         .input("CREATED_AT", sql.DateTime, newOrden.fecha_creacion)
@@ -457,8 +481,8 @@ class OrdenesRepository {
         .input("CODIGO", sql.NVarChar, codigoOC)
         .input("ID_ORDEN", sql.Int, id_orden).query(`
           UPDATE oc.OrdenCompra
-          SET CODIGO = @CODIGO
-          WHERE ID_ORDEN = @ID_ORDEN
+          SET codigo = @CODIGO
+          WHERE id_orden = @ID_ORDEN
         `);
 
       for (const producto of productos) {
@@ -473,13 +497,13 @@ class OrdenesRepository {
           .input("CANT_X_RECIBIR", sql.Decimal(18, 2), producto.cantidad)
           .query(`
             INSERT INTO oc.DetalleOrdenCompra (
-              ID_SOLICITUD,
-              ID_ORDEN_COMPRA,
-              ID_PRODUCTO,
-              PRECIO,
-              CANTIDAD,
-              TOTAL_DETALLE,
-              CANT_X_RECIBIR
+              id_solicitud,
+              id_orden_compra,
+              id_producto,
+              precio,
+              cantidad,
+              total_detalle,
+              cant_x_recibir
             )
             VALUES (
               @ID_SOLICITUD,
@@ -509,8 +533,8 @@ class OrdenesRepository {
   async updateOrdenCodigo(id_orden, codigo) {
     const query = `
       UPDATE oc.OrdenCompra
-      SET CODIGO = @CODIGO
-      WHERE ID_ORDEN = @ID_ORDEN
+      SET codigo = @CODIGO
+      WHERE id_orden = @ID_ORDEN
     `;
     try {
       const pool = await poolPromise;
@@ -531,8 +555,8 @@ class OrdenesRepository {
   async updateOrdenPdfUrl(id_orden, pdfData) {
     const query = `
       UPDATE oc.OrdenCompra
-      SET RUTA_ARCHIVO_PDF = @PDF_DATA
-      WHERE ID_ORDEN = @ID_ORDEN
+      SET ruta_archivo_pdf = @PDF_DATA
+      WHERE id_orden = @ID_ORDEN
     `;
     try {
       const pool = await poolPromise;
@@ -553,16 +577,16 @@ class OrdenesRepository {
   async getProveedorById(id) {
     const query = `
       SELECT
-        NOMBRE_PROVEEDOR,
-        DOCUMENTO_PROVEEDOR,
-        TELEFONO_PRINCIPAL,
-        CORREO_PRINCIPAL
+        nombre_proveedor,
+        documento_proveedor,
+        telefono_principal,
+        correo_principal
       FROM
         oc.Proveedor
       WHERE
-        ID_PROVEEDOR = @ID
+        id_proveedor = @ID
       AND
-        ELIMINADO = 0
+        eliminado = 0
     `;
     try {
       const pool = await poolPromise;
@@ -580,13 +604,11 @@ class OrdenesRepository {
   async getBancoById(id) {
     const query = `
       SELECT
-        NOMBRE_BANCO
+        nombre_banco
       FROM
         oc.Banco
       WHERE
-        ID_BANCO = @ID
-      AND
-        ELIMINADO = 0
+        id_banco = @ID
     `;
     try {
       const pool = await poolPromise;
@@ -601,13 +623,13 @@ class OrdenesRepository {
   async getPlazoPagoById(id) {
     const query = `
       SELECT
-        NOMBRE
+        nombre
       FROM
         oc.PlazoPago
       WHERE
-        ID_FORMA_PAGO = @ID
+        id_forma_pago = @ID
       AND
-        ELIMINADO = 0
+        estatus_forma_pago = 1
     `;
     try {
       const pool = await poolPromise;
@@ -625,15 +647,15 @@ class OrdenesRepository {
   async getEmpresaById(id) {
     const query = `
       SELECT
-        NOMBRE,
-        DOCUMENTO,
-        DIRECCION
+        nombre,
+        documento,
+        direccion
       FROM
         oc.Empresa
       WHERE
-        ID_EMPRESA = @ID
+        id_empresa = @ID
       AND
-        ELIMINADO = 0
+        eliminado = 0
     `;
     try {
       const pool = await poolPromise;
@@ -651,13 +673,13 @@ class OrdenesRepository {
   async getCentroCostoById(id) {
     const query = `
       SELECT
-        NOMBRE
+        nombre
       FROM
         oc.CentroCosto
       WHERE
-        ID_CENTRO_COSTO = @ID
+        id_centro_costo = @ID
       AND
-        ESTATUS = 1
+        estatus = 1
     `;
     try {
       const pool = await poolPromise;
@@ -675,11 +697,11 @@ class OrdenesRepository {
   async getTipoOrdenById(id) {
     const query = `
       SELECT
-        NOMBRE
+        nombre
       FROM
         oc.TipoOrden
       WHERE
-        ID_TIPO = @ID
+        id_tipo = @ID
     `;
     try {
       const pool = await poolPromise;
@@ -697,13 +719,13 @@ class OrdenesRepository {
   async getMonedaById(id) {
     const query = `
       SELECT
-        ABREV,
-        NOMBRE,
-        CAMBIO
+        abrev,
+        nombre,
+        cambio
       FROM
         oc.Monedas
       WHERE
-        ID_MONEDA = @ID
+        id_moneda = @ID
     `;
     try {
       const pool = await poolPromise;
@@ -718,12 +740,12 @@ class OrdenesRepository {
   async getCuentaContableById(id) {
     const query = `
       SELECT
-        NOMBRE_CUENTA,
-        CODIGO
+        nombre_cuenta,
+        codigo
       FROM
         oc.Cuentas
       WHERE
-        ID_CUENTA = @ID
+        id_cuenta = @ID
     `;
     try {
       const pool = await poolPromise;
@@ -741,15 +763,15 @@ class OrdenesRepository {
   async getProveedorBanco(id_banco, id_proveedor) {
     const query = `
       SELECT
-        NUMERO_CUENTA,
-        TIPO_CUENTA,
-        CORREO_BANCO
+        numero_cuenta,
+        tipo_cuenta,
+        correo_banco
       FROM
         oc.ProveedorBanco
       WHERE
-        ID_BANCO = @ID_BANCO
+        id_banco = @ID_BANCO
       AND
-        ID_PROVEEDOR = @ID_PROVEEDOR
+        id_proveedor = @ID_PROVEEDOR
     `;
     try {
       const pool = await poolPromise;
@@ -783,7 +805,7 @@ function generateCodigoOrden(id_orden) {
   const anio = fecha.getFullYear();
   const mes = ("0" + (fecha.getMonth() + 1)).slice(-2);
   const dia = ("0" + fecha.getDate()).slice(-2);
-  return `OC-${id_orden}_${anio}${mes}${dia}`;
+  return `${dia}${mes}${anio}-${id_orden}`;
 }
 
 export default OrdenesRepository;

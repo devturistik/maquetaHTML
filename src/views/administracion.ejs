@@ -8,7 +8,17 @@
     <h4 class="mb-3">Administración de Tablas</h4>
     <p class="mb-0">Selecciona una tabla para gestionar sus datos.</p>
   </div>
-
+  <% const iconosTabla = {
+    'banco': 'ti ti-building-bank',
+    'centrocosto': 'ti ti-calculator',
+    'cuentas': 'ti ti-wallet',
+    'empresa': 'ti ti-building',
+    'monedas': 'ti ti-currency-dollar',
+    'plazopago': 'ti ti-clock',
+    'producto': 'ti ti-package',
+    'proveedor': 'ti ti-truck-delivery',
+    'tipoorden': 'ti ti-file-description',
+  }; %>
   <div class="row row-cols-1 row-cols-md-3 g-4">
     <% tablas.forEach(tabla => { %>
       <div class="col">
@@ -16,27 +26,11 @@
           <div class="card h-100">
             <div class="card-body text-center">
               <div class="mb-3">
-                <% if (tabla.nombre.toLowerCase().includes('proveedor')) { %>
-                  <i class="tf-icons ti ti-truck-delivery" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('banco')) { %>
-                  <i class="tf-icons ti ti-building-bank" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('plazo')) { %>
-                  <i class="tf-icons ti ti-clock" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('empresa')) { %>
-                  <i class="tf-icons ti ti-building" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('centro')) { %>
-                  <i class="tf-icons ti ti-calculator" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('tipo')) { %>
-                  <i class="tf-icons ti ti-file-description" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('moneda')) { %>
-                  <i class="tf-icons ti ti-currency-dollar" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('cuenta')) { %>
-                  <i class="tf-icons ti ti-wallet" style="font-size: 2rem;"></i>
-                <% } else if (tabla.nombre.toLowerCase().includes('producto')) { %>
-                  <i class="tf-icons ti ti-package" style="font-size: 2rem;"></i>
-                <% } else { %>
-                  <i class="tf-icons ti ti-database" style="font-size: 2rem;"></i>
-                <% } %>
+                <%
+                const nombreTabla = tabla.nombre.toLowerCase();
+                const claseIcono = iconosTabla[nombreTabla] || 'ti ti-database';
+                %>
+                <i class="tf-icons <%= claseIcono %>" style="font-size: 2rem;"></i>
               </div>
               <h5 class="card-title"><%= tabla.nombre %></h5>
             </div>

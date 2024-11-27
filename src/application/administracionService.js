@@ -51,6 +51,29 @@ class AdministracionService {
   obtenerBancos() {
     return this.administracionRepository.obtenerBancos();
   }
+
+  obtenerTiposOrden() {
+    return this.administracionRepository.obtenerTiposOrden();
+  }
+
+  establecerRelacionTipoOrden(idTipoOrden, data) {
+    return this.administracionRepository.establecerRelacionTipoOrden(
+      idTipoOrden,
+      data
+    );
+  }
+
+  establecerRelacionProveedorBanco(idProveedor, idBanco, data) {
+    return this.administracionRepository.establecerRelacionProveedorBanco(
+      idProveedor,
+      idBanco,
+      data
+    );
+  }
+
+  obtenerDetallesTipoOrden() {
+    return this.administracionRepository.obtenerDetallesTipoOrden();
+  }
 }
 
 export default AdministracionService;

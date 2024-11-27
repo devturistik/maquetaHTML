@@ -14,7 +14,6 @@
         </div>
         <div class="card-body">
           <p>La tabla <strong><%= tabla %></strong> no contiene una columna de <strong>ELIMINADO</strong> ni una columna que contenga <strong>ESTATUS</strong>. ¿Estás seguro de que deseas eliminar este registro de manera permanente?</p>
-          <!-- Opcional: Mostrar detalles del registro -->
           <form action="/administracion/<%= tabla %>/eliminar/<%= id %>/confirmar" method="POST">
             <button type="submit" class="btn btn-danger me-2">Sí, eliminar definitivamente</button>
             <a href="/administracion/<%= tabla %>" class="btn btn-secondary">Cancelar</a>

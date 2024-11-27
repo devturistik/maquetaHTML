@@ -38,12 +38,9 @@ class AdministracionRepository {
   obtenerMetadatos(tabla) {
     const meta = columnMetadata[tabla];
     if (!meta) {
-      console.warn(`Metadatos no encontrados para la tabla: ${tabla}`);
       return { id: null, columns: [] };
     }
-
     const columnasVisibles = meta.columns.filter((col) => col.visible);
-
     return {
       id: meta.id,
       columns: columnasVisibles,
@@ -58,6 +55,7 @@ class AdministracionRepository {
           SELECT TABLE_NAME
           FROM INFORMATION_SCHEMA.TABLES
           WHERE TABLE_SCHEMA = @schema AND TABLE_TYPE = 'BASE TABLE'
+          ORDER BY TABLE_NAME ASC
         `);
 
       const tablas = result.recordset
@@ -81,23 +79,79 @@ class AdministracionRepository {
 
     try {
       const pool = await poolPromise;
-      let query = `SELECT * FROM oc.[${tabla}]`;
+      let query = "";
+      const metadatos = columnMetadata[tabla];
+      const columnas = metadatos.columns.map((col) => col.nombre.toUpperCase());
 
-      const columnaEliminado = this.columnaEliminado(tabla);
-      const columnaEstatus = this.columnaEstatus(tabla);
-
-      const conditions = [];
-
-      if (columnaEliminado) {
-        conditions.push(`${columnaEliminado} = 0`);
+      let tableAlias = "";
+      if (tabla === "Proveedor") {
+        tableAlias = "p";
+      } else if (tabla === "TipoOrden") {
+        tableAlias = "t";
       }
 
-      if (columnaEstatus) {
-        conditions.push(`${columnaEstatus} != 0`);
+      const getPrefixedColumn = (columnName) => {
+        return tableAlias ? `${tableAlias}.[${columnName}]` : `[${columnName}]`;
+      };
+
+      const condiciones = [];
+
+      if (columnas.includes("ELIMINADO")) {
+        condiciones.push(`${getPrefixedColumn("ELIMINADO")} = 0`);
       }
 
-      if (conditions.length > 0) {
-        query += ` WHERE ${conditions.join(" AND ")}`;
+      const columnasEstatus = metadatos.columns.filter((col) =>
+        col.nombre.toUpperCase().includes("ESTATUS")
+      );
+
+      if (columnasEstatus.length > 0) {
+        columnasEstatus.forEach((col) => {
+          condiciones.push(`${getPrefixedColumn(col.nombre)} != 0`);
+        });
+      }
+
+      if (tabla === "Proveedor") {
+        query = `
+          SELECT
+            p.*,
+            ISNULL(
+              STUFF((
+                SELECT '; ' + b.NOMBRE_BANCO + ' (NUMERO_CUENTA: ' + pb.NUMERO_CUENTA + ', TIPO_CUENTA: ' + pb.TIPO_CUENTA + ', CORREO_BANCO: ' + pb.CORREO_BANCO + ')'
+                FROM oc.ProveedorBanco pb
+                INNER JOIN oc.Banco b ON pb.ID_BANCO = b.ID_BANCO
+                WHERE pb.ID_PROVEEDOR = p.ID_PROVEEDOR
+                FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'N/A') AS Bancos_Asociados
+          FROM
+            oc.Proveedor p
+        `;
+        if (condiciones.length > 0) {
+          query += ` WHERE ${condiciones.join(" AND ")}`;
+        }
+        query += " ORDER BY p.ID_PROVEEDOR";
+      } else if (tabla === "TipoOrden") {
+        query = `
+          SELECT
+            t.*,
+            ISNULL(
+              STUFF((
+                SELECT '; ' + d.NOMBRE_DETALLE + ' (CANTIDAD: ' + CAST(d.CANTIDAD AS VARCHAR) + ', TIPO_DETALLE: ' + d.TIPO_DETALLE + ')'
+                FROM oc.DetalleTipoOrden d
+                WHERE d.ID_TIPO_ORDEN = t.ID_TIPO
+                FOR XML PATH(''), TYPE
+              ).value('.', 'NVARCHAR(MAX)'), 1, 2, ''), 'Sin detalles') AS Detalles_Asociados
+          FROM
+            oc.TipoOrden t
+        `;
+        if (condiciones.length > 0) {
+          query += ` WHERE ${condiciones.join(" AND ")}`;
+        }
+        query += " ORDER BY t.ID_TIPO";
+      } else {
+        query = `SELECT * FROM oc.[${tabla}]`;
+        if (condiciones.length > 0) {
+          query += ` WHERE ${condiciones.join(" AND ")}`;
+        }
       }
 
       const result = await pool.request().query(query);
@@ -209,14 +263,14 @@ class AdministracionRepository {
   async eliminarLogico(tabla, id, columna, valor) {
     try {
       const pool = await poolPromise;
-      const metadatos = this.obtenerMetadatos(tabla);
+      const metadatos = columnMetadata[tabla];
       const idColumna = metadatos.id;
 
       if (!idColumna) {
         throw new Error(`No se encontró la columna ID para la tabla ${tabla}`);
       }
 
-      const query = `UPDATE oc.[${tabla}] SET ${columna} = @valor WHERE ${idColumna} = @id`;
+      const query = `UPDATE oc.[${tabla}] SET [${columna}] = @valor WHERE [${idColumna}] = @id`;
 
       await pool
         .request()
@@ -235,14 +289,14 @@ class AdministracionRepository {
   async eliminarFisico(tabla, id) {
     try {
       const pool = await poolPromise;
-      const metadatos = this.obtenerMetadatos(tabla);
+      const metadatos = columnMetadata[tabla];
       const idColumna = metadatos.id;
 
       if (!idColumna) {
         throw new Error(`No se encontró la columna ID para la tabla ${tabla}`);
       }
 
-      const query = `DELETE FROM oc.[${tabla}] WHERE ${idColumna} = @id`;
+      const query = `DELETE FROM oc.[${tabla}] WHERE [${idColumna}] = @id`;
 
       await pool.request().input("id", sql.Int, id).query(query);
     } catch (error) {
@@ -260,7 +314,7 @@ class AdministracionRepository {
       const result = await pool
         .request()
         .query(
-          `SELECT ID_PROVEEDOR, NOMBRE_PROVEEDOR FROM oc.[Proveedor] WHERE ELIMINADO = 0`
+          `SELECT ID_PROVEEDOR, NOMBRE_PROVEEDOR FROM oc.[Proveedor] WHERE ELIMINADO = 0 AND ESTATUS_PROVEEDOR = 1`
         );
       return result.recordset;
     } catch (error) {
@@ -275,11 +329,82 @@ class AdministracionRepository {
       const result = await pool
         .request()
         .query(
-          `SELECT ID_BANCO, NOMBRE_BANCO FROM oc.[Banco] WHERE ELIMINADO = 0`
+          `SELECT ID_BANCO, NOMBRE_BANCO FROM oc.[Banco] WHERE ESTATUS = 1`
         );
       return result.recordset;
     } catch (error) {
       console.error("Error al obtener bancos:", error);
+      throw error;
+    }
+  }
+
+  async obtenerTiposOrden() {
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .query(
+          `SELECT ID_TIPO, NOMBRE FROM oc.[TipoOrden] WHERE ESTATUS_TIPO_ORDEN != 0`
+        );
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener tipos de orden:", error);
+      throw error;
+    }
+  }
+
+  async establecerRelacionProveedorBanco(idProveedor, idBanco, data) {
+    try {
+      const pool = await poolPromise;
+      const query = `
+        INSERT INTO oc.ProveedorBanco (ID_PROVEEDOR, ID_BANCO, NUMERO_CUENTA, TIPO_CUENTA, CORREO_BANCO)
+        VALUES (@idProveedor, @idBanco, @NUMERO_CUENTA, @TIPO_CUENTA, @CORREO_BANCO)
+      `;
+      await pool
+        .request()
+        .input("idProveedor", sql.Int, idProveedor)
+        .input("idBanco", sql.Int, idBanco)
+        .input("NUMERO_CUENTA", sql.VarChar, data.NUMERO_CUENTA)
+        .input("TIPO_CUENTA", sql.VarChar, data.TIPO_CUENTA)
+        .input("CORREO_BANCO", sql.VarChar, data.CORREO_BANCO)
+        .query(query);
+    } catch (error) {
+      console.error("Error al establecer relación en ProveedorBanco:", error);
+      throw error;
+    }
+  }
+
+  async establecerRelacionTipoOrden(idTipoOrden, data) {
+    try {
+      const pool = await poolPromise;
+      const query = `
+        INSERT INTO oc.DetalleTipoOrden (ID_TIPO_ORDEN, NOMBRE_DETALLE, CANTIDAD, TIPO_DETALLE)
+        VALUES (@idTipoOrden, @NOMBRE_DETALLE, @CANTIDAD, @TIPO_DETALLE)
+      `;
+      await pool
+        .request()
+        .input("idTipoOrden", sql.Int, idTipoOrden)
+        .input("NOMBRE_DETALLE", sql.NVarChar, data.NOMBRE_DETALLE)
+        .input("CANTIDAD", sql.Decimal(18, 2), data.CANTIDAD)
+        .input("TIPO_DETALLE", sql.NVarChar, data.TIPO_DETALLE)
+        .query(query);
+    } catch (error) {
+      console.error("Error al establecer relación en DetalleTipoOrden:", error);
+      throw error;
+    }
+  }
+
+  async obtenerDetallesTipoOrden() {
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .query(
+          `SELECT ID_DETALLE_TIPO_ORDEN, NOMBRE_DETALLE FROM oc.DetalleTipoOrden`
+        );
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener detalles de tipo de orden:", error);
       throw error;
     }
   }

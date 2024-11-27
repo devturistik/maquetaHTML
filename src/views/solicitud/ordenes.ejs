@@ -54,8 +54,8 @@
                   %>
                   <tr>
                     <td><%= orden.codigo %></td>
-                    <td><%= orden.USUARIO_CREADOR %></td>
-                    <td><%= orden.CORREO_CREADOR %></td>
+                    <td><%= orden.usuario_creador %></td>
+                    <td><%= orden.correo_creador %></td>
                     <td>
                       <% if (orden.ruta_archivo_pdf) { %>
                         <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" rel="noreferrer">VER PDF</a>

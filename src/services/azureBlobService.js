@@ -67,10 +67,6 @@ class AzureBlobService {
         blobHTTPHeaders: { blobContentType: file.mimetype },
       });
 
-      console.log(
-        `Blob "${blobName}" cargado con éxito. Request ID: ${uploadBlobResponse.requestId}`
-      );
-
       return blockBlobClient.url;
     } catch (error) {
       console.error(
@@ -114,10 +110,6 @@ class AzureBlobService {
 
       const blockBlobClient = containerClient.getBlockBlobClient(blobName);
       const deleteResponse = await blockBlobClient.delete();
-
-      console.log(
-        `Blob "${blobName}" eliminado con éxito. Request ID: ${deleteResponse.requestId}`
-      );
     } catch (error) {
       console.error(`Error al eliminar el blob "${blobUrl}":`, error.message);
       throw new Error("Error al eliminar el archivo de Azure Blob Storage");
@@ -173,10 +165,6 @@ class AzureBlobService {
       const uploadBlobResponse = await blockBlobClient.uploadData(buffer, {
         blobHTTPHeaders: { blobContentType: contentType },
       });
-
-      console.log(
-        `Blob "${blobName}" cargado con éxito. Request ID: ${uploadBlobResponse.requestId}`
-      );
 
       return blockBlobClient.url;
     } catch (error) {

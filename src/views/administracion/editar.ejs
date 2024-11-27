@@ -1,4 +1,5 @@
 <!-- views/administracion/editar.ejs -->
+
 <%- include('../partials/header', { title: 'Editar ' + tabla }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
@@ -49,6 +50,13 @@
                       <% }) %>
                     </select>
                   <% } %>
+                <% } else if (tabla === 'DetalleTipoOrden' && columna.nombre === 'ID_TIPO_ORDEN') { %>
+                  <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
+                    <option value="">Seleccione un Tipo de Orden</option>
+                    <% tiposOrden.forEach(tipo => { %>
+                      <option value="<%= tipo.ID_TIPO %>" <%= tipo.ID_TIPO == registro.ID_TIPO_ORDEN ? 'selected' : '' %>><%= tipo.NOMBRE %></option>
+                    <% }) %>
+                  </select>
                 <% } else { %>
                   <!-- Opciones para otras tablas si es necesario -->
                 <% } %>
@@ -58,18 +66,17 @@
                   class="form-control" 
                   id="<%= columna.nombre %>" 
                   name="<%= columna.nombre %>" 
-                  value="<%= valor === null ? 'null' : valor %>" 
+                  value="<%= valor === null ? '' : valor %>" 
                   <%= columna.editable ? 'required' : 'readonly' %>
                 >
               <% } %>
             </div>
           <% } else { %>
-            <!-- Campos ocultos para columnas como ID_PROVEEDOR_BANCO -->
             <input 
               type="hidden" 
               id="<%= columna.nombre %>" 
               name="<%= columna.nombre %>" 
-              value="<%= registro[columna.nombre] === null ? 'null' : registro[columna.nombre] %>"
+              value="<%= registro[columna.nombre] === null ? '' : registro[columna.nombre] %>"
             >
           <% } %>
         <% }) %>
@@ -81,6 +88,7 @@
 </div>
 
 <%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
 <%- include('../partials/footer') %>
 <%- include('../partials/content-wrapper-close') %>
 

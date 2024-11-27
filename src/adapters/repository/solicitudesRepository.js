@@ -2,7 +2,6 @@
 import { sql, poolPromise } from "../../config/database.js";
 
 class SolicitudesRepository {
-  // Obtener todas las solicitudes no eliminadas
   async getAllWithOrdenes() {
     try {
       const pool = await poolPromise;
@@ -16,7 +15,7 @@ class SolicitudesRepository {
           s.correo_solicitante,
           s.created_at,
           e.nombre AS estatus,
-          o.id_orden
+          COUNT(o.id_orden) AS ordenes_count
         FROM
           oc.Solicitud s
         JOIN
@@ -25,24 +24,33 @@ class SolicitudesRepository {
           oc.OrdenCompra o ON s.id_solicitud = o.id_solicitud
         WHERE
           s.eliminado = 0
+        GROUP BY
+          s.id_solicitud,
+          s.asunto,
+          s.descripcion,
+          s.archivos,
+          s.usuario_solicitante,
+          s.correo_solicitante,
+          s.created_at,
+          e.nombre
         ORDER BY
           s.created_at DESC
       `);
       return result.recordset;
     } catch (error) {
       console.error(
-        "Error al obtener solicitudes con órdenes de la base de datos:",
+        "Error al obtener solicitudes con el conteo de órdenes de la base de datos:",
         error
       );
       throw error;
     }
   }
 
-  // Obtener una solicitud por ID
   async getById(id) {
     try {
       const pool = await poolPromise;
-      const result = await pool.request().input("id", sql.Int, id).query(`
+      const result = await pool.request().input("ID_SOLICITUD", sql.Int, id)
+        .query(`
           SELECT
             s.id_solicitud,
             s.asunto,
@@ -52,19 +60,36 @@ class SolicitudesRepository {
             s.usuario_solicitante,
             s.correo_solicitante,
             s.eliminado,
-            s.locked_at
+            s.locked_at,
+            s.estatus_id,
+            (
+              SELECT
+                o.id_orden,
+                o.codigo,
+                e.nombre AS estatus,
+                o.ruta_archivo_pdf,
+                o.created_at
+              FROM oc.OrdenCompra o
+              JOIN oc.Estatus e ON o.estatus_id = e.id_estatus
+              WHERE o.id_solicitud = s.id_solicitud
+              FOR JSON PATH
+            ) AS ordenes_json
           FROM oc.Solicitud s
           JOIN oc.Estatus e ON s.estatus_id = e.id_estatus
-          WHERE s.id_solicitud = @id
+          WHERE s.id_solicitud = @ID_SOLICITUD
         `);
-      return result.recordset[0];
+      const solicitud = result.recordset[0];
+
+      solicitud.ordenes = JSON.parse(solicitud.ordenes_json);
+      delete solicitud.ordenes_json;
+
+      return solicitud;
     } catch (error) {
       console.error("Error al obtener solicitud:", error);
       throw error;
     }
   }
 
-  // Guardar una nueva solicitud
   async saveSolicitud(solicitud) {
     try {
       const pool = await poolPromise;
@@ -97,7 +122,6 @@ class SolicitudesRepository {
     }
   }
 
-  // Actualizar una solicitud existente
   async updateSolicitud(id, solicitudData) {
     try {
       const pool = await poolPromise;
@@ -116,7 +140,6 @@ class SolicitudesRepository {
           WHERE id_solicitud = @id
         `);
     } catch (error) {
-      console.error("Error al actualizar la solicitud:", error);
       throw error;
     }
   }
@@ -141,7 +164,7 @@ class SolicitudesRepository {
     }
   }
 
-  async updateEstatus(id, nuevoEstatus) {
+  async updateEstatus(id, nuevoEstatus, locked_at = null) {
     try {
       const pool = await poolPromise;
 
@@ -158,11 +181,6 @@ class SolicitudesRepository {
 
       const estatusId = estatusResult.recordset[0].id_estatus;
 
-      let locked_at = null;
-      if (nuevoEstatus.toLowerCase() === "editando") {
-        locked_at = new Date();
-      }
-
       await pool
         .request()
         .input("id", sql.Int, id)
@@ -175,12 +193,10 @@ class SolicitudesRepository {
           WHERE id_solicitud = @id
         `);
     } catch (error) {
-      console.error("Error al actualizar el estatus de la solicitud:", error);
       throw error;
     }
   }
 
-  // Eliminar una solicitud (marcar como eliminado)
   async deleteSolicitud(id, justificacion) {
     try {
       const pool = await poolPromise;

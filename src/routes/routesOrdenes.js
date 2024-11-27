@@ -15,6 +15,25 @@ router.get("/ordenes/:id", ordenesController.getOrdenById);
 // Ruta para renderizar el formulario para crear orden dada una solicitud
 router.get("/ordenes-crear/:id", ordenesController.renderCreateForm);
 
+// Ruta para procesar la creación de orden dada una solicitud
+router.post(
+  "/ordenes-crear/:id",
+  upload.array("cotizacion", 10),
+  ordenesController.createOrden
+);
+
+// Ruta para liberar el bloqueo de procesamiento
+router.post(
+  "/ordenes-liberar-procesamiento/:id",
+  ordenesController.liberarProcesamiento
+);
+
+// Ruta para cancelar el procesamiento
+router.get(
+  "/ordenes-cancelar-procesamiento/:id",
+  ordenesController.cancelarProcesamiento
+);
+
 // Ruta API para obtener bancos por proveedor
 router.get(
   "/api/proveedores/:proveedorId/bancos",
@@ -25,13 +44,6 @@ router.get(
 router.get(
   "/api/tipos-orden/:tipoOrdenId/detalles",
   ordenesController.getDetallesTipoOrden
-);
-
-// Ruta para procesar la creación de orden dada una solicitud
-router.post(
-  "/ordenes-crear/:id",
-  upload.array("cotizacion", 10),
-  ordenesController.createOrden
 );
 
 export default router;

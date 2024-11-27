@@ -5,7 +5,10 @@ const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB por archivo
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10 MB máximo por archivo
+    files: 10, // Máximo 10 archivos
+  },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       // Documentos de Word

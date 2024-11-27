@@ -34,4 +34,13 @@ router.post(
   administracionController.confirmarEliminarFisico
 );
 
+router.get(
+  "/administracion/:tabla/relacionar",
+  administracionController.mostrarFormularioRelacionar
+);
+router.post(
+  "/administracion/:tabla/relacionar",
+  administracionController.establecerRelacion
+);
+
 export default router;

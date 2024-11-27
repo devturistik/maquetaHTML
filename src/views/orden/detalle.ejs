@@ -1,6 +1,6 @@
 <!-- views/orden/detalle.ejs -->
 <%- include('../partials/header', { title: 'Detalle de Orden de Compra' }) %>
-<%- include('../partials/navbar', { navbarText: 'Detalle de Orden de Compra: "' + orden.CODIGO + '"' }) %>
+<%- include('../partials/navbar', { navbarText: 'Detalle de Orden de Compra: "' + orden.codigo + '"' }) %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
@@ -85,22 +85,22 @@
 
       <div class="approval-level">
         <h4>Nivel de Aprobación</h4>
-        <% 
+        <%
           let approvalClass = 'pendiente';
-          if (orden.NIVEL_APROBACION >= 3) {
+          if (orden.nivel_aprobacion >= 3) {
             approvalClass = 'aprobado';
-          } else if (orden.NIVEL_APROBACION < 0) {
+          } else if (orden.nivel_aprobacion < 0) {
             approvalClass = 'rechazado';
           }
         %>
         <span class="approval-badge <%= approvalClass %>">
-          <%= orden.NIVEL_APROBACION >= 3 ? 'Aprobado' : (orden.NIVEL_APROBACION < 0 ? 'Rechazado' : 'Pendiente') %>
+          <%= orden.nivel_aprobacion >= 3 ? 'Aprobado' : (orden.nivel_aprobacion < 0 ? 'Rechazado' : 'Pendiente') %>
         </span>
       </div>
 
       <div class="pdf-preview-container">
-        <% if (orden.RUTA_ARCHIVO_PDF) { %>
-          <iframe src="<%= orden.RUTA_ARCHIVO_PDF.replace(/\"/g, '') %>" class="pdf-preview" frameborder="0"></iframe>
+        <% if (orden.ruta_archivo_pdf) { %>
+          <iframe src="<%= orden.ruta_archivo_pdf.replace(/\"/g, '') %>" class="pdf-preview" frameborder="0"></iframe>
         <% } else { %>
           <p>No hay archivo PDF disponible para esta orden.</p>
         <% } %>

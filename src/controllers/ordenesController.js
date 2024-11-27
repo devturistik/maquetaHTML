@@ -3,19 +3,15 @@ import OrdenesService from "../application/ordenesService.js";
 import SolicitudesService from "../application/solicitudesService.js";
 import { encodeBase64, decodeBase64 } from "../utils/base64.js";
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc.js";
-import timezone from "dayjs/plugin/timezone.js";
 import { calculateFechaVencimiento } from "../utils/helpers.js";
 import AzureBlobService from "../services/azureBlobService.js";
 import axios from "axios";
 import ejs from "ejs";
 import path from "path";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
-
-dayjs.extend(utc);
-dayjs.extend(timezone);
 
 class OrdenesController {
   constructor() {
@@ -26,13 +22,11 @@ class OrdenesController {
   getAllOrdenes = async (req, res) => {
     try {
       const ordenes = await this.ordenesService.getAllOrdenes();
-      console.log(ordenes);
       res.render("ordenes", {
         ordenes: ordenes.map((orden) => ({
           ...orden,
           Encoded_id_orden: encodeBase64(orden.id_orden),
           Encoded_id_solicitud: encodeBase64(orden.id_solicitud),
-          codigo: orden.codigo.match(/(?<=OC-)\d+/)[0],
           ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
           created_at: new Date(orden.created_at).toLocaleString("es-CL", {
             timeZone: "UTC",
@@ -58,7 +52,8 @@ class OrdenesController {
         return res.redirect("/ordenes");
       }
 
-      orden.id = encodeBase64(orden.ID_ORDEN);
+      orden.id = encodeBase64(orden.id_orden);
+
       res.render("orden/detalle", { orden });
     } catch (error) {
       console.error("Error al obtener orden:", error.message);
@@ -84,7 +79,27 @@ class OrdenesController {
         return res.redirect("/solicitudes");
       }
 
-      await this.solicitudesService.updateEstatus(id_solicitud, "procesada");
+      const lockTimeoutMinutes = 10;
+      const now = dayjs();
+      const lockedAt = dayjs(solicitud.locked_at);
+      const estatusLower = solicitud.estatus.toLowerCase();
+
+      if (
+        (estatusLower === "editando" || estatusLower === "procesando") &&
+        now.diff(lockedAt, "minute") < lockTimeoutMinutes
+      ) {
+        req.flash(
+          "errorMessage",
+          "La solicitud está siendo procesada por otro usuario."
+        );
+        return res.redirect("/solicitudes");
+      }
+
+      await this.solicitudesService.updateEstatus(
+        id_solicitud,
+        "procesando",
+        new Date()
+      );
 
       solicitud.id = encodeBase64(solicitud.id_solicitud);
 
@@ -108,16 +123,31 @@ class OrdenesController {
         this.ordenesService.getCuentasContables(),
       ]);
 
-      return res.render("orden/crear", {
-        solicitud,
+      const datosAdicionales = {
         proveedores,
         plazosdepago,
         empresas,
         centrosdecosto,
         tiposdeorden,
         monedas,
-        productos,
         cuentascontables,
+      };
+
+      const tokenDatos = jwt.sign(datosAdicionales, process.env.JWT_SECRET, {
+        expiresIn: "1h",
+      });
+
+      return res.render("orden/crear", {
+        solicitud,
+        productos,
+        proveedores,
+        plazosdepago,
+        empresas,
+        centrosdecosto,
+        tiposdeorden,
+        monedas,
+        cuentascontables,
+        tokenDatos,
         errors: {},
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
@@ -192,6 +222,7 @@ class OrdenesController {
         retencion,
         propina,
         total,
+        tokenDatos,
       } = req.body;
       const productos = JSON.parse(req.body.productos || "[]");
       const fechaHoySantiago = dayjs().tz("America/Santiago").toDate();
@@ -214,30 +245,85 @@ class OrdenesController {
         documentosCotizacion = blobUrls.map((url) => ({ url, eliminado: 0 }));
       }
 
-      const [
-        Solicitud,
-        Proveedor,
-        Banco,
-        PlazoPago,
-        Empresa,
-        CentroCosto,
-        TipoOrden,
-        Moneda,
-        CuentaContable,
-      ] = await Promise.all([
-        this.solicitudesService.getSolicitudById(id_solicitud),
-        this.ordenesService.getProveedorById(id_proveedor),
-        this.ordenesService.getProveedorBanco(id_banco, id_proveedor),
-        this.ordenesService.getPlazoPagoById(id_plazoPago),
-        this.ordenesService.getEmpresaById(id_empresa),
-        this.ordenesService.getCentroCostoById(id_centroCosto),
-        this.ordenesService.getTipoOrdenById(id_tipoOrden),
-        this.ordenesService.getMonedaById(id_moneda),
-        this.ordenesService.getCuentaContableById(id_cuentaContable),
-      ]);
+      let datosAdicionales;
+      try {
+        datosAdicionales = jwt.verify(tokenDatos, process.env.JWT_SECRET);
+      } catch (err) {
+        req.flash("errorMessage", "Datos inválidos o sesión expirada.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
 
-      if (Moneda.ABREV !== "CLP$") {
-        totalLocal = Moneda.CAMBIO * total;
+      const Solicitud = await this.solicitudesService.getSolicitudById(
+        id_solicitud
+      );
+
+      const Proveedor = datosAdicionales.proveedores.find(
+        (p) => p.id_proveedor == id_proveedor
+      );
+      if (!Proveedor) {
+        req.flash("errorMessage", "Proveedor inválido.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const Banco = await this.ordenesService.getProveedorBanco(
+        id_banco,
+        id_proveedor
+      );
+      if (!Banco) {
+        req.flash("errorMessage", "Banco inválido.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const PlazoPago = datosAdicionales.plazosdepago.find(
+        (p) => p.id_forma_pago == id_plazoPago
+      );
+      if (!PlazoPago) {
+        req.flash("errorMessage", "Plazo de pago inválido.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const Empresa = datosAdicionales.empresas.find(
+        (e) => e.id_empresa == id_empresa
+      );
+      if (!Empresa) {
+        req.flash("errorMessage", "Empresa inválida.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const CentroCosto = datosAdicionales.centrosdecosto.find(
+        (c) => c.id_centro_costo == id_centroCosto
+      );
+      if (!CentroCosto) {
+        req.flash("errorMessage", "Centro de costo inválido.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const TipoOrden = datosAdicionales.tiposdeorden.find(
+        (t) => t.id_tipo == id_tipoOrden
+      );
+      if (!TipoOrden) {
+        req.flash("errorMessage", "Tipo de orden inválido.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const Moneda = datosAdicionales.monedas.find(
+        (m) => m.id_moneda == id_moneda
+      );
+      if (!Moneda) {
+        req.flash("errorMessage", "Moneda inválida.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      const CuentaContable = datosAdicionales.cuentascontables.find(
+        (c) => c.id_cuenta == id_cuentaContable
+      );
+      if (!CuentaContable) {
+        req.flash("errorMessage", "Cuenta contable inválida.");
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      if (Moneda.abrev !== "CLP$") {
+        totalLocal = Moneda.cambio * total;
       }
 
       const newOrden = {
@@ -259,6 +345,7 @@ class OrdenesController {
         id_proveedor: id_proveedor,
         id_tipo_orden: id_tipoOrden,
         id_plazo: id_plazoPago,
+        id_cuenta_contable: id_cuentaContable,
         fecha_vencimiento: fechaVencimiento,
         fecha_creacion: fechaHoySantiago,
       };
@@ -271,7 +358,7 @@ class OrdenesController {
         );
 
       const templateData = {
-        codigooc: codigoOC.match(/OC-(\d+)_/)[1],
+        codigooc: codigoOC.split("-")[1],
         creadoroc: creadorOC,
         solicitud: Solicitud,
         proveedor: Proveedor,
@@ -311,6 +398,7 @@ class OrdenesController {
       });
 
       try {
+        console.time("Tiempo de ejecución api html a pdf");
         const response = await axios.post(
           process.env.URL_API_CREATE_PDF,
           html,
@@ -332,8 +420,9 @@ class OrdenesController {
           pdfBuffer,
           "application/pdf"
         );
-
+        console.timeEnd("Tiempo de ejecución api html a pdf");
         await this.ordenesService.updateOrdenPdfUrl(id_orden, pdfUrl);
+        await this.solicitudesService.updateEstatus(id_solicitud, "procesada");
 
         req.flash("successMessage", "Orden creada exitosamente.");
         res.redirect("/ordenes");
@@ -352,6 +441,34 @@ class OrdenesController {
         "Hubo un error al crear la orden. Por favor, inténtelo nuevamente."
       );
       res.redirect(`/ordenes-crear/${req.params.id}`);
+    }
+  };
+
+  liberarProcesamiento = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id_solicitud = decodeBase64(encodedId);
+      await this.solicitudesService.updateEstatus(id_solicitud, "abierta");
+      res.status(200).json({ message: "Bloqueo de procesamiento liberado." });
+    } catch (error) {
+      console.error("Error al liberar el bloqueo de procesamiento:", error);
+      res
+        .status(500)
+        .json({ message: "Error al liberar el bloqueo de procesamiento." });
+    }
+  };
+
+  cancelarProcesamiento = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id_solicitud = decodeBase64(encodedId);
+      await this.solicitudesService.updateEstatus(id_solicitud, "abierta");
+      req.flash("successMessage", "Procesamiento cancelado.");
+      res.redirect("/solicitudes");
+    } catch (error) {
+      console.error("Error al cancelar el procesamiento:", error);
+      req.flash("errorMessage", "Error al cancelar el procesamiento.");
+      res.redirect("/solicitudes");
     }
   };
 }

@@ -265,7 +265,6 @@
     function liberarBloqueo() {
       const encodedId = "<%= solicitud.id %>";
       const url = `/solicitudes-liberar-edicion/${encodedId}`;
-
       navigator.sendBeacon(url);
     }
 

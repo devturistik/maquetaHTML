@@ -139,12 +139,12 @@
     <div class="container">
         <div class="header">
             <div class="info">
-                <p><strong>EMPRESA:</strong> <%= defaultText(empresa.NOMBRE) %></p>
-                <p><strong>RUT:</strong> <%= defaultText(empresa.DOCUMENTO) %></p>
-                <p><strong>DIRECCIÓN:</strong> <%= defaultText(empresa.DIRECCION) %></p>
+                <p><strong>EMPRESA:</strong> <%= defaultText(empresa.nombre) %></p>
+                <p><strong>RUT:</strong> <%= defaultText(empresa.documento) %></p>
+                <p><strong>DIRECCIÓN:</strong> <%= defaultText(empresa.direccion) %></p>
             </div>
             <div class="details">
-                <p><strong>CENTRO DE COSTO:</strong> <%= defaultText(centrocosto.NOMBRE) %></p>
+                <p><strong>CENTRO DE COSTO:</strong> <%= defaultText(centrocosto.nombre) %></p>
                 <p><strong>FECHA:</strong> <%= defaultText(fechaHoy) %></p>
                 <p><strong>N°:</strong> <%= defaultText(codigooc) %></p>
             </div>
@@ -154,25 +154,25 @@
         <div class="section">
             <table class="info-table">
                 <tr>
-                    <td colspan="2"><strong>SEÑOR (ES):</strong> <%= defaultText(proveedor.NOMBRE_PROVEEDOR) %></td>
+                    <td colspan="2"><strong>SEÑOR (ES):</strong> <%= defaultText(proveedor.nombre_proveedor) %></td>
                 </tr>
                 <tr>
-                    <td colspan="2"><strong>RUT:</strong> <%= defaultText(proveedor.DOCUMENTO_PROVEEDOR) %></td>
+                    <td colspan="2"><strong>RUT:</strong> <%= defaultText(proveedor.documento_proveedor) %></td>
                 </tr>
                 <tr>
-                    <td><strong>BANCO:</strong> <%= defaultText(banco.NOMBRE_BANCO) %></td>
-                    <td><strong>TIPO CUENTA:</strong> <%= defaultText(banco.TIPO_CUENTA) %></td>
+                    <td><strong>BANCO:</strong> <%= defaultText(banco.nombre_banco) %></td>
+                    <td><strong>TIPO CUENTA:</strong> <%= defaultText(banco.tipo_cuenta) %></td>
                 </tr>
                 <tr>
-                    <td><strong>N°:</strong> <%= defaultText(banco.NUMERO_CUENTA) %></td>
-                    <td><strong>CORREO:</strong> <%= defaultText(proveedor.CORREO_PRINCIPAL) %></td>
+                    <td><strong>N°:</strong> <%= defaultText(banco.numero_cuenta) %></td>
+                    <td><strong>CORREO:</strong> <%= defaultText(proveedor.correo_principal) %></td>
                 </tr>
             </table>
         </div>
 
         <div class="section">
-            <p><strong>DIRECCION DE DESPACHO:</strong> <%= defaultText(empresa.DIRECCION) %></p>
-            <p><strong>FORMA DE PAGO:</strong> <%= defaultText(plazopago.NOMBRE) %></p>
+            <p><strong>DIRECCION DE DESPACHO:</strong> <%= defaultText(empresa.direccion) %></p>
+            <p><strong>FORMA DE PAGO:</strong> <%= defaultText(plazopago.nombre) %></p>
             <p><strong>CONTACTO:</strong> <%= defaultText(creadoroc) %></p>
         </div>
         <div class="section">
@@ -199,48 +199,48 @@
                     <%= producto.cantidad %> / <%= defaultText(producto.unidad) %>
                 </td>
                 <td>
-                    <%= defaultText(moneda.ABREV) %><%= formatNumber(producto.valorUnitario) %>
+                    <%= defaultText(moneda.abrev) %> <%= formatNumber(producto.valorUnitario) %>
                 </td>
                 <td>
-                    <%= defaultText(moneda.ABREV) %><%= formatNumber(producto.valorTotal) %>
+                    <%= defaultText(moneda.abrev) %> <%= formatNumber(producto.valorTotal) %>
                 </td>
             </tr>
             <% }); %>
         </table>
         <table class="summary-table">
-            <% if (formatNumber(totales.subtotal, moneda.ABREV)) { %>
+            <% if (formatNumber(totales.subtotal, moneda.abrev)) { %>
             <tr>
                 <td><strong>Subtotal</strong></td>
-                <td><%= moneda.ABREV %></td>
-                <td><%= formatNumber(totales.subtotal, moneda.ABREV) %></td>
+                <td><%= moneda.abrev %></td>
+                <td><%= formatNumber(totales.subtotal, moneda.abrev) %></td>
             </tr>
             <% } %>
-            <% if (formatNumber(totales.impuesto, moneda.ABREV)) { %>
+            <% if (formatNumber(totales.impuesto, moneda.abrev)) { %>
             <tr>
                 <td><strong>Impuesto</strong></td>
-                <td><%= moneda.ABREV %></td>
-                <td><%= formatNumber(totales.impuesto, moneda.ABREV) %></td>
+                <td><%= moneda.abrev %></td>
+                <td><%= formatNumber(totales.impuesto, moneda.abrev) %></td>
             </tr>
             <% } %>
-            <% if (formatNumber(totales.retencion, moneda.ABREV)) { %>
+            <% if (formatNumber(totales.retencion, moneda.abrev)) { %>
             <tr>
                 <td><strong>Retención</strong></td>
-                <td><%= moneda.ABREV %></td>
-                <td><%= formatNumber(totales.retencion, moneda.ABREV) %></td>
+                <td><%= moneda.abrev %></td>
+                <td><%= formatNumber(totales.retencion, moneda.abrev) %></td>
             </tr>
             <% } %>
-            <% if (formatNumber(totales.propina, moneda.ABREV)) { %>
+            <% if (formatNumber(totales.propina, moneda.abrev)) { %>
             <tr>
                 <td><strong>Propina</strong></td>
-                <td><%= moneda.ABREV %></td>
-                <td><%= formatNumber(totales.propina, moneda.ABREV) %></td>
+                <td><%= moneda.abrev %></td>
+                <td><%= formatNumber(totales.propina, moneda.abrev) %></td>
             </tr>
             <% } %>
-            <% if (formatNumber(totales.total, moneda.ABREV)) { %>
+            <% if (formatNumber(totales.total, moneda.abrev)) { %>
             <tr>
                 <td><strong>Total</strong></td>
-                <td><%= moneda.ABREV %></td>
-                <td><%= formatNumber(totales.total, moneda.ABREV) %></td>
+                <td><%= moneda.abrev %></td>
+                <td><%= formatNumber(totales.total, moneda.abrev) %></td>
             </tr>
             <% } %>
         </table>
