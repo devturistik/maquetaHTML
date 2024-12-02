@@ -19,6 +19,33 @@ class OrdenesService {
     }
   }
 
+  async getHistorialAprobaciones(codigoOrden) {
+    try {
+      return await this.ordenesRepository.getHistorialAprobaciones(codigoOrden);
+    } catch (error) {
+      console.error(
+        "Error en OrdenesService.getHistorialAprobaciones:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getUsuariosAprobadores(historialAprobaciones) {
+    try {
+      const aprobadorIds = historialAprobaciones
+        .map((h) => h.APROBADOR_ID)
+        .filter(Boolean);
+      return await this.ordenesRepository.getUsuariosAprobadores(aprobadorIds);
+    } catch (error) {
+      console.error(
+        "Error en OrdenesService.getUsuariosAprobadores:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
   async getProveedores() {
     return await this.ordenesRepository.getProveedores();
   }

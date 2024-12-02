@@ -59,9 +59,16 @@ class OrdenesController {
         return res.redirect("/ordenes");
       }
 
+      const historialAprobaciones =
+        await this.ordenesService.getHistorialAprobaciones(orden.codigo);
+
+      const usuarios = await this.ordenesService.getUsuariosAprobadores(
+        historialAprobaciones
+      );
+
       orden.id = encodeBase64(orden.id_orden);
 
-      res.render("orden/detalle", { orden });
+      res.render("orden/detalle", { orden, historialAprobaciones, usuarios });
     } catch (error) {
       console.error("Error al obtener orden:", error.message);
       req.flash("errorMessage", "Error al obtener la orden de compra.");
@@ -254,7 +261,7 @@ class OrdenesController {
       const formattedFechaHoyForTemplate =
         fechaHoySantiago.format("DD-MM-YYYY");
       const fechaCreacionDate = fechaHoySantiago.utc().toDate();
-      const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}, ${res.locals.user.correo}`;
+      const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}`;
 
       const documentosCotizacionPromise =
         req.files && req.files.length > 0

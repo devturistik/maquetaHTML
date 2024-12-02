@@ -18,6 +18,86 @@
     border-radius: 8px;
   }
 
+  .approval-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2rem 0;
+  }
+
+  .flow-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 800px;
+    position: relative;
+  }
+
+  .flow-line {
+    position: absolute;
+    top: 25px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background-color: #ddd;
+    z-index: 1;
+  }
+
+  .flow-line.active {
+    background-color: #28a745;
+  }
+
+  .flow-step {
+    text-align: center;
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  .step-circle {
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+    display: inline-block;
+    z-index: 2;
+    margin-bottom: 10px;
+  }
+
+  .step-circle.pending {
+    background-color: #ffc107;
+  }
+
+  .step-circle.approved {
+    background-color: #28a745;
+  }
+
+  .step-circle.rejected {
+    background-color: #dc3545;
+  }
+
+  .approver-name {
+    font-size: 0.9rem;
+    color: #212529;
+    position: relative;
+    z-index: 2;
+  }
+
+  .flow-container .flow-step:first-child .flow-line {
+    left: 25%;
+  }
+
+  .flow-container .flow-step:last-child .flow-line {
+    right: 25%;
+  }
+
   .approval-level {
     text-align: center;
     margin-bottom: 2rem;
@@ -89,6 +169,38 @@
       <div class="mb-4">
         <h2>Detalle de Orden de Compra</h2>
       </div>
+
+      <% if (historialAprobaciones.length > 0) { %>
+        <div class="approval-flow">
+          <h4>Flujo de Historial de Aprobación</h4>
+          <div class="flow-container">
+            <div class="flow-line <%= historialAprobaciones.some(h => h.APPROVALS === 1) ? 'active' : '' %>"></div>
+            <% historialAprobaciones.forEach((historial, index) => { %>
+              <div class="flow-step">
+                <div
+                  class="step-circle <%=
+                    historial.APPROVALS === 1
+                      ? 'approved'
+                      : historial.APPROVALS === 2
+                      ? 'rejected'
+                      : 'pending'
+                  %>"
+                  title="<%= historial.COMENTARIO || 'Sin comentario' %>"
+                >
+                  <%= historial.NIVEL_APROBACION %>
+                </div>
+                <span class="approver-name">
+                  <% if (usuarios[historial.APROBADOR_ID]) { %>
+                    <%= usuarios[historial.APROBADOR_ID].nombre %> <%= usuarios[historial.APROBADOR_ID].apellido %>
+                  <% } else { %>
+                    Desconocido
+                  <% } %>
+                </span>
+              </div>
+            <% }); %>
+          </div>
+        </div>
+      <% } %>
 
       <div class="approval-level">
         <h4>Nivel de Aprobación</h4>

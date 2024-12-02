@@ -93,6 +93,77 @@ class OrdenesRepository {
     }
   }
 
+  async getHistorialAprobaciones(codigoOrden) {
+    const query = `
+      SELECT
+        h.ID_HISTORIAL,
+        h.ID_ORDEN_COMPRA,
+        h.CODIGO_ORDEN_COMPRA,
+        h.APROBADOR_ID,
+        h.NIVEL_APROBACION,
+        h.APPROVALS,
+        h.ESTATUS_ID,
+        h.COMENTARIO,
+        h.UPDATED_AT
+      FROM
+        oc.HistorialAprobaciones h
+      WHERE
+        h.CODIGO_ORDEN_COMPRA = @CODIGO_ORDEN_COMPRA
+      ORDER BY
+        h.NIVEL_APROBACION ASC
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("CODIGO_ORDEN_COMPRA", sql.VarChar, codigoOrden)
+        .query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error(
+        "Error al obtener historial de aprobaciones:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async getUsuariosAprobadores(aprobadorIds) {
+    if (!aprobadorIds.length) return [];
+
+    const placeholders = aprobadorIds
+      .map((_, index) => `@ID${index}`)
+      .join(", ");
+
+    const query = `
+      SELECT
+        u.id AS APROBADOR_ID,
+        u.nombre,
+        u.apellido
+      FROM
+        centralusuarios.Usuarios u
+      WHERE
+        u.id IN (${placeholders})
+    `;
+    try {
+      const pool = await poolPromise;
+      const request = pool.request();
+
+      aprobadorIds.forEach((id, index) => {
+        request.input(`ID${index}`, sql.Int, id);
+      });
+
+      const result = await request.query(query);
+      return result.recordset.reduce((acc, user) => {
+        acc[user.APROBADOR_ID] = user;
+        return acc;
+      }, {});
+    } catch (error) {
+      console.error("Error al obtener usuarios aprobadores:", error.message);
+      throw error;
+    }
+  }
+
   async getOrdenesBySolicitudId(solicitudId) {
     const query = `
       SELECT
