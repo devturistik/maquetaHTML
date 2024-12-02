@@ -57,8 +57,8 @@ class ApiService {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          codigoOC,
-          API_USERNAME: apiUsername,
+          codigo: codigoOC,
+          sistema: apiUsername,
         }),
       });
 
