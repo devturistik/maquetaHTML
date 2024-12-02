@@ -88,6 +88,8 @@ class AdministracionRepository {
         tableAlias = "p";
       } else if (tabla === "TipoOrden") {
         tableAlias = "t";
+      } else if (tabla === "CentroCosto") {
+        tableAlias = "cc";
       }
 
       const getPrefixedColumn = (columnName) => {
@@ -147,6 +149,23 @@ class AdministracionRepository {
           query += ` WHERE ${condiciones.join(" AND ")}`;
         }
         query += " ORDER BY t.ID_TIPO";
+      } else if (tabla === "CentroCosto") {
+        query = `
+          SELECT
+            cc.*,
+            ISNULL(
+              CONCAT(u.nombre, ' ', u.apellido, ' (', u.departamento, ')'),
+              'N/A'
+            ) AS Gerente_Detalle
+          FROM
+            oc.CentroCosto cc
+          LEFT JOIN
+            centralusuarios.Usuarios u ON cc.ID_GERENTE = u.ID
+        `;
+        if (condiciones.length > 0) {
+          query += ` WHERE ${condiciones.join(" AND ")}`;
+        }
+        query += " ORDER BY cc.ID_CENTRO_COSTO";
       } else {
         query = `SELECT * FROM oc.[${tabla}]`;
         if (condiciones.length > 0) {
@@ -158,6 +177,30 @@ class AdministracionRepository {
       return result.recordset;
     } catch (error) {
       console.error(`Error al obtener registros de la tabla ${tabla}:`, error);
+      throw error;
+    }
+  }
+
+  async obtenerGerentes() {
+    try {
+      const pool = await poolPromise;
+      const query = `
+        SELECT
+          u.ID,
+          u.nombre,
+          u.apellido,
+          u.departamento
+        FROM
+          centralusuarios.Usuarios u
+        WHERE
+          u.ACTIVO = 1
+        ORDER BY
+          u.nombre ASC, u.apellido ASC
+      `;
+      const result = await pool.request().query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener gerentes:", error);
       throw error;
     }
   }
@@ -208,10 +251,28 @@ class AdministracionRepository {
     try {
       const pool = await poolPromise;
       const idColumna = columnMetadata[tabla].id;
-      const result = await pool
-        .request()
-        .input("Id", sql.Int, id)
-        .query(`SELECT * FROM oc.[${tabla}] WHERE ${idColumna} = @Id`);
+      let query = "";
+
+      if (tabla === "CentroCosto") {
+        query = `
+          SELECT
+            cc.*,
+            ISNULL(
+              CONCAT(u.nombre, ' ', u.apellido, ' (', u.departamento, ')'),
+              'N/A'
+            ) AS Gerente_Detalle
+          FROM
+            oc.CentroCosto cc
+          LEFT JOIN
+            centralusuarios.Usuarios u ON cc.ID_GERENTE = u.ID
+          WHERE
+            cc.[${idColumna}] = @Id
+        `;
+      } else {
+        query = `SELECT * FROM oc.[${tabla}] WHERE [${idColumna}] = @Id`;
+      }
+
+      const result = await pool.request().input("Id", sql.Int, id).query(query);
       return result.recordset[0];
     } catch (error) {
       console.error(`Error al obtener registro de la tabla ${tabla}:`, error);
@@ -405,6 +466,30 @@ class AdministracionRepository {
       return result.recordset;
     } catch (error) {
       console.error("Error al obtener detalles de tipo de orden:", error);
+      throw error;
+    }
+  }
+
+  async obtenerGerentes() {
+    try {
+      const pool = await poolPromise;
+      const query = `
+        SELECT
+          u.ID,
+          u.nombre,
+          u.apellido,
+          u.departamento
+        FROM
+          centralusuarios.Usuarios u
+        WHERE
+          u.ACTIVO = 1
+        ORDER BY
+          u.nombre ASC, u.apellido ASC
+      `;
+      const result = await pool.request().query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener gerentes:", error);
       throw error;
     }
   }

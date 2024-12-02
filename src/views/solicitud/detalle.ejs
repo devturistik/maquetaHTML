@@ -1,8 +1,14 @@
-<!-- views/solicitud/detalle.ejs -->
 <%- include('../partials/header', { title: 'Detalle de Solicitud' }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
+
+<%
+  const userRoles = user.roles.map(role => role.rol.toLowerCase());
+  const isAdmin = userRoles.includes('admin');
+  const isComprador = userRoles.includes('comprador');
+  const canCreateOrdenCompra = isAdmin || isComprador;
+%>
 
 <style>
   .img-fluid {
@@ -13,33 +19,31 @@
     margin-right: auto;
   }
 
-  iframe {
-    width: 100%;
-    height: 800px;
-    border: none;
+  .table td, .table th {
+    vertical-align: middle;
   }
 
-  .preview-container {
-    display: flex;
-    justify-content: center;
-  }
-
-  @media (max-width: 768px) {
-    iframe {
-      height: 600px;
-    }
-  }
-
-  .text-word {
-    color: #2B579A !important; /* Color azul típico de Word */
-  }
-
-  .btn-toggle-preview {
-    display: flex;
+  .btn-back {
+    display: inline-flex;
     align-items: center;
+    text-decoration: none;
   }
 
-  .btn-toggle-preview i {
+  .btn-back i {
+    margin-right: 5px;
+  }
+
+  .list-group-item {
+    font-size: 0.9rem;
+  }
+
+  .btn-create-order {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+  }
+
+  .btn-create-order i {
     margin-right: 5px;
   }
 </style>
@@ -48,88 +52,163 @@
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-solicitud-detalle">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">Detalle de la Solicitud #<%= solicitud.id_solicitud %></h4>
-        <a href="/solicitudes" class="btn btn-secondary">
-          <i class="fas fa-arrow-left me-1"></i> Regresar
-        </a>
+        <h4 class="mb-0 text-primary">Detalle de la Solicitud #<%= solicitud.nro_solicitud %></h4>
+        <div>
+          <a href="/solicitudes" class="btn btn-secondary btn-back">
+            <i class="fas fa-arrow-left"></i> Regresar
+          </a>
+          <% if (canCreateOrdenCompra) { %>
+            <a href="/ordenes-crear/<%= solicitud.id_solicitud %>" class="btn btn-primary btn-create-order">
+              <i class="fas fa-plus me-1"></i> Crear Orden de Compra
+            </a>
+          <% } %>
+        </div>
       </div>
 
       <div class="card shadow-sm mb-4">
-        <div class="card-body">
-          <div class="mb-4">
-            <h6 class="fw-bold text-primary">Asunto</h6>
-            <p class="mb-0"><%= solicitud.asunto %></p>
-          </div>
-
-          <div class="mb-4">
-            <h6 class="fw-bold text-primary">Descripción</h6>
-            <p class="mb-0"><%= solicitud.descripcion %></p>
-          </div>
-
-          <div class="mb-4">
-            <h6 class="fw-bold text-primary">Archivos Adjuntos</h6>
-            <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
-              <ul class="list-group list-group-flush">
-                <% solicitud.archivos.forEach((archivo) => { 
-                  const blobName = archivo.url.split('/').pop();
-                  const parts = blobName.split('-');
-                  const originalFileName = parts.slice(2).join('-');
-                  const extension = originalFileName.split('.').pop().toLowerCase();
-                  let iconClass = 'fas fa-file';
-                  if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf text-danger';
-                  else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image text-info';
-                  else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word text-word';
-                  else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel text-success';
-                  else if (['ppt', 'pptx'].includes(extension)) iconClass = 'fas fa-file-powerpoint text-danger';
-
-                %>
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="/solicitudes/<%= solicitud.id %>/descargar/<%= blobName %>" class="text-decoration-none">
-                      <i class="<%= iconClass %> me-2"></i> <%= originalFileName %>
-                    </a>
-                  </li>
-                <% }); %>
-              </ul>
-            <% } else { %>
-              <p class="text-muted">No hay archivos adjuntos.</p>
-            <% } %>
-          </div>
-
-          <div class="row mb-4">
-            <div class="col-md-4">
-              <h6 class="fw-bold text-primary">Estatus</h6>
-              <p class="mb-0"><%= solicitud.estatus %></p>
-            </div>
-            <div class="col-md-4">
-              <h6 class="fw-bold text-primary">Solicitante</h6>
-              <p class="mb-0"><%= solicitud.usuario_solicitante %></p>
-            </div>
-            <div class="col-md-4">
-              <h6 class="fw-bold text-primary">Correo del Solicitante</h6>
-              <p class="mb-0">
-                <a href="mailto:<%= solicitud.correo_solicitante %>" class="text-decoration-none"><%= solicitud.correo_solicitante %></a>
-              </p>
-            </div>
-          </div>
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Información de la Solicitud</h5>
+        </div>
+        <div class="card-body py-3">
           <div class="row">
-            <h5 class="fw-bold text-primary">Órdenes Asociadas</h5>
-            <% if (ordenes && ordenes.length > 0) { %>
-              <ul class="list-group">
-                <% ordenes.forEach(orden => { %>
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>
-                      Orden #<%= orden.codigo %> - <%= orden.estatus %>
-                    </span>
-                    <a href="/ordenes/<%= orden.Encoded_id_orden %>" class="btn btn-sm btn-outline-primary">
-                      Ver Orden
-                    </a>
-                  </li>
-                <% }) %>
-              </ul>
-            <% } else { %>
-              <p>No hay órdenes asociadas a esta solicitud.</p>
-            <% } %>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <h6 class="fw-bold text-secondary">Asunto</h6>
+                <p class="mb-0 text-dark"><%= solicitud.asunto %></p>
+              </div>
+              <div>
+                <h6 class="fw-bold text-secondary">Descripción</h6>
+                <p class="mb-0 text-dark"><%= solicitud.descripcion %></p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <h6 class="fw-bold text-secondary">Estatus</h6>
+                <p class="mb-0">
+                  <% if (solicitud.estatus.toLowerCase() === 'abierta') { %>
+                    <i class="fas fa-hourglass-start text-warning me-2"></i>Pendiente
+                  <% } else if (solicitud.estatus.toLowerCase() === 'procesada') { %>
+                    <i class="fas fa-check-circle text-success me-2"></i>Procesada
+                  <% } %>
+                </p>
+              </div>
+              <div class="mb-3">
+                <h6 class="fw-bold text-secondary">Solicitante</h6>
+                <p class="mb-0 text-dark"><%= solicitud.usuario_solicitante %></p>
+              </div>
+              <div>
+                <h6 class="fw-bold text-secondary">Correo del Solicitante</h6>
+                <p class="mb-0">
+                  <a href="mailto:<%= solicitud.correo_solicitante %>" class="text-decoration-none"><%= solicitud.correo_solicitante %></a>
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Archivos Adjuntos</h5>
+        </div>
+        <div class="card-body">
+          <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
+            <ul class="list-group list-group-flush">
+              <% solicitud.archivos.forEach((archivo) => { 
+                const blobName = archivo.url.split('/').pop();
+                const parts = blobName.split('-');
+                const originalFileName = parts.slice(2).join('-');
+                const extension = originalFileName.split('.').pop().toLowerCase();
+                let iconClass = 'fas fa-file';
+
+                if (['pdf'].includes(extension)) iconClass = 'fas fa-file-pdf text-danger';
+                else if (['jpg', 'jpeg', 'png'].includes(extension)) iconClass = 'fas fa-file-image text-info';
+                else if (['doc', 'docx'].includes(extension)) iconClass = 'fas fa-file-word text-primary';
+                else if (['xlsx', 'xls'].includes(extension)) iconClass = 'fas fa-file-excel text-success';
+                else if (['ppt', 'pptx'].includes(extension)) iconClass = 'fas fa-file-powerpoint text-warning';
+              %>
+                <li class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                  <a href="/solicitudes/<%= solicitud.id_solicitud %>/descargar/<%= blobName %>" class="text-decoration-none">
+                    <i class="<%= iconClass %> me-2"></i> <%= originalFileName %>
+                  </a>
+                  <span class="badge bg-info"><%= extension.toUpperCase() %></span>
+                </li>
+              <% }); %>
+            </ul>
+          <% } else { %>
+            <p class="text-muted text-center mb-0">No hay archivos adjuntos.</p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Órdenes Asociadas</h5>
+        </div>
+        <div class="card-body">
+          <% if (ordenes && ordenes.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-hover table-striped align-middle">
+                <thead class="bg-primary text-white">
+                  <tr>
+                    <th># Orden</th>
+                    <th>Estatus</th>
+                    <th>Archivo PDF</th>
+                    <th>Fecha</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% ordenes.forEach(orden => { 
+                    let estatusIcon = '';
+                    switch (orden.estatus.toLowerCase()) {
+                      case 'pendiente':
+                        estatusIcon = '<i class="fas fa-hourglass-start text-warning"></i>';
+                        break;
+                      case 'aprobada':
+                        estatusIcon = '<i class="fas fa-check-circle text-success"></i>';
+                        break;
+                      case 'rechazada':
+                        estatusIcon = '<i class="fas fa-times-circle text-danger"></i>';
+                        break;
+                      case 'pagada':
+                        estatusIcon = '<i class="fas fa-dollar-sign text-info"></i>';
+                        break;
+                      case 'cerrada':
+                        estatusIcon = '<i class="fas fa-lock text-muted"></i>';
+                        break;
+                      case 'eliminada':
+                        estatusIcon = '<i class="fas fa-trash-alt text-danger"></i>';
+                        break;
+                      default:
+                        estatusIcon = '<i class="fas fa-question-circle text-secondary"></i>';
+                        break;
+                    }
+                  %>
+                    <tr>
+                      <td>Orden #<%= orden.codigo %></td>
+                      <td><%- estatusIcon %> <%= orden.estatus %></td>
+                      <td>
+                        <% if (orden.ruta_archivo_pdf) { %>
+                          <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" class="btn btn-sm btn-outline-danger">
+                            Ver PDF
+                          </a>
+                        <% } else { %>
+                          <span class="text-muted">No disponible</span>
+                        <% } %>
+                      </td>
+                      <td><%= orden.created_at %></td>
+                      <td>
+                        <a href="/ordenes/<%= orden.id_orden %>" class="btn btn-sm btn-primary">Ver Orden</a>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="text-muted text-center mb-0">No hay órdenes asociadas a esta solicitud.</p>
+          <% } %>
         </div>
       </div>
     </div>

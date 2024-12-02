@@ -331,31 +331,25 @@ button.list-group-item-primary.active {
 
 .btn-primary {
   color: #fff;
-  background-color: #cc0000;
-  border-color: #cc0000;
-}
-.btn-primary.btn[class*=btn-]:not([class*=btn-label-]):not([class*=btn-outline-]):not([class*=btn-text-]):not(.btn-icon):not(:disabled):not(.disabled) {
-  box-shadow: 0 0.125rem 0.375rem 0 rgba(115, 103, 240, 0.3);
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  box-shadow: none;
 }
 .btn-primary:hover {
-  color: #fff !important;
-  background-color: 685dd8 !important;
-  border-color: 685dd8 !important;
-}
-.btn-check:focus + .btn-primary, .btn-primary:focus, .btn-primary.focus {
   color: #fff;
-  background-color: 685dd8;
-  border-color: 685dd8;
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
 }
-.btn-check:checked + .btn-primary, .btn-check:active + .btn-primary, .btn-primary:active, .btn-primary.active, .btn-primary.show.dropdown-toggle, .show > .btn-primary.dropdown-toggle {
-  color: #fff !important;
-  background-color: 685dd8 !important;
-  border-color: 685dd8 !important;
+.btn-primary:focus, .btn-primary.focus {
+  color: #fff;
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.5);
 }
-.btn-primary.disabled, .btn-primary:disabled {
-  color: #fff !important;
-  background-color: #cc0000 !important;
-  border-color: #cc0000 !important;
+.btn-primary:disabled, .btn-primary.disabled {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
 
 .btn-group .btn-primary,
@@ -444,45 +438,46 @@ button.list-group-item-primary.active {
 }
 
 .btn-outline-primary {
-  color: #cc0000;
-  border-color: #cc0000;
-  background: transparent;
-}
-.btn-outline-primary.waves-effect .waves-ripple {
-  background: radial-gradient(rgba(115, 103, 240, 0.2) 0, rgba(115, 103, 240, 0.3) 40%, rgba(115, 103, 240, 0.4) 50%, rgba(115, 103, 240, 0.5) 60%, rgba(255, 255, 255, 0) 70%);
+  color: #0d6efd;
+  border-color: #0d6efd;
+  background-color: transparent;
 }
 .btn-outline-primary:hover {
-  color: #cc0000 !important;
-  background-color: #f4f3fe !important;
-  border-color: #cc0000 !important;
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
-.btn-check:focus + .btn-outline-primary, .btn-outline-primary:focus {
-  color: #cc0000;
-  background-color: #f4f3fe;
-  border-color: #cc0000;
+.btn-outline-primary:focus, .btn-outline-primary.focus {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.5);
 }
-.btn-check:checked + .btn-outline-primary, .btn-check:active + .btn-outline-primary, .btn-outline-primary:active, .btn-outline-primary.active, .btn-outline-primary.dropdown-toggle.show {
-  color: #cc0000 !important;
-  background-color: #f4f3fe !important;
-  border-color: #cc0000 !important;
+.btn-check:focus + .btn-outline-primary, .btn-check:checked + .btn-outline-primary, .btn-outline-primary.active, .btn-outline-primary:active, .btn-outline-primary.dropdown-toggle.show {
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
 .btn-outline-primary.disabled, .btn-outline-primary:disabled {
-  color: #cc0000 !important;
+  color: #0d6efd;
+  background-color: transparent;
+  border-color: #0d6efd;
 }
 
 .btn-outline-primary .badge {
-  background: #cc0000;
-  border-color: #cc0000;
-  color: #fff;
+  color: #0d6efd;
+  background-color: transparent;
+  border-color: currentColor;
 }
 
-.btn-outline-primary:hover .badge,
-.btn-outline-primary:focus:hover .badge,
-.btn-outline-primary:active .badge,
-.btn-outline-primary.active .badge,
+.btn-outline-primary:hover .badge, 
+.btn-outline-primary:focus:hover .badge, 
+.btn-outline-primary:active .badge, 
+.btn-outline-primary.active .badge, 
 .show > .btn-outline-primary.dropdown-toggle .badge {
-  background: #cc0000;
-  border-color: #cc0000;
+  color: #fff;
+  background-color: #0d6efd;
+  border-color: #0d6efd;
 }
 
 .dropdown-item.waves-effect .waves-ripple {
@@ -541,7 +536,9 @@ button.list-group-item-primary.active {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: #cc0000 !important;
+  border-color: #86b7fe;
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
 .input-group:focus-within .form-control,

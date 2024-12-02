@@ -3,15 +3,21 @@ import OrdenesService from "../application/ordenesService.js";
 import SolicitudesService from "../application/solicitudesService.js";
 import { encodeBase64, decodeBase64 } from "../utils/base64.js";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import timezone from "dayjs/plugin/timezone.js";
 import { calculateFechaVencimiento } from "../utils/helpers.js";
 import AzureBlobService from "../services/azureBlobService.js";
-import axios from "axios";
+import apiService from "../services/apiService.js";
 import ejs from "ejs";
 import path from "path";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import puppeteerService from "../services/puppeteerService.js";
 
 dotenv.config();
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 class OrdenesController {
   constructor() {
@@ -25,6 +31,7 @@ class OrdenesController {
       res.render("ordenes", {
         ordenes: ordenes.map((orden) => ({
           ...orden,
+          oc: orden.codigo.split("-")[1],
           Encoded_id_orden: encodeBase64(orden.id_orden),
           Encoded_id_solicitud: encodeBase64(orden.id_solicitud),
           ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
@@ -79,29 +86,8 @@ class OrdenesController {
         return res.redirect("/solicitudes");
       }
 
-      const lockTimeoutMinutes = 10;
-      const now = dayjs();
-      const lockedAt = dayjs(solicitud.locked_at);
-      const estatusLower = solicitud.estatus.toLowerCase();
-
-      if (
-        (estatusLower === "editando" || estatusLower === "procesando") &&
-        now.diff(lockedAt, "minute") < lockTimeoutMinutes
-      ) {
-        req.flash(
-          "errorMessage",
-          "La solicitud está siendo procesada por otro usuario."
-        );
-        return res.redirect("/solicitudes");
-      }
-
-      await this.solicitudesService.updateEstatus(
-        id_solicitud,
-        "procesando",
-        new Date()
-      );
-
-      solicitud.id = encodeBase64(solicitud.id_solicitud);
+      solicitud.nro_solicitud = solicitud.id_solicitud;
+      solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
 
       const [
         proveedores,
@@ -205,6 +191,7 @@ class OrdenesController {
   };
 
   createOrden = async (req, res) => {
+    console.time("Crear OC en BD");
     try {
       const id_solicitud = decodeBase64(req.params.id);
       const {
@@ -223,119 +210,177 @@ class OrdenesController {
         propina,
         total,
         tokenDatos,
+        productos: productosRaw = "[]",
       } = req.body;
-      const productos = JSON.parse(req.body.productos || "[]");
-      const fechaHoySantiago = dayjs().tz("America/Santiago").toDate();
-      const fechaVencimiento = calculateFechaVencimiento(30);
 
-      const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}, ${res.locals.user.correo}`;
-
-      let totalLocal = total;
-
-      let documentosCotizacion = [];
-      if (req.files && req.files.length > 0) {
-        const archivos = req.files.map((file) => {
-          const uniqueSuffix = dayjs(fechaHoySantiago).format("DD-MM-YYYY");
-          const blobName = `${uniqueSuffix}_${file.originalname}`;
-          return { blobName, file };
+      let productosArray;
+      try {
+        productosArray = JSON.parse(productosRaw);
+        if (!Array.isArray(productosArray) || productosArray.length === 0) {
+          throw new Error("Debe agregar al menos un producto.");
+        }
+        productosArray.forEach((producto, index) => {
+          const { cantidad, valorUnitario } = producto;
+          if (!cantidad || isNaN(cantidad) || parseFloat(cantidad) < 1) {
+            throw new Error(
+              `La cantidad del producto ${
+                index + 1
+              } es inválida. Debe ser un número mayor o igual a 1.`
+            );
+          }
+          if (
+            !valorUnitario ||
+            isNaN(valorUnitario) ||
+            parseFloat(valorUnitario) <= 0
+          ) {
+            throw new Error(
+              `El valor unitario del producto ${
+                index + 1
+              } es inválido. Debe ser un número mayor a 0.`
+            );
+          }
         });
-
-        const blobUrls = await AzureBlobService.uploadFilesWithNames(archivos);
-
-        documentosCotizacion = blobUrls.map((url) => ({ url, eliminado: 0 }));
+      } catch (error) {
+        req.flash(
+          "errorMessage",
+          error.message || "Datos de productos inválidos."
+        );
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
       }
 
-      let datosAdicionales;
-      try {
-        datosAdicionales = jwt.verify(tokenDatos, process.env.JWT_SECRET);
-      } catch (err) {
+      const fechaHoySantiago = dayjs().tz("America/Santiago");
+      const fechaVencimiento = calculateFechaVencimiento(30);
+      const formattedFechaHoyForBlob = fechaHoySantiago.format("DDMMYYYY");
+      const formattedFechaHoyForTemplate =
+        fechaHoySantiago.format("DD-MM-YYYY");
+      const fechaCreacionDate = fechaHoySantiago.utc().toDate();
+      const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}, ${res.locals.user.correo}`;
+
+      const documentosCotizacionPromise =
+        req.files && req.files.length > 0
+          ? AzureBlobService.uploadFilesWithNames(
+              req.files.map((file) => ({
+                blobName: `${formattedFechaHoyForBlob}_${file.originalname}`,
+                file,
+              }))
+            )
+          : Promise.resolve([]);
+
+      const datosAdicionalesPromise = (async () => {
+        try {
+          return jwt.verify(tokenDatos, process.env.JWT_SECRET);
+        } catch (err) {
+          throw new Error("Datos inválidos o sesión expirada.");
+        }
+      })();
+
+      const [documentosCotizacionURLs, datosAdicionales] = await Promise.all([
+        documentosCotizacionPromise,
+        datosAdicionalesPromise,
+      ]);
+
+      const documentosCotizacion = JSON.stringify(
+        documentosCotizacionURLs.map((url) => ({ url, eliminado: 0 }))
+      );
+
+      if (!datosAdicionales) {
         req.flash("errorMessage", "Datos inválidos o sesión expirada.");
         return res.redirect(`/ordenes-crear/${req.params.id}`);
       }
 
-      const Solicitud = await this.solicitudesService.getSolicitudById(
-        id_solicitud
-      );
+      const [
+        Solicitud,
+        Proveedor,
+        Banco,
+        PlazoPago,
+        Empresa,
+        CentroCosto,
+        TipoOrden,
+        Moneda,
+        CuentaContable,
+      ] = await Promise.all([
+        this.solicitudesService.getSolicitudById(id_solicitud),
+        Promise.resolve(
+          datosAdicionales.proveedores.find(
+            (p) => p.id_proveedor == id_proveedor
+          )
+        ),
+        this.ordenesService.getProveedorBanco(id_banco, id_proveedor),
+        Promise.resolve(
+          datosAdicionales.plazosdepago.find(
+            (p) => p.id_forma_pago == id_plazoPago
+          )
+        ),
+        Promise.resolve(
+          datosAdicionales.empresas.find((e) => e.id_empresa == id_empresa)
+        ),
+        Promise.resolve(
+          datosAdicionales.centrosdecosto.find(
+            (c) => c.id_centro_costo == id_centroCosto
+          )
+        ),
+        Promise.resolve(
+          datosAdicionales.tiposdeorden.find((t) => t.id_tipo == id_tipoOrden)
+        ),
+        Promise.resolve(
+          datosAdicionales.monedas.find((m) => m.id_moneda == id_moneda)
+        ),
+        Promise.resolve(
+          datosAdicionales.cuentascontables.find(
+            (c) => c.id_cuenta == id_cuentaContable
+          )
+        ),
+      ]);
 
-      const Proveedor = datosAdicionales.proveedores.find(
-        (p) => p.id_proveedor == id_proveedor
-      );
-      if (!Proveedor) {
-        req.flash("errorMessage", "Proveedor inválido.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      const validaciones = [
+        { entidad: Proveedor, mensaje: "Proveedor inválido." },
+        { entidad: Banco, mensaje: "Banco inválido." },
+        { entidad: PlazoPago, mensaje: "Plazo de pago inválido." },
+        { entidad: Empresa, mensaje: "Empresa inválida." },
+        { entidad: CentroCosto, mensaje: "Centro de costo inválido." },
+        { entidad: TipoOrden, mensaje: "Tipo de orden inválido." },
+        { entidad: Moneda, mensaje: "Moneda inválida." },
+        { entidad: CuentaContable, mensaje: "Cuenta contable inválida." },
+      ];
+
+      for (const validacion of validaciones) {
+        if (!validacion.entidad) {
+          throw new Error(validacion.mensaje);
+        }
       }
 
-      const Banco = await this.ordenesService.getProveedorBanco(
-        id_banco,
-        id_proveedor
-      );
-      if (!Banco) {
-        req.flash("errorMessage", "Banco inválido.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
+      const isCLP = Moneda.abrev === "CLP$";
 
-      const PlazoPago = datosAdicionales.plazosdepago.find(
-        (p) => p.id_forma_pago == id_plazoPago
-      );
-      if (!PlazoPago) {
-        req.flash("errorMessage", "Plazo de pago inválido.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
+      const parsedSubtotal = isCLP
+        ? Math.round(Number(subtotal))
+        : parseFloat(subtotal);
+      const parsedTotal = isCLP ? Math.round(Number(total)) : parseFloat(total);
+      const parsedImpuesto = isCLP
+        ? Math.round(Number(impuesto || 0))
+        : parseFloat(impuesto || 0);
+      const parsedRetencion = isCLP
+        ? Math.round(Number(retencion || 0))
+        : parseFloat(retencion || 0);
+      const parsedPropina = isCLP
+        ? Math.round(Number(propina || 0))
+        : parseFloat(propina || 0);
 
-      const Empresa = datosAdicionales.empresas.find(
-        (e) => e.id_empresa == id_empresa
-      );
-      if (!Empresa) {
-        req.flash("errorMessage", "Empresa inválida.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-
-      const CentroCosto = datosAdicionales.centrosdecosto.find(
-        (c) => c.id_centro_costo == id_centroCosto
-      );
-      if (!CentroCosto) {
-        req.flash("errorMessage", "Centro de costo inválido.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-
-      const TipoOrden = datosAdicionales.tiposdeorden.find(
-        (t) => t.id_tipo == id_tipoOrden
-      );
-      if (!TipoOrden) {
-        req.flash("errorMessage", "Tipo de orden inválido.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-
-      const Moneda = datosAdicionales.monedas.find(
-        (m) => m.id_moneda == id_moneda
-      );
-      if (!Moneda) {
-        req.flash("errorMessage", "Moneda inválida.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-
-      const CuentaContable = datosAdicionales.cuentascontables.find(
-        (c) => c.id_cuenta == id_cuentaContable
-      );
-      if (!CuentaContable) {
-        req.flash("errorMessage", "Cuenta contable inválida.");
-        return res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
-
-      if (Moneda.abrev !== "CLP$") {
-        totalLocal = Moneda.cambio * total;
-      }
+      const totalLocal =
+        Moneda.abrev !== "CLP$"
+          ? Math.round(Moneda.cambio * parsedTotal)
+          : Math.round(parsedTotal);
 
       const newOrden = {
         codigo: "",
-        subtotal: subtotal,
-        total: total,
-        impuesto: impuesto,
-        retencion: retencion,
-        usuario_creador: `${res.locals.user.nombre} ${res.locals.user.apellido}`,
-        correo_creador: `${res.locals.user.correo}`,
+        subtotal: parsedSubtotal,
+        total: parsedTotal,
+        impuesto: parsedImpuesto,
+        retencion: parsedRetencion,
+        propina: parsedPropina,
+        usuario_creador: creadorOC,
+        correo_creador: res.locals.user.correo,
         nota_creador: Nota,
-        documentos_cotizacion: JSON.stringify(documentosCotizacion),
+        documentos_cotizacion: documentosCotizacion,
         nivel_aprobacion: 0,
         total_local: totalLocal,
         id_centro_costo: id_centroCosto,
@@ -347,18 +392,20 @@ class OrdenesController {
         id_plazo: id_plazoPago,
         id_cuenta_contable: id_cuentaContable,
         fecha_vencimiento: fechaVencimiento,
-        fecha_creacion: fechaHoySantiago,
+        fecha_creacion: fechaCreacionDate,
       };
 
       const { id_orden, codigoOC } =
         await this.ordenesService.createOrdenConDetalles(
           newOrden,
-          productos,
+          productosArray,
           id_solicitud
         );
 
+      const codigoOCShort = codigoOC.split("-")[1];
+
       const templateData = {
-        codigooc: codigoOC.split("-")[1],
+        codigooc: codigoOCShort,
         creadoroc: creadorOC,
         solicitud: Solicitud,
         proveedor: Proveedor,
@@ -370,75 +417,67 @@ class OrdenesController {
         moneda: Moneda,
         cuentacontable: CuentaContable,
         nota: Nota,
-        productos,
+        productos: productosArray,
         totales: {
-          subtotal: parseFloat(subtotal),
-          impuesto: parseFloat(impuesto || 0),
-          retencion: parseFloat(retencion || 0),
-          propina: parseFloat(propina || 0),
-          total: parseFloat(total),
+          subtotal: parsedSubtotal,
+          impuesto: parsedImpuesto,
+          retencion: parsedRetencion,
+          propina: parsedPropina,
+          total: parsedTotal,
         },
-        fechaHoy: dayjs(fechaHoySantiago).format("DD-MM-YYYY"),
+        fechaHoy: formattedFechaHoyForTemplate,
         defaultText,
         formatNumber,
       };
 
-      const templatePath = path.join(
-        process.cwd(),
-        "src",
-        "views",
-        "orden",
-        "templates",
-        "pdfTemplate.ejs"
+      const bodyHtml = await ejs.renderFile(
+        path.join(
+          process.cwd(),
+          "src",
+          "views",
+          "orden",
+          "templates",
+          "pdfTemplate.ejs"
+        ),
+        templateData,
+        { encoding: "utf8" }
       );
 
-      const html = await ejs.renderFile(templatePath, templateData, {
-        encoding: "utf8",
-        async: true,
-      });
+      const pdfBufferFinal = await puppeteerService.generatePdf(
+        bodyHtml,
+        codigoOCShort
+      );
 
-      try {
-        console.time("Tiempo de ejecución api html a pdf");
-        const response = await axios.post(
-          process.env.URL_API_CREATE_PDF,
-          html,
-          {
-            headers: {
-              "Content-Type": "text/html; charset=utf-8",
-            },
-            responseType: "arraybuffer",
-          }
-        );
+      const pdfBlobName = `OC-${id_orden}-${formattedFechaHoyForBlob}.pdf`;
+      const pdfUrl = await AzureBlobService.uploadBufferWithName(
+        pdfBlobName,
+        pdfBufferFinal,
+        "application/pdf"
+      );
 
-        const pdfBuffer = Buffer.from(response.data);
+      await Promise.all([
+        this.ordenesService.updateOrdenPdfUrl(id_orden, pdfUrl),
+        this.solicitudesService.updateEstatus(id_solicitud, "procesada"),
+      ]);
 
-        const pdfBlobName = `OC-${id_orden}-${dayjs(fechaHoySantiago).format(
-          "DD-MM-YYYY"
-        )}.pdf`;
-        const pdfUrl = await AzureBlobService.uploadBufferWithName(
-          pdfBlobName,
-          pdfBuffer,
-          "application/pdf"
-        );
-        console.timeEnd("Tiempo de ejecución api html a pdf");
-        await this.ordenesService.updateOrdenPdfUrl(id_orden, pdfUrl);
-        await this.solicitudesService.updateEstatus(id_solicitud, "procesada");
+      apiService
+        .enviarAprobacionAPI(codigoOC, process.env.API_USERNAME)
+        .catch((error) => {
+          console.error(
+            "Error al enviar la solicitud de aprobación:",
+            error.message
+          );
+        });
 
-        req.flash("successMessage", "Orden creada exitosamente.");
-        res.redirect("/ordenes");
-      } catch (postError) {
-        console.error("Error al enviar la petición POST:", postError);
-        req.flash(
-          "errorMessage",
-          "Hubo un error al procesar la orden. Por favor, inténtelo nuevamente."
-        );
-        res.redirect(`/ordenes-crear/${req.params.id}`);
-      }
+      console.timeEnd("Crear OC en BD");
+      req.flash("successMessage", "Orden creada exitosamente.");
+      res.redirect("/ordenes");
     } catch (error) {
       console.error("Error al crear la orden:", error.message);
       req.flash(
         "errorMessage",
-        "Hubo un error al crear la orden. Por favor, inténtelo nuevamente."
+        error.message ||
+          "Hubo un error al crear la orden. Por favor, inténtelo nuevamente."
       );
       res.redirect(`/ordenes-crear/${req.params.id}`);
     }
@@ -481,14 +520,20 @@ function formatNumber(value, currency) {
   if (value === null || value === 0) {
     return null;
   }
+  const isNegative = value < 0;
+  const absoluteValue = Math.abs(value);
+
+  let formatted;
   if (currency === "CLP$" || currency === "UF") {
-    return Math.round(value).toLocaleString("es-CL");
+    formatted = absoluteValue.toLocaleString("es-CL");
   } else {
-    return value
+    formatted = absoluteValue
       .toFixed(2)
       .replace(".", ",")
       .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
+
+  return isNegative ? `-${formatted}` : formatted;
 }
 
 export default OrdenesController;

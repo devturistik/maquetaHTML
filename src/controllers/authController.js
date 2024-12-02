@@ -7,7 +7,7 @@ export const login = async (req, res) => {
 
     // 1. Obtener el token
     const tokenResponse = await fetch(
-      "https://turistik-sistema-user.azurewebsites.net/api/v1/auth/token",
+      process.env.URL_API_AUTH_TOKEN,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -28,7 +28,7 @@ export const login = async (req, res) => {
 
     // 2. Autenticar al usuario con el token
     const authResponse = await fetch(
-      "https://turistik-sistema-user.azurewebsites.net/api/v1/auth/login",
+      process.env.URL_API_AUTH_LOGIN,
       {
         method: "POST",
         headers: {

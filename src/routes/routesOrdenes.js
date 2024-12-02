@@ -22,18 +22,6 @@ router.post(
   ordenesController.createOrden
 );
 
-// Ruta para liberar el bloqueo de procesamiento
-router.post(
-  "/ordenes-liberar-procesamiento/:id",
-  ordenesController.liberarProcesamiento
-);
-
-// Ruta para cancelar el procesamiento
-router.get(
-  "/ordenes-cancelar-procesamiento/:id",
-  ordenesController.cancelarProcesamiento
-);
-
 // Ruta API para obtener bancos por proveedor
 router.get(
   "/api/proveedores/:proveedorId/bancos",

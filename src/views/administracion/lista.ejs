@@ -1,3 +1,5 @@
+<!-- views/administracion/lista.ejs -->
+
 <%- include('../partials/header', { title: 'Administración - ' + tabla }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
@@ -33,6 +35,7 @@
           <i class="fas fa-link me-1"></i> Establecer Relaciones
         </a>
       <% } %>
+      <!-- Eliminados los botones de Importar y Exportar para CentroCosto -->
     </div>
   </div>
 
@@ -41,25 +44,43 @@
       <div class="table-responsive">
         <table id="tabla-registros" class="table table-hover w-100">
           <thead>
-            <tr>
-              <% if (columnas && Array.isArray(columnas)) { %>
+            <% if (tabla === 'CentroCosto') { %>
+              <tr>
+                <th><input type="checkbox" id="select-all"></th>
                 <% columnas.forEach(columna => { %>
-                  <th><%= columna.nombre %></th>
+                  <% if (columna.nombre !== 'Gerente_Detalle') { %>
+                    <th><%= columna.nombre.charAt(0).toUpperCase() + columna.nombre.slice(1) %></th>
+                  <% } else { %>
+                    <th>Gerente</th>
+                  <% } %>
                 <% }) %>
                 <th>Acciones</th>
+              </tr>
+            <% } else { %>
+              <% if (columnas && Array.isArray(columnas)) { %>
+                <tr>
+                  <th><input type="checkbox" id="select-all"></th>
+                  <% columnas.forEach(columna => { %>
+                    <th><%= columna.nombre.charAt(0).toUpperCase() + columna.nombre.slice(1) %></th>
+                  <% }) %>
+                  <th>Acciones</th>
+                </tr>
               <% } else { %>
-                <th>No hay registros</th>
+                <tr>
+                  <th>No hay registros</th>
+                </tr>
               <% } %>
-            </tr>
+            <% } %>
           </thead>
           <tbody>
             <% if (registros.length > 0 && columnas && Array.isArray(columnas)) { %>
               <% registros.forEach(registro => { %>
                 <tr>
+                  <td><input type="checkbox" class="select-item" value="<%= registro[idColumna] %>"></td>
                   <% columnas.forEach(columna => { %>
                     <td>
-                      <% if (columna.nombre === 'Bancos_Asociados' || columna.nombre === 'Detalles_Asociados') { %>
-                        <%= registro[columna.nombre] %>
+                      <% if (tabla === 'CentroCosto' && columna.nombre === 'Gerente_Detalle') { %>
+                        <%= registro.Gerente_Detalle || 'N/A' %>
                       <% } else { %>
                         <%= registro[columna.nombre] === null ? 'NULL' : registro[columna.nombre] %>
                       <% } %>
@@ -79,6 +100,10 @@
                   </td>
                 </tr>
               <% }) %>
+            <% } else { %>
+              <tr>
+                <td colspan="<%= columnas.length + 2 %>">No hay registros</td>
+              </tr>
             <% } %>
           </tbody>
         </table>
@@ -97,7 +122,7 @@
       responsive: true,
       autoWidth: false,
       language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+        url: "//cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
         search: "",
         emptyTable: "No hay registros disponibles."
       },
@@ -134,5 +159,42 @@
         dataTableFilter.css('float', 'left');
       }
     });
+
+    // Seleccionar/Deseleccionar todos
+    $('#select-all').on('click', function() {
+      $('.select-item').prop('checked', this.checked);
+      toggleBulkButtons();
+    });
+
+    // Habilitar/Deshabilitar botones de operaciones en masa
+    $('.select-item').on('change', function() {
+      if (!this.checked) {
+        $('#select-all').prop('checked', false);
+      }
+      toggleBulkButtons();
+    });
+
+    function toggleBulkButtons() {
+      const anyChecked = $('.select-item:checked').length > 0;
+      $('#bulk-delete').prop('disabled', !anyChecked);
+      // Eliminados los botones de bulk-export
+    }
+
+    // Manejar eliminación en masa
+    $('#bulk-delete').on('click', function() {
+      const ids = $('.select-item:checked').map(function() {
+        return this.value;
+      }).get();
+
+      if (confirm(`¿Estás seguro de eliminar ${ids.length} registros seleccionados?`)) {
+        $.post('/administracion/<%= tabla %>/eliminar-masivo', { ids }, function(response) {
+          location.reload();
+        }).fail(function() {
+          alert('Error al eliminar registros.');
+        });
+      }
+    });
+
+    // Eliminado el manejo de exportación en masa
   });
 </script>

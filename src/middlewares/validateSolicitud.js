@@ -1,25 +1,26 @@
 // src/middlewares/validateSolicitud.js
-import { check, validationResult } from "express-validator";
+import { body, validationResult } from "express-validator";
 
 export const validateSolicitud = [
-  check("asunto")
+  body("asunto")
+    .trim()
     .notEmpty()
     .withMessage("El asunto es requerido.")
+    .isLength({ max: 100 })
+    .withMessage("El asunto no puede exceder 100 caracteres."),
+
+  body("descripcion")
     .trim()
-    .escape(),
-  check("descripcion")
     .notEmpty()
     .withMessage("La descripción es requerida.")
-    .trim()
-    .escape(),
+    .isLength({ max: 300 })
+    .withMessage("La descripción no puede exceder 300 caracteres."),
+
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       const extractedErrors = {};
-      errors.array().forEach((err) => {
-        extractedErrors[err.param] = err.msg;
-      });
-
+      errors.array().map((err) => (extractedErrors[err.param] = err.msg));
       return res.render("solicitud/crear", {
         errors: extractedErrors,
         asunto: req.body.asunto,

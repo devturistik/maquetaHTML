@@ -3,14 +3,6 @@
   id="layout-navbar"
 >
   <div class="d-flex align-items-center me-3">
-    <!-- Logo de la empresa (extendiéndose horizontalmente) -->
-    <a href="/" class="navbar-brand">
-      <img
-        src="/assets/img/logoTK/logo.png"
-        alt="Logo Turistik"
-        style="height: 50px"
-      />
-    </a>
     <% if (typeof navbarText !== 'undefined' && navbarText) { %>
       <span class="navbar-brand text-dark"><%= navbarText %></span>
     <% } %>
@@ -32,7 +24,7 @@
               class="dropdown-item"
               href="javascript:void(0);"
               data-theme="light"
-              ><i class="ti ti-sun ti-md me-3"></i>Light</a
+              ><i class="ti ti-sun ti-md me-3"></i>Claro</a
             >
           </li>
           <li>
@@ -40,7 +32,7 @@
               class="dropdown-item"
               href="javascript:void(0);"
               data-theme="dark"
-              ><i class="ti ti-moon-stars ti-md me-3"></i>Dark</a
+              ><i class="ti ti-moon-stars ti-md me-3"></i>Oscuro</a
             >
           </li>
           <li>
@@ -49,7 +41,7 @@
               href="javascript:void(0);"
               data-theme="system"
               ><i class="ti ti-device-desktop-analytics ti-md me-3"></i
-              >System</a
+              >Sistema</a
             >
           </li>
         </ul>
@@ -72,7 +64,7 @@
         <ul class="dropdown-menu dropdown-menu-end p-0">
           <li class="dropdown-menu-header border-bottom">
             <div class="dropdown-header d-flex align-items-center py-3">
-              <h6 class="mb-0 me-auto">Notifications</h6>
+              <h6 class="mb-0 me-auto">Notificaciones</h6>
             </div>
           </li>
         </ul>
@@ -114,7 +106,7 @@
           <li>
             <div class="d-grid px-2 pt-2 pb-1">
               <a class="btn btn-sm btn-danger d-flex" href="/logout">
-                <small>Logout</small>
+                <small>Cerrar sesión</small>
                 <i class="ti ti-logout ms-2 ti-14px"></i>
               </a>
             </div>

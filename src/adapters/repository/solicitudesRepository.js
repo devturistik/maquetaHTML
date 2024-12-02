@@ -80,7 +80,9 @@ class SolicitudesRepository {
         `);
       const solicitud = result.recordset[0];
 
-      solicitud.ordenes = JSON.parse(solicitud.ordenes_json);
+      solicitud.ordenes = solicitud.ordenes_json
+        ? JSON.parse(solicitud.ordenes_json)
+        : [];
       delete solicitud.ordenes_json;
 
       return solicitud;

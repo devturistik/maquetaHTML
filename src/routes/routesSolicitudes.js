@@ -8,21 +8,16 @@ const router = express.Router();
 const solicitudesController = new SolicitudesController();
 
 router.get("/solicitudes", solicitudesController.getAllSolicitudes);
-
 router.get("/solicitudes/:id", solicitudesController.getSolicitudById);
-
 router.get("/solicitudes-ver-archivos/:id", solicitudesController.viewArchivos);
-
 router.get(
   "/solicitudes/:id/ordenes",
   solicitudesController.viewOrdenesDeSolicitud
 );
-
 router.get(
   "/solicitudes/:id/descargar/:filename",
   solicitudesController.downloadArchivo
 );
-
 router.get("/solicitudes-crear", solicitudesController.renderCreateForm);
 
 router.post(
@@ -33,25 +28,11 @@ router.post(
 );
 
 router.get("/solicitudes-editar/:id", solicitudesController.renderEditForm);
-
 router.post(
   "/solicitudes-editar/:id",
   upload.array("archivos", 10),
   validateSolicitud,
   solicitudesController.updateSolicitud
-);
-
-router.get(
-  "/solicitudes-cancelar-edicion/:id",
-  solicitudesController.cancelarEdicion
-);
-router.post(
-  "/solicitudes-cancelar-edicion/:id",
-  solicitudesController.cancelarEdicion
-);
-router.post(
-  "/solicitudes-liberar-edicion/:id",
-  solicitudesController.liberarEdicion
 );
 
 router.get("/solicitudes-eliminar/:id", solicitudesController.renderDeleteForm);

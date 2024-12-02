@@ -12,11 +12,11 @@ class SolicitudesController {
   getAllSolicitudes = async (req, res) => {
     try {
       const solicitudes = await this.solicitudesService.getAllSolicitudes();
-
       res.render("solicitudes", {
         solicitudes: solicitudes.map((solicitud) => ({
           ...solicitud,
-          id: encodeBase64(solicitud.id_solicitud.toString()),
+          nro_solicitud: solicitud.id_solicitud,
+          id_solicitud: encodeBase64(solicitud.id_solicitud.toString()),
           hasFiles:
             solicitud.archivos &&
             JSON.parse(solicitud.archivos).some((a) => a.eliminado === 0),
@@ -41,9 +41,12 @@ class SolicitudesController {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
       }
-      const ordenesFormateadas = solicitud.ordenes.map((orden) => ({
+
+      const ordenes = Array.isArray(solicitud.ordenes) ? solicitud.ordenes : [];
+
+      const ordenesFormateadas = ordenes.map((orden) => ({
         ...orden,
-        Encoded_id_orden: encodeBase64(orden.id_orden),
+        id_orden: encodeBase64(orden.id_orden),
         ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
         created_at: new Date(orden.created_at).toLocaleString("es-CL", {
           timeZone: "UTC",
@@ -52,10 +55,12 @@ class SolicitudesController {
         }),
       }));
 
-      solicitud.id = encodeBase64(solicitud.id_solicitud);
+      solicitud.nro_solicitud = solicitud.id_solicitud;
+      solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
       solicitud.archivos = JSON.parse(solicitud.archivos || "[]").filter(
         (archivo) => archivo.eliminado === 0
       );
+
       res.render("solicitud/detalle", {
         solicitud,
         ordenes: ordenesFormateadas,
@@ -135,17 +140,10 @@ class SolicitudesController {
         correoSolicitante: correo,
       };
 
-      const validationErrors =
-        this.solicitudesService.validateSolicitudData(solicitudData);
-      if (validationErrors) {
-        throw { validationErrors };
-      }
-
       const solicitudCreada = await this.solicitudesService.createSolicitud(
         solicitudData
       );
       const solicitudId = solicitudCreada.id_solicitud;
-
       const solicitudIdBase64 = encodeBase64(solicitudId.toString());
 
       let archivosUrls = [];
@@ -155,7 +153,6 @@ class SolicitudesController {
           blobName: `${solicitudIdBase64}-${fechaActual}-${file.originalname}`,
           file,
         }));
-
         archivosUrls = await AzureBlobService.uploadFilesWithNames(
           archivosParaSubir
         );
@@ -194,6 +191,7 @@ class SolicitudesController {
     try {
       const encodedId = req.params.id;
       const id = decodeBase64(encodedId);
+
       const solicitud = await this.solicitudesService.getSolicitudById(id);
 
       if (!solicitud) {
@@ -201,31 +199,18 @@ class SolicitudesController {
         return res.redirect("/solicitudes");
       }
 
-      const lockTimeoutMinutes = 5;
-      const now = dayjs();
-      const lockedAt = dayjs(solicitud.locked_at);
-      if (
-        solicitud.estatus.toLowerCase() === "editando" &&
-        now.diff(lockedAt, "minute") < lockTimeoutMinutes
-      ) {
-        req.flash(
-          "errorMessage",
-          "La solicitud está siendo editada por otro usuario."
-        );
-        return res.redirect("/solicitudes");
-      }
-
-      await this.solicitudesService.updateEstatus(id, "editando", new Date());
-
-      solicitud.estatus = "editando";
-      solicitud.locked_at = new Date();
-
+      solicitud.nro_solicitud = solicitud.id_solicitud;
+      solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
       solicitud.archivos = JSON.parse(solicitud.archivos || "[]");
-      solicitud.id = encodeBase64(solicitud.id_solicitud);
 
       res.render("solicitud/editar", {
         solicitud,
         errors: {},
+        asunto: solicitud.asunto,
+        descripcion: solicitud.descripcion,
+        archivos: solicitud.archivos.filter(
+          (archivo) => archivo.eliminado === 0
+        ),
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
       });
@@ -268,7 +253,6 @@ class SolicitudesController {
           blobName: `${encodeBase64(id)}-${fechaActual}-${file.originalname}`,
           file,
         }));
-
         const archivosUrls = await AzureBlobService.uploadFilesWithNames(
           archivosParaSubir
         );
@@ -276,7 +260,6 @@ class SolicitudesController {
           url,
           eliminado: 0,
         }));
-
         archivosActuales = [...archivosActuales, ...nuevosArchivos];
       }
 
@@ -285,12 +268,6 @@ class SolicitudesController {
         descripcion,
         archivos: archivosActuales,
       };
-
-      const validationErrors =
-        this.solicitudesService.validateSolicitudData(solicitudData);
-      if (validationErrors) {
-        throw { validationErrors };
-      }
 
       await this.solicitudesService.updateSolicitud(id, solicitudData);
       await this.solicitudesService.updateEstatus(id, "abierta");
@@ -306,6 +283,8 @@ class SolicitudesController {
             id: req.params.id,
           },
           errors: error.validationErrors,
+          asunto: req.body.asunto,
+          descripcion: req.body.descripcion,
           successMessage: "",
           errorMessage: "Por favor, corrige los errores en el formulario.",
         });
@@ -323,7 +302,6 @@ class SolicitudesController {
       req.flash("successMessage", "Edición cancelada.");
       res.redirect("/solicitudes");
     } catch (error) {
-      console.error("Error al cancelar la edición:", error);
       req.flash("errorMessage", "Error al cancelar la edición.");
       res.redirect("/solicitudes");
     }
@@ -343,27 +321,17 @@ class SolicitudesController {
     }
   };
 
-  cancelarEdicion = async (req, res) => {
-    try {
-      const id = decodeBase64(req.params.id);
-      await this.solicitudesService.updateEstatus(id, "abierta");
-      req.flash("successMessage", "Edición cancelada.");
-      res.redirect("/solicitudes");
-    } catch (error) {
-      req.flash("errorMessage", "Error al cancelar la edición.");
-      res.redirect("/solicitudes");
-    }
-  };
-
   renderDeleteForm = async (req, res) => {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
+
       if (!solicitud) {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
       }
 
+      solicitud.nro_solicitud = solicitud.id_solicitud;
       solicitud.id = encodeBase64(solicitud.id_solicitud);
 
       res.render("solicitud/eliminar", {
@@ -401,6 +369,19 @@ class SolicitudesController {
         });
       }
 
+      const wordCount = justificacion
+        .trim()
+        .split(/\s+/)
+        .filter((word) => word).length;
+
+      if (wordCount < 5) {
+        req.flash(
+          "errorMessage",
+          "La justificación debe tener al menos 5 palabras."
+        );
+        return res.redirect(`/solicitudes-eliminar/${req.params.id_solicitud}`);
+      }
+
       await this.solicitudesService.deleteSolicitud(id, justificacion);
       await this.solicitudesService.updateEstatus(id, "eliminada");
 
@@ -417,6 +398,7 @@ class SolicitudesController {
     try {
       const id = decodeBase64(req.params.id);
       const solicitud = await this.solicitudesService.getSolicitudById(id);
+
       if (!solicitud) {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.redirect("/solicitudes");
@@ -426,9 +408,24 @@ class SolicitudesController {
         (archivo) => archivo.eliminado === 0
       );
 
+      const conteo = {
+        pdf: 0,
+        imagen: 0,
+        word: 0,
+        excel: 0,
+        ppt: 0,
+      };
+
       archivos = await Promise.all(
         archivos.map(async (archivo) => {
           const extension = archivo.url.split(".").pop().toLowerCase();
+
+          if (extension === "pdf") conteo.pdf++;
+          else if (["jpg", "jpeg", "png"].includes(extension)) conteo.imagen++;
+          else if (["doc", "docx"].includes(extension)) conteo.word++;
+          else if (["xls", "xlsx"].includes(extension)) conteo.excel++;
+          else if (["ppt", "pptx"].includes(extension)) conteo.ppt++;
+
           const isPreviewable = [
             "pdf",
             "jpg",
@@ -458,10 +455,22 @@ class SolicitudesController {
         })
       );
 
+      const navbarText = `
+        [ PDFs: ${conteo.pdf} ]
+        [ Imágenes: ${conteo.imagen} ]
+        [ Word: ${conteo.word} ]
+        [ Excel: ${conteo.excel} ]
+        [ PowerPoint: ${conteo.ppt} ]
+      `;
+
+      solicitud.nro_solicitud = solicitud.id_solicitud;
+      solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
+
       res.render("solicitud/archivos", {
-        solicitudId: encodeBase64(solicitud.id_solicitud),
-        solicitud: solicitud,
+        solicitud,
         archivos,
+        conteo,
+        navbarText,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
       });
@@ -502,13 +511,13 @@ class SolicitudesController {
         req.flash("errorMessage", "Nombre de archivo inválido.");
         return res.status(400).redirect("back");
       }
+
       const originalFilename = blobParts.slice(2).join("-");
 
       const sasUrl = AzureBlobService.generateSasUrl(
         blobName,
         originalFilename
       );
-
       if (!sasUrl) {
         req.flash(
           "errorMessage",

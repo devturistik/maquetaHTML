@@ -1,80 +1,161 @@
-<!-- views/solicitud/eliminar.ejs -->
 <%- include('../partials/header', { title: 'Eliminar Solicitud' }) %>
 <%- include('../partials/navbar') %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
+<style>
+  .card {
+    border: 1px solid #dc3545;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);
+  }
+
+  .card-header {
+    background-color: #f8d7da;
+    color: #842029;
+    font-weight: 600;
+    font-size: 1.2rem;
+    border-bottom: 1px solid #dc3545;
+  }
+
+  .card-body {
+    padding: 20px;
+    font-size: 1rem;
+  }
+
+  .alert-dismissible {
+    font-size: 1rem;
+  }
+
+  .form-label {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .form-control {
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 1rem;
+  }
+
+  .btn {
+    border-radius: 8px;
+    font-size: 1rem;
+  }
+
+  .btn-danger {
+    background-color: #dc3545;
+    border: none;
+  }
+
+  .btn-danger:hover {
+    background-color: #bb2d3b;
+  }
+
+  .list-group-item {
+    font-size: 1rem;
+  }
+
+  .word-count {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 5px;
+  }
+
+  .word-count.error {
+    color: #dc3545;
+  }
+</style>
+
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
-    <div class="app-solicitud-eliminar">
-      <% if (successMessage && successMessage.length > 0) { %>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <%= successMessage %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-      <% } %>
-      <% if (errorMessage && errorMessage.length > 0) { %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <%= errorMessage %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-        </div>
-      <% } %>
-
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="mb-0">Eliminar Solicitud</h4>
-        <a href="/solicitudes" class="btn btn-secondary">
-          <i class="fas fa-arrow-left me-1"></i> Regresar
-        </a>
+    <% if (successMessage && successMessage.length > 0) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= successMessage %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
       </div>
+    <% } %>
+    <% if (errorMessage && errorMessage.length > 0) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= errorMessage %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    <% } %>
 
-      <div class="card mb-4">
-        <div class="card-body">
-          <p>Estás a punto de eliminar la siguiente solicitud:</p>
-          <ul class="list-group list-group-flush mb-3">
-            <li class="list-group-item"><strong>Asunto:</strong> <%= solicitud.asunto %></li>
-            <li class="list-group-item"><strong>Descripción:</strong> <%= solicitud.descripcion %></li>
-          </ul>
-          <p>Por favor, proporciona una justificación para esta acción:</p>
-          <form action="/solicitudes-eliminar/<%= solicitud.id %>" method="POST" class="needs-validation" novalidate>
-            <div class="mb-3">
-              <label for="justificacion" class="form-label fw-bold">Justificación de eliminación <span class="text-danger">*</span></label>
-              <textarea
-                class="form-control <%= errors && errors.justificacion ? 'is-invalid' : '' %>"
-                id="justificacion"
-                name="justificacion"
-                rows="4"
-                required
-              ><%= justificacion %></textarea>
-              <% if (errors && errors.justificacion) { %>
-                <div class="invalid-feedback"><%= errors.justificacion %></div>
-              <% } %>
-            </div>
-            <div class="d-flex justify-content-end gap-2">
-              <button type="submit" class="btn btn-danger">
-                <i class="fas fa-trash-alt me-1"></i> Confirmar Eliminación
-              </button>
-            </div>
-          </form>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="mb-0 text-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i> Eliminar Solicitud #<%= solicitud.nro_solicitud %>
+      </h4>
+      <a href="/solicitudes" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Regresar
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        Advertencia: Esta acción es irreversible
+      </div>
+      <div class="card-body">
+        <p class="text-danger fw-bold">
+          Estás a punto de eliminar la siguiente solicitud. Esta acción no se puede deshacer.
+        </p>
+        <ul class="list-group list-group-flush mb-4">
+          <li class="list-group-item"><strong>Asunto:</strong> <%= solicitud.asunto %></li>
+          <li class="list-group-item"><strong>Descripción:</strong> <%= solicitud.descripcion %></li>
+        </ul>
+        <p>Por favor, proporciona una justificación para esta acción (mínimo 5 palabras):</p>
+        <form action="/solicitudes-eliminar/<%= solicitud.id_solicitud %>" method="POST" class="needs-validation" novalidate>
+          <div class="mb-4">
+            <label for="justificacion" class="form-label">
+              Justificación de eliminación <span class="text-danger">*</span>
+            </label>
+            <textarea
+              class="form-control <%= errors && errors.justificacion ? 'is-invalid' : '' %>"
+              id="justificacion"
+              name="justificacion"
+              rows="4"
+              placeholder="Escribe la razón por la cual estás eliminando esta solicitud..."
+              required
+            ><%= justificacion %></textarea>
+            <% if (errors && errors.justificacion) { %>
+              <div class="invalid-feedback"><%= errors.justificacion %></div>
+            <% } %>
+            <small id="wordCount" class="word-count">
+              0 palabras (mínimo 5)
+            </small>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-danger" id="submitButton" disabled>
+              <i class="fas fa-trash-alt me-1"></i> Confirmar Eliminación
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  (function () {
-    'use strict';
-    var forms = document.querySelectorAll('.needs-validation');
-    Array.prototype.slice.call(forms).forEach(function (form) {
-      form.addEventListener('submit', function (event) {
-        if (!form.checkValidity()) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-        form.classList.add('was-validated');
-      }, false);
-    });
-  })();
+  const justificacionInput = document.getElementById('justificacion');
+  const wordCountDisplay = document.getElementById('wordCount');
+  const submitButton = document.getElementById('submitButton');
+  const MIN_WORDS = 5;
+
+  justificacionInput.addEventListener('input', () => {
+    const wordCount = justificacionInput.value
+      .trim()
+      .split(/\s+/)
+      .filter(word => word).length;
+
+    wordCountDisplay.textContent = `${wordCount} palabras (mínimo ${MIN_WORDS})`;
+    if (wordCount < MIN_WORDS) {
+      wordCountDisplay.classList.add('error');
+      submitButton.disabled = true;
+    } else {
+      wordCountDisplay.classList.remove('error');
+      submitButton.disabled = false;
+    }
+  });
 </script>
 
 <%- include('../partials/footer-text') %>

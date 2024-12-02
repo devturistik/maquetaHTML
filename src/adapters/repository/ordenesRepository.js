@@ -385,14 +385,27 @@ class OrdenesRepository {
     try {
       await transaction.begin();
 
-      const requestOrden = new sql.Request(transaction);
-      const queryOrden = `
+      const request = new sql.Request(transaction);
+
+      const defaultStatusResult = await request.query(`
+        SELECT id_estatus FROM oc.Estatus WHERE nombre = 'pendiente'
+      `);
+
+      if (defaultStatusResult.recordset.length === 0) {
+        throw new Error(
+          "Estatus 'pendiente' no encontrado en la tabla Estatus."
+        );
+      }
+
+      const defaultStatus = defaultStatusResult.recordset[0].id_estatus;
+
+      const queryInsertOrden = `
         INSERT INTO oc.OrdenCompra(
-          codigo,
           subtotal,
           total,
           impuesto,
           retencion,
+          propina,
           usuario_creador,
           correo_creador,
           nota_creador,
@@ -413,11 +426,11 @@ class OrdenesRepository {
         )
         OUTPUT INSERTED.ID_ORDEN AS id_orden
         VALUES (
-          @CODIGO,
           @SUBTOTAL,
           @TOTAL,
           @IMPUESTO,
           @RETENCION,
+          @PROPINA,
           @USUARIO_CREADOR,
           @CORREO_CREADOR,
           @NOTA_CREADOR,
@@ -438,18 +451,12 @@ class OrdenesRepository {
         )
       `;
 
-      const requestEstatus = new sql.Request(transaction);
-      const defaultStatusResult = await requestEstatus.query(
-        `SELECT id_estatus FROM oc.Estatus WHERE nombre = 'pendiente'`
-      );
-      const defaultStatus = defaultStatusResult.recordset[0].id_estatus;
-
-      const resultOrden = await requestOrden
-        .input("CODIGO", sql.NVarChar, newOrden.codigo)
-        .input("SUBTOTAL", sql.Decimal(18, 2), newOrden.subtotal)
-        .input("TOTAL", sql.Decimal(18, 2), newOrden.total)
-        .input("IMPUESTO", sql.Decimal(18, 2), newOrden.impuesto)
-        .input("RETENCION", sql.Decimal(18, 2), newOrden.retencion)
+      const resultOrden = await request
+        .input("SUBTOTAL", sql.Decimal(10, 2), newOrden.subtotal)
+        .input("TOTAL", sql.Decimal(10, 2), newOrden.total)
+        .input("IMPUESTO", sql.Decimal(10, 2), newOrden.impuesto)
+        .input("RETENCION", sql.Decimal(10, 2), newOrden.retencion)
+        .input("PROPINA", sql.Decimal(10, 2), newOrden.propina)
         .input("USUARIO_CREADOR", sql.NVarChar, newOrden.usuario_creador)
         .input("CORREO_CREADOR", sql.NVarChar, newOrden.correo_creador)
         .input("NOTA_CREADOR", sql.NVarChar, newOrden.nota_creador)
@@ -459,7 +466,7 @@ class OrdenesRepository {
           newOrden.documentos_cotizacion
         )
         .input("NIVEL_APROBACION", sql.TinyInt, newOrden.nivel_aprobacion)
-        .input("TOTAL_LOCAL", sql.Decimal(18, 2), newOrden.total_local)
+        .input("TOTAL_LOCAL", sql.Decimal(10, 2), newOrden.total_local)
         .input("ID_CENTRO_COSTO", sql.Int, newOrden.id_centro_costo)
         .input("ID_MONEDA", sql.Int, newOrden.id_moneda)
         .input("ID_EMPRESA", sql.Int, newOrden.id_empresa)
@@ -470,52 +477,50 @@ class OrdenesRepository {
         .input("ID_CUENTA_CONTABLE", sql.Int, newOrden.id_cuenta_contable)
         .input("FECHA_VENCIMIENTO", sql.Date, newOrden.fecha_vencimiento)
         .input("ESTATUS_ID", sql.Int, defaultStatus)
-        .input("CREATED_AT", sql.DateTime, newOrden.fecha_creacion)
-        .query(queryOrden);
+        .input("CREATED_AT", sql.DateTime2, newOrden.fecha_creacion)
+        .query(queryInsertOrden);
 
       const id_orden = resultOrden.recordset[0].id_orden;
 
       const codigoOC = generateCodigoOrden(id_orden);
-      const requestCodigo = new sql.Request(transaction);
-      await requestCodigo
-        .input("CODIGO", sql.NVarChar, codigoOC)
-        .input("ID_ORDEN", sql.Int, id_orden).query(`
-          UPDATE oc.OrdenCompra
-          SET codigo = @CODIGO
-          WHERE id_orden = @ID_ORDEN
-        `);
 
-      for (const producto of productos) {
-        const requestDetalle = new sql.Request(transaction);
-        await requestDetalle
-          .input("ID_SOLICITUD", sql.Int, id_solicitud)
-          .input("ID_ORDEN_COMPRA", sql.Int, id_orden)
-          .input("ID_PRODUCTO", sql.Int, producto.id_producto)
-          .input("PRECIO", sql.Decimal(18, 2), producto.valorUnitario)
-          .input("CANTIDAD", sql.Decimal(18, 2), producto.cantidad)
-          .input("TOTAL_DETALLE", sql.Decimal(18, 2), producto.valorTotal)
-          .input("CANT_X_RECIBIR", sql.Decimal(18, 2), producto.cantidad)
-          .query(`
-            INSERT INTO oc.DetalleOrdenCompra (
-              id_solicitud,
-              id_orden_compra,
-              id_producto,
-              precio,
-              cantidad,
-              total_detalle,
-              cant_x_recibir
-            )
-            VALUES (
-              @ID_SOLICITUD,
-              @ID_ORDEN_COMPRA,
-              @ID_PRODUCTO,
-              @PRECIO,
-              @CANTIDAD,
-              @TOTAL_DETALLE,
-              @CANT_X_RECIBIR
-            )
-          `);
-      }
+      const queryUpdateCodigo = `
+        UPDATE oc.OrdenCompra
+        SET codigo = @CODIGO
+        WHERE id_orden = @ID_ORDEN
+      `;
+
+      await request
+        .input("CODIGO", sql.NVarChar, codigoOC)
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(queryUpdateCodigo);
+
+      const table = new sql.Table("oc.DetalleOrdenCompra");
+      table.columns.add("id_solicitud", sql.Int, { nullable: false });
+      table.columns.add("id_orden_compra", sql.Int, { nullable: false });
+      table.columns.add("id_producto", sql.Int, { nullable: false });
+      table.columns.add("precio", sql.Decimal(18, 2), { nullable: true });
+      table.columns.add("cantidad", sql.Decimal(18, 2), { nullable: true });
+      table.columns.add("total_detalle", sql.Decimal(18, 2), {
+        nullable: true,
+      });
+      table.columns.add("cant_x_recibir", sql.Decimal(18, 2), {
+        nullable: true,
+      });
+
+      productos.forEach((producto) => {
+        table.rows.add(
+          id_solicitud,
+          id_orden,
+          producto.id_producto,
+          producto.valorUnitario,
+          producto.cantidad,
+          producto.valorTotal,
+          producto.cantidad
+        );
+      });
+
+      await request.bulk(table);
 
       await transaction.commit();
 
@@ -524,7 +529,7 @@ class OrdenesRepository {
       await transaction.rollback();
       console.error(
         "Error en OrdenesRepository.createOrdenConDetalles:",
-        error.message
+        error
       );
       throw error;
     }
@@ -544,9 +549,10 @@ class OrdenesRepository {
         .input("ID_ORDEN", sql.Int, id_orden)
         .query(query);
     } catch (error) {
+      await transaction.rollback();
       console.error(
-        "Error en ordenesRepository.updateOrdenCodigo:",
-        error.message
+        "Error en OrdenesRepository.createOrdenConDetalles:",
+        error.stack || error
       );
       throw error;
     }

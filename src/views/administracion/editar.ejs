@@ -35,30 +35,17 @@
               %>
               <% if (columna.inputType === 'select') { %>
                 <% if (tabla === 'ProveedorBanco') { %>
-                  <% if (columna.nombre === 'ID_PROVEEDOR') { %>
-                    <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
-                      <option value="">Seleccione un Proveedor</option>
-                      <% proveedores.forEach(proveedor => { %>
-                        <option value="<%= proveedor.ID_PROVEEDOR %>" <%= proveedor.ID_PROVEEDOR == registro.ID_PROVEEDOR ? 'selected' : '' %>><%= proveedor.NOMBRE_PROVEEDOR %></option>
-                      <% }) %>
-                    </select>
-                  <% } else if (columna.nombre === 'ID_BANCO') { %>
-                    <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
-                      <option value="">Seleccione un Banco</option>
-                      <% bancos.forEach(banco => { %>
-                        <option value="<%= banco.ID_BANCO %>" <%= banco.ID_BANCO == registro.ID_BANCO ? 'selected' : '' %>><%= banco.NOMBRE_BANCO %></option>
-                      <% }) %>
-                    </select>
-                  <% } %>
                 <% } else if (tabla === 'DetalleTipoOrden' && columna.nombre === 'ID_TIPO_ORDEN') { %>
+                <% } else if (tabla === 'CentroCosto' && columna.nombre === 'ID_GERENTE') { %>
                   <select class="form-select" id="<%= columna.nombre %>" name="<%= columna.nombre %>" <%= columna.editable ? 'required' : 'disabled' %>>
-                    <option value="">Seleccione un Tipo de Orden</option>
-                    <% tiposOrden.forEach(tipo => { %>
-                      <option value="<%= tipo.ID_TIPO %>" <%= tipo.ID_TIPO == registro.ID_TIPO_ORDEN ? 'selected' : '' %>><%= tipo.NOMBRE %></option>
+                    <option value="">Seleccione un Gerente</option>
+                    <% gerentes.forEach(gerente => { %>
+                      <option value="<%= gerente.ID_USUARIO %>" <%= gerente.ID_USUARIO == registro.ID_GERENTE ? 'selected' : '' %>>
+                        <%= gerente.nombre %> <%= gerente.apellido %> (<%= gerente.departamento %>)
+                      </option>
                     <% }) %>
                   </select>
                 <% } else { %>
-                  <!-- Opciones para otras tablas si es necesario -->
                 <% } %>
               <% } else { %>
                 <input 
@@ -88,7 +75,6 @@
 </div>
 
 <%- include('../partials/footer-text') %>
-<%- include('../partials/footer') %>
 <%- include('../partials/footer') %>
 <%- include('../partials/content-wrapper-close') %>
 

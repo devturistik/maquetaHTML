@@ -3,6 +3,13 @@
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
+<%
+  const userRoles = user.roles.map(role => role.rol.toLowerCase());
+  const isAdmin = userRoles.includes('admin');
+  const isComprador = userRoles.includes('comprador');
+  const canCreateOrdenCompra = isAdmin || isComprador;
+%>
+
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
@@ -13,6 +20,11 @@
         <a href="/solicitudes" class="btn btn-secondary">
           <i class="fas fa-arrow-left me-1"></i> Volver a Solicitudes
         </a>
+        <% if (canCreateOrdenCompra) { %>
+          <a href="/ordenes-crear/<%= solicitud.id_solicitud %>" class="btn btn-primary ms-2">
+            <i class="fas fa-plus me-1"></i> Crear Orden de Compra
+          </a>
+        <% } %>
       </div>
     </div>
 
@@ -104,13 +116,13 @@
     var table = $("#table-ordenes-solicitud").DataTable({
       responsive: true,
       language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+        url: "//cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
         search: "",
         emptyTable: "No hay órdenes disponibles."
       },
       pageLength: 10,
       lengthChange: false,
-      order: [[0, "asc"]],
+      order: [[0, "desc"]],
       columnDefs: [
         {
           targets: 4,

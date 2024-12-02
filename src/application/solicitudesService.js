@@ -9,17 +9,6 @@ class SolicitudesService {
     this.ordenesRepository = new OrdenesRepository();
   }
 
-  validateSolicitudData(solicitudData) {
-    const errors = {};
-    if (!solicitudData.asunto || solicitudData.asunto.trim() === "") {
-      errors.asunto = "El asunto es requerido.";
-    }
-    if (!solicitudData.descripcion || solicitudData.descripcion.trim() === "") {
-      errors.descripcion = "La descripción es requerida.";
-    }
-    return Object.keys(errors).length > 0 ? errors : null;
-  }
-
   async getAllSolicitudes() {
     const solicitudes = await this.solicitudesRepository.getAllWithOrdenes();
     return solicitudes;
@@ -31,32 +20,11 @@ class SolicitudesService {
 
   async getSolicitudById(id) {
     const solicitud = await this.solicitudesRepository.getById(id);
-
     if (!solicitud) {
       return null;
     }
 
-    const estatusLower = solicitud.estatus.toLowerCase();
-
-    if (estatusLower === "editando" || estatusLower === "procesando") {
-      const lockedAt = dayjs(solicitud.locked_at);
-      const now = dayjs();
-      const diff = now.diff(lockedAt, "minute");
-
-      const lockTimeout = 5;
-
-      if (diff > lockTimeout) {
-        await this.updateEstatus(id, "abierta");
-        solicitud.estatus = "abierta";
-        solicitud.locked_at = null;
-      }
-    }
-
     return solicitud;
-  }
-
-  async releaseLock(id) {
-    await this.updateEstatus(id, "abierta");
   }
 
   async createSolicitud(solicitudData) {

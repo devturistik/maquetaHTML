@@ -1,3 +1,4 @@
+<!-- src/views/ordenes.ejs -->
 <%- include('partials/header', { title: 'Órdenes' }) %>
 <%- include('partials/navbar') %>
 <%- include('partials/sidebar') %>
@@ -90,7 +91,7 @@
                     }
                   %>
                   <tr>
-                    <td><%= orden.codigo %></td>
+                    <td><%= orden.oc %></td>
                     <td>
                       <a href="/solicitudes/<%= orden.Encoded_id_solicitud %>">#<%= orden.id_solicitud %></a>
                     </td>
@@ -146,10 +147,20 @@
 
 <script>
   $(document).ready(function () {
+    setTimeout(function () {
+      var alerta = document.querySelector('.alert.alert-danger');
+
+      if (alerta) {
+        var bootstrapAlert = new bootstrap.Alert(alerta);
+
+        bootstrapAlert.close();
+      }
+    }, 1000);
+
     var table = $("#table-ordenes").DataTable({
       responsive: true,
       language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json",
+        url: "//cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
         search: "",
         emptyTable: "No hay órdenes disponibles."
       },

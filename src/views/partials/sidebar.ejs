@@ -1,42 +1,139 @@
+<%
+  const userRoles = user.roles.map(role => role.rol.toLowerCase());
+  const isAdmin = userRoles.includes('admin');
+  const isSolicitante = userRoles.includes('solicitante');
+  const isComprador = userRoles.includes('comprador');
+%>
+
 <aside id="layout-menu" class="layout-menu menu-vertical menu bg-menu-theme">
   <div class="menu-inner-shadow"></div>
-
-  <ul class="menu-inner py-1">
-    <!-- Home -->
+  <ul class="menu-inner py-3">
     <li class="menu-item <%= currentUrl === '/dashboard' ? 'active' : '' %>">
-      <a href="/dashboard" class="menu-link">
+      <a href="/dashboard" class="menu-link" style="text-decoration: none;">
         <i class="menu-icon tf-icons ti ti-home"></i>
-        <div data-i18n="Home">Inicio</div>
+        <div>Inicio</div>
       </a>
     </li>
-
-    <!-- Solicitudes -->
-    <li class="menu-item <%= currentUrl === '/solicitudes' ? 'active' : '' %>">
-      <a href="/solicitudes" class="menu-link">
-        <i class="menu-icon tf-icons ti ti-file"></i>
-        <div data-i18n="Solicitudes">Solicitudes</div>
-      </a>
-    </li>
-
-    <!-- OC -->
-    <li class="menu-item <%= currentUrl === '/ordenes' ? 'active' : '' %>">
-      <a href="/ordenes" class="menu-link">
-        <i class="menu-icon tf-icons ti ti-file-invoice"></i>
-        <div data-i18n="OC">OC</div>
-      </a>
-    </li>
-
-    <!-- Divider -->
-    <li class="menu-header small text-uppercase">
-      <span class="menu-header-text">Administración</span>
-    </li>
-
-    <!-- Administración -->
-    <li class="menu-item <%= currentUrl === '/administracion' ? 'active' : '' %>">
-      <a href="/administracion" class="menu-link">
-        <i class="menu-icon tf-icons ti ti-settings"></i>
-        <div data-i18n="Administracion">Administración</div>
-      </a>
-    </li>
+    <% if (isAdmin || isSolicitante || isComprador) { %>
+      <li class="menu-item <%= currentUrl === '/solicitudes' ? 'active' : '' %>">
+        <a href="/solicitudes" class="menu-link" style="text-decoration: none;">
+          <i class="menu-icon tf-icons ti ti-file"></i>
+          <div>Solicitudes</div>
+        </a>
+      </li>
+    <% } %>
+    <% if (isAdmin || isComprador) { %>
+      <li class="menu-item <%= currentUrl === '/ordenes' ? 'active' : '' %>">
+        <a href="/ordenes" class="menu-link" style="text-decoration: none;">
+          <i class="menu-icon tf-icons ti ti-file-invoice"></i>
+          <div>OC</div>
+        </a>
+      </li>
+    <% } %>
+    <% if (isAdmin) { %>
+      <li class="menu-item <%= currentUrl === '/administracion' ? 'active' : '' %>">
+        <a href="/administracion" class="menu-link" style="text-decoration: none;">
+          <i class="menu-icon tf-icons ti ti-settings"></i>
+          <div>Administración</div>
+        </a>
+      </li>
+    <% } %>
   </ul>
 </aside>
+
+<button id="menu-toggle" class="menu-toggle d-md-none">
+  <i id="menu-icon" class="ti ti-arrow-bar-right"></i>
+</button>
+
+<style>
+  #layout-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background-color: var(--bs-body-bg, #fff);
+    z-index: 1040;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 767px) {
+    #layout-menu {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      position: fixed;
+      height: 100vh;
+      z-index: 1050;
+    }
+
+    #layout-menu ul {
+      margin-top: 56px;
+    }
+
+    #layout-menu.mobile-visible {
+      transform: translateX(0);
+    }
+  }
+
+  .menu-toggle {
+    position: fixed;
+    top: 24px;
+    left: 18px;
+    z-index: 1100;
+    background-color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .menu-toggle:hover {
+    transform: scale(1.1);
+    background-color: #f8f9fa;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2), 0 3px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .menu-toggle.on-right {
+    left: 250px;
+  }
+
+  @media (min-width: 768px) {
+    .menu-toggle {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  const layoutMenu = document.getElementById('layout-menu');
+  const menuToggle = document.getElementById('menu-toggle');
+  const menuIcon = document.getElementById('menu-icon');
+
+  menuToggle.addEventListener('click', () => {
+    const isVisible = layoutMenu.classList.contains('mobile-visible');
+    layoutMenu.classList.toggle('mobile-visible', !isVisible);
+    menuToggle.classList.toggle('on-right', !isVisible);
+    menuIcon.classList.toggle('ti-arrow-bar-right', isVisible);
+    menuIcon.classList.toggle('ti-arrow-bar-left', !isVisible);
+  });
+
+  document.addEventListener('click', (event) => {
+    if (
+      layoutMenu.classList.contains('mobile-visible') &&
+      !layoutMenu.contains(event.target) &&
+      !menuToggle.contains(event.target)
+    ) {
+      layoutMenu.classList.remove('mobile-visible');
+      menuToggle.classList.remove('on-right');
+      menuIcon.classList.remove('ti-arrow-bar-left');
+      menuIcon.classList.add('ti-arrow-bar-right');
+    }
+  });
+</script>

@@ -1,10 +1,16 @@
-<!-- views/orden/crear.ejs -->
 <%- include('../partials/header', { title: 'Crear Orden de Compra' }) %>
-<%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: "' + solicitud.asunto + '"' }) %>
+<%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: #' + solicitud.nro_solicitud + '"' + solicitud.asunto + '"' }) %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
 <style>
+  .gradient-primary-secondary {
+    background: radial-gradient(circle, var(--bs-primary), var(--bs-secondary));
+    text-align: center;
+  }
+  .text-word {
+    color: #2B579A !important;
+  }
   .total-row th {
     font-size: 1.5em;
     background-color: #f8f9fa;
@@ -12,99 +18,107 @@
     padding-top: 1em;
     padding-bottom: 1em;
   }
-
   .impuesto-row td,
   .retencion-row td,
   .propina-row td {
     font-weight: 500;
   }
-
   .table-sm td, .table-sm th {
     vertical-align: middle;
   }
-
   .impuesto-row, .retencion-row, .propina-row {
     transition: all 0.3s ease-in-out;
   }
-
   .impuesto-row.hide,
   .retencion-row.hide,
   .propina-row.hide {
     display: none;
   }
-
   .impuesto-row.show,
   .retencion-row.show,
   .propina-row.show {
     display: table-row;
   }
-
   .moneda-symbol {
     font-weight: bold;
   }
-
   .btn-fixed-width {
     width: 150px;
     text-align: center;
     white-space: nowrap;
   }
-
   @media (max-width: 576px) {
     .btn-fixed-width {
       width: 100%;
       margin-bottom: 5px;
     }
-
     .btn-group-actions {
       display: flex;
       flex-direction: column;
       width: 100%;
     }
   }
-
   .list-group-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.3s;
   }
-
   .list-group-item:hover {
     background-color: #f8f9fa;
   }
-
   .file-info {
     display: flex;
     align-items: center;
   }
-
   .file-info i {
     font-size: 1.5rem;
     margin-right: 10px;
   }
-
   .btn-group-actions button,
   .btn-group-actions a {
     margin-left: 5px;
   }
-
   #file-list li {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-
   #file-list li .btn-danger {
     margin-left: 10px;
+  }
+  .form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+  }
+  .form-control.is-invalid:focus {
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+  }
+  .invalid-feedback {
+    display: none;
+  }
+  .form-control.is-invalid + .invalid-feedback {
+    display: block;
+  }
+  .form-control.is-valid {
+    border-color: #ced4da;
+    background-image: none;
+    box-shadow: none;
+  }
+  .form-control.is-valid + .valid-feedback {
+    display: none;
   }
 </style>
 
 <div class="content-wrapper">
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-orden-compra">
-      <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
+      <div class="card my-1 gradient-primary-secondary">
         <div class="card-body p-2">
-          <h6 class="mb-0" style="color: #fff;">DATOS</h6>
+          <h6 class="mb-0 text-white">DATOS</h6>
         </div>
       </div>
 
@@ -115,10 +129,8 @@
         </div>
       <% } %>
 
-      <form action="/ordenes-crear/<%= solicitud.id %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+      <form id="orden-form" action="/ordenes-crear/<%= solicitud.id_solicitud %>" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         <div class="row">
-
-          <!-- Proveedor -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-proveedor">Proveedor <span class="text-danger">*</span></label>
             <select id="orden-proveedor" class="form-select select2" name="id_proveedor" required>
@@ -128,16 +140,12 @@
               <% }); %>
             </select>
           </div>
-
-          <!-- Banco -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-banco">Banco <span class="text-danger">*</span></label>
             <select id="orden-banco" class="form-select select2" name="id_banco" required disabled>
               <option value="">Seleccione un banco</option>
             </select>
           </div>
-
-          <!-- Plazo de Pago -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-plazo">Plazo de Pago <span class="text-danger">*</span></label>
             <select id="orden-plazo" class="form-select select2" name="id_plazoPago" required>
@@ -147,8 +155,6 @@
               <% }); %>
             </select>
           </div>
-
-          <!-- Empresa -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-empresa">Empresa <span class="text-danger">*</span></label>
             <select id="orden-empresa" class="form-select select2" name="id_empresa" required>
@@ -158,8 +164,6 @@
               <% }); %>
             </select>
           </div>
-
-          <!-- Centro de Costo -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-centro-costo">Centro de Costo <span class="text-danger">*</span></label>
             <select id="orden-centro-costo" class="form-select select2" name="id_centroCosto" required>
@@ -169,8 +173,6 @@
               <% }); %>
             </select>
           </div>
-
-          <!-- Tipo de Orden -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-tipo">Tipo de Orden <span class="text-danger">*</span></label>
             <select id="orden-tipo" class="form-select select2" name="id_tipoOrden" required>
@@ -180,8 +182,6 @@
               <% }); %>
             </select>
           </div>
-
-          <!-- Moneda -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-moneda">Moneda <span class="text-danger">*</span></label>
             <div class="input-group">
@@ -193,8 +193,6 @@
               </select>
             </div>
           </div>
-
-          <!-- Cuenta Contable -->
           <div class="col-md-3 mb-3">
             <label class="form-label" for="orden-cuenta-contable">Cuenta Contable <span class="text-danger">*</span></label>
             <select id="orden-cuenta-contable" class="form-select select2" name="id_cuentaContable" required>
@@ -204,20 +202,9 @@
               <% }); %>
             </select>
           </div>
-
-          <!-- Subir Cotización -->
           <div class="col-md-6 mb-3">
             <label class="form-label" for="orden-archivos">Subir Cotización</label>
-            <input
-              type="file"
-              class="form-control d-none"
-              id="orden-archivos"
-              name="cotizacion"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
-              multiple
-              aria-label="Subir Archivos"
-              onchange="handleFileSelect(this)"
-            />
+            <input type="file" class="form-control d-none" id="orden-archivos" name="cotizacion" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" multiple aria-label="Subir Archivos" onchange="handleFileSelect(this)" />
             <div class="mb-2">
               <small class="form-text text-muted">
                 Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG, PNG (máximo 10 archivos y 10 MB en total)
@@ -229,27 +216,29 @@
               </button>
             </div>
             <ul id="file-list" class="list-group mt-2"></ul>
+            <div id="file-count" class="form-text text-muted"></div>
             <% if (solicitud.archivos && solicitud.archivos.length > 0) { %>
               <div class="mt-2">
-                <a href="/solicitudes-ver-archivos/<%= solicitud.id %>" target="_blank">Ver archivos de la solicitud</a>
+                <a href="/solicitudes-ver-archivos/<%= solicitud.id_solicitud %>" target="_blank">Ver archivos de la solicitud</a>
               </div>
             <% } %>
           </div>
-
-          <!-- Nota -->
           <div class="col-md-6 mb-3">
             <label class="form-label" for="orden-nota">Nota</label>
-            <textarea class="form-control" id="orden-nota" name="Nota" rows="3" style="resize: none; background-color: #fff;" placeholder="Escribe una nota aquí..."><%= solicitud.descripcion || '' %></textarea>
+            <textarea class="form-control" id="orden-nota" name="Nota" rows="3" style="resize: none; background-color: #fff;" placeholder="Escribe una nota aquí..." maxlength="300"><%= solicitud.descripcion || '' %></textarea>
+            <div class="d-flex justify-content-between">
+              <div class="invalid-feedback">La nota no debe exceder 300 caracteres.</div>
+              <small id="notaCount" class="form-text text-muted"><%= (solicitud.descripcion && solicitud.descripcion.length) || 0 %> / 300 caracteres</small>
+            </div>
           </div>
         </div>
 
-        <div class="card my-1" style="background: radial-gradient(circle, #b30000, #ff4d4d); text-align: center;">
+        <div class="card my-1 gradient-primary-secondary">
           <div class="card-body p-2">
             <h6 class="mb-0" style="color: #fff;">DETALLE</h6>
           </div>
         </div>
 
-        <!-- Dropdown Producto y Botón Agregar Producto -->
         <div class="row mb-4">
           <div class="col-md-9">
             <label class="form-label" for="producto">Producto</label>
@@ -265,9 +254,8 @@
           </div>
         </div>
 
-        <!-- Tabla de Productos -->
         <div class="table-responsive mb-4">
-          <table class="table table-bordered" id="productos-table">
+          <table class="table table-bordered bg-white" id="productos-table">
             <colgroup>
               <col style="width: 50%;">
               <col style="width: 10%;">
@@ -289,10 +277,9 @@
           </table>
         </div>
 
-        <!-- Totales -->
         <div class="row">
           <div class="col-md-6 offset-md-6">
-            <table class="table table-sm">
+            <table class="table table-sm bg-white">
               <tbody>
                 <tr>
                   <td>Sub-total:</td>
@@ -327,9 +314,8 @@
         <input type="hidden" name="productos" id="hidden-productos">
         <input type="hidden" name="tokenDatos" value="<%= tokenDatos %>">
 
-        <!-- Botones -->
         <div class="d-flex justify-content-end gap-4">
-          <a href="/ordenes-cancelar-procesamiento/<%= solicitud.id %>" class="btn btn-secondary">Regresar</a>
+          <a href="/solicitudes/<%= solicitud.id_solicitud %>" class="btn btn-secondary">Regresar</a>
           <button type="submit" class="btn btn-primary" id="submit-btn">Crear Orden</button>
         </div>
       </form>
@@ -447,11 +433,17 @@
           <td>${productoDesc}</td>
           <td>
             <input type="number" class="form-control cantidad" min="1" value="1" required>
+            <div class="invalid-feedback">
+              Por favor, ingrese una cantidad válida.
+            </div>
           </td>
           <td>
             <div class="input-group">
               <span class="input-group-text moneda-symbol">${currentMonedaAbrev}</span>
               <input type="number" class="form-control valor-unitario" min="${useIntegers ? '0' : '0.01'}" step="${useIntegers ? '1' : '0.01'}" value="0.00" required>
+            </div>
+            <div class="invalid-feedback">
+              Por favor, ingrese un valor unitario válido.
             </div>
           </td>
           <td>
@@ -477,8 +469,28 @@
     let appliedDetails = [];
 
     let selectedFiles = [];
+    const maxFiles = 10;
+    const maxSize = 10 * 1024 * 1024;
 
-    function formatNumber(number) {
+    const extensionIcons = {
+      'pdf': { icon: 'fa-file-pdf', color: 'text-danger' },
+      'doc': { icon: 'fa-file-word', color: 'text-word' },
+      'docx': { icon: 'fa-file-word', color: 'text-word' },
+      'xls': { icon: 'fa-file-excel', color: 'text-success' },
+      'xlsx': { icon: 'fa-file-excel', color: 'text-success' },
+      'ppt': { icon: 'fa-file-powerpoint', color: 'text-warning' },
+      'pptx': { icon: 'fa-file-powerpoint', color: 'text-warning' },
+      'jpg': { icon: 'fa-file-image', color: 'text-info' },
+      'jpeg': { icon: 'fa-file-image', color: 'text-info' },
+      'png': { icon: 'fa-file-image', color: 'text-info' },
+      'default': { icon: 'fa-file', color: 'text-secondary' }
+    };
+
+    function getFileIcon(extension) {
+      return extensionIcons[extension.toLowerCase()] || extensionIcons['default'];
+    }
+
+    function formatNumber(number, useIntegers) {
       if (isNaN(number)) return '0';
       return new Intl.NumberFormat('es-CL', {
         minimumFractionDigits: useIntegers ? 0 : 2,
@@ -495,12 +507,8 @@
     function calcularTotales() {
       let subtotal = 0;
       $('#productos-tbody tr').each(function () {
-        let valorTotalData = $(this).find('.valor-total-data').data('value');
-        let valorTotal = parseFloat(valorTotalData);
-        if (isNaN(valorTotal)) {
-          valorTotal = 0;
-        }
-        subtotal += valorTotal;
+        let valorTotalData = parseFloat($(this).find('.valor-total-data').attr('data-value')) || 0;
+        subtotal += valorTotalData;
       });
       let formattedSubtotal = formatNumber(subtotal, useIntegers);
       $('#subtotal').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedSubtotal}`);
@@ -514,10 +522,7 @@
       let propina = 0;
 
       appliedDetails.forEach(detail => {
-        let cantidad = parseFloat(detail.cantidad);
-        if (isNaN(cantidad)) {
-          cantidad = 0;
-        }
+        let cantidad = parseFloat(detail.cantidad) || 0;
 
         if (detail.nombre_detalle.toLowerCase() === 'impuesto') {
           if (detail.tipo_detalle === '%') {
@@ -641,6 +646,7 @@
             cantidad: detail.cantidad ? parseFloat(detail.cantidad) : 0,
             tipo_detalle: detail.tipo_detalle || ''
           }));
+
           calcularTotales();
         })
         .fail(function(jqXHR, textStatus, errorThrown) {
@@ -708,14 +714,19 @@
     }
 
     $('#productos-tbody').on('input', '.cantidad, .valor-unitario', function() {
-      let tr = $(this).closest('tr');
-      let cantidad = parseFloat(tr.find('.cantidad').val()) || 0;
-      let valorUnitario = parseFloat(tr.find('.valor-unitario').val()) || 0;
-      let valorTotal = cantidad * valorUnitario;
-      let formattedValorTotal = formatNumber(valorTotal, useIntegers);
+      let row = $(this).closest('tr');
+      let cantidad = parseFloat(row.find('.cantidad').val());
+      let valorUnitario = parseFloat(row.find('.valor-unitario').val());
+      let valorTotal = 0;
 
-      tr.find('.valor-total').text(formattedValorTotal);
-      tr.find('.valor-total-data').data('value', valorTotal.toFixed(useIntegers ? 0 : 2));
+      if (!isNaN(cantidad) && cantidad >= 1 && !isNaN(valorUnitario) && valorUnitario > 0) {
+        valorTotal = cantidad * valorUnitario;
+        row.find('.valor-total').text(formatNumber(valorTotal, useIntegers));
+        row.find('.valor-total-data').attr('data-value', valorTotal);
+      } else {
+        row.find('.valor-total').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> 0`);
+        row.find('.valor-total-data').attr('data-value', '0');
+      }
 
       calcularTotales();
     });
@@ -723,13 +734,15 @@
     $('#productos-tbody').on('click', '.eliminar-producto', function() {
       $(this).closest('tr').remove();
       calcularTotales();
+
+      $('#add-producto').focus();
     });
 
     window.handleFileSelect = function(input) {
       const files = Array.from(input.files);
 
-      if ((selectedFiles.length + files.length) > 10) {
-        alert('Máximo 10 archivos permitidos.');
+      if ((selectedFiles.length + files.length) > maxFiles) {
+        alert(`Máximo ${maxFiles} archivos permitidos.`);
         return;
       }
 
@@ -737,7 +750,7 @@
       files.forEach(file => {
         totalSize += file.size;
       });
-      if (totalSize > 10 * 1024 * 1024) {
+      if (totalSize > maxSize) {
         alert('El tamaño total de los archivos no debe exceder 10 MB.');
         return;
       }
@@ -756,25 +769,32 @@
       const fileListEl = $('#file-list');
       fileListEl.empty();
 
-      if (selectedFiles.length > 0) {
-        $('#clear-files').show();
-        selectedFiles.forEach((file, index) => {
-          let li = $('<li>').addClass('list-group-item d-flex justify-content-between align-items-center');
-          li.text(file.name + ' (' + formatBytes(file.size) + ')');
-          let removeBtn = $('<button>')
-            .addClass('btn btn-sm btn-danger')
-            .attr('type', 'button')
-            .attr('aria-label', 'Eliminar ' + file.name)
-            .html('<i class="fas fa-trash-alt"></i>')
-            .on('click', function() {
-              removeFile(index);
-            });
-          li.append(removeBtn);
-          fileListEl.append(li);
-        });
-      } else {
-        $('#clear-files').hide();
-      }
+      selectedFiles.forEach((file, index) => {
+        const extension = file.name.split('.').pop().toLowerCase();
+        const { icon, color } = getFileIcon(extension);
+
+        let li = $('<li>').addClass('list-group-item d-flex justify-content-between align-items-center');
+
+        let fileInfo = $('<div>').addClass('file-info');
+        let iconElement = $('<i>').addClass(`fas ${icon} ${color} me-2`);
+        let fileName = $('<strong>').text(file.name);
+        let fileSize = $('<span>').text(`(${formatBytes(file.size)})`);
+        fileInfo.append(iconElement, fileName, fileSize);
+
+        let removeBtn = $('<button>')
+          .addClass('btn btn-sm btn-danger')
+          .attr('type', 'button')
+          .attr('aria-label', 'Eliminar ' + file.name)
+          .html('<i class="fas fa-trash-alt"></i>')
+          .on('click', function() {
+            removeFile(index);
+          });
+
+        li.append(fileInfo, removeBtn);
+        fileListEl.append(li);
+      });
+
+      $('#file-count').text(`${selectedFiles.length}/${maxFiles} archivos (${formatBytes(selectedFiles.reduce((sum, file) => sum + file.size, 0))})`);
     }
 
     function removeFile(index) {
@@ -792,10 +812,49 @@
     }
 
     let isSubmitting = false;
-    $('#submit-btn').on('click', function (e) {
+
+    $('#orden-form').on('submit', function (e) {
+      if (isSubmitting) {
+        e.preventDefault();
+        return;
+      }
+
+      // Agregar clase de validación de Bootstrap
+      $(this).addClass('was-validated');
+
       if ($('#productos-tbody tr').length === 0) {
         alert('Por favor, agrega al menos un producto.');
         e.preventDefault();
+        return;
+      }
+
+      let hasErrors = false;
+
+      $('#productos-tbody tr').each(function () {
+        let cantidadInput = $(this).find('.cantidad');
+        let valorUnitarioInput = $(this).find('.valor-unitario');
+        let cantidad = parseFloat(cantidadInput.val());
+        let valorUnitario = parseFloat(valorUnitarioInput.val());
+
+        cantidadInput.removeClass('is-invalid');
+        valorUnitarioInput.removeClass('is-invalid');
+
+        if (isNaN(cantidad) || cantidad < 1) {
+          cantidadInput.addClass('is-invalid');
+          hasErrors = true;
+        }
+
+        if (isNaN(valorUnitario) || valorUnitario <= 0) {
+          valorUnitarioInput.addClass('is-invalid');
+          hasErrors = true;
+        }
+      });
+
+      if (hasErrors) {
+        alert('Algunos productos tienen una cantidad menor a 1 o un valor unitario de 0 o menos. Por favor, corrige estos valores antes de continuar.');
+        e.preventDefault();
+
+        $('.is-invalid').first().focus();
         return;
       }
 
@@ -806,19 +865,20 @@
           descripcion: $(this).find('td:nth-child(1)').text().trim(),
           cantidad: parseFloat($(this).find('.cantidad').val()),
           valorUnitario: parseFloat($(this).find('.valor-unitario').val()),
-          valorTotal: parseFloat($(this).find('.valor-total-data').data('value')),
+          valorTotal: parseFloat($(this).find('.valor-total-data').attr('data-value')) || 0,
           unidad: $(this).data('unidad'),
         });
       });
 
       const extractNumericValue = (text) => {
         const rawValue = text.replace(/[^\d.,-]/g, '');
+        let numericValue;
         if (currentMonedaAbrev === 'CLP$' || currentMonedaAbrev === 'UF') {
-          return parseInt(rawValue.replace(/\./g, '').replace(/,/g, '')) || 0;
+          numericValue = parseInt(rawValue.replace(/\./g, '').replace(/,/g, '')) || 0;
         } else {
-          const normalizedValue = rawValue.replace(/\./g, '').replace(',', '.');
-          return parseFloat(normalizedValue) || 0;
+          numericValue = parseFloat(rawValue.replace(/\./g, '').replace(',', '.')) || 0;
         }
+        return numericValue;
       };
 
       $('#hidden-subtotal').val(extractNumericValue($('#subtotal').text()));
@@ -832,24 +892,22 @@
       selectedFiles.forEach(file => dt.items.add(file));
       $('#orden-archivos')[0].files = dt.files;
 
+      // Cambio de texto y deshabilitación del botón
       isSubmitting = true;
+      $('#submit-btn').text('Generando OC...').prop('disabled', true);
     });
 
-    function liberarBloqueo() {
-      if (isSubmitting) {
-        return;
-      }
-      const encodedId = "<%= solicitud.id %>";
-      const url = `/ordenes-liberar-procesamiento/${encodedId}`;
-      setTimeout(() => {
-        navigator.sendBeacon(url);
-      }, 100);
-    }
-
-    window.addEventListener("beforeunload", liberarBloqueo);
-    window.addEventListener("unload", liberarBloqueo);
-
     checkDropdowns();
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const nota = document.getElementById('orden-nota');
+    const notaCount = document.getElementById('notaCount');
+
+    nota.addEventListener('input', () => {
+      const currentLength = nota.value.length;
+      notaCount.textContent = `${currentLength} / 300 caracteres`;
+    });
   });
 </script>
 

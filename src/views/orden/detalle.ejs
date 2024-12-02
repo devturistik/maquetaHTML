@@ -1,8 +1,15 @@
-<!-- views/orden/detalle.ejs -->
 <%- include('../partials/header', { title: 'Detalle de Orden de Compra' }) %>
 <%- include('../partials/navbar', { navbarText: 'Detalle de Orden de Compra: "' + orden.codigo + '"' }) %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
+
+<%
+  const userRoles = user.roles.map(role => role.rol.toLowerCase());
+  const isAdmin = userRoles.includes('admin');
+  const isComprador = userRoles.includes('comprador');
+  const isSolicitante = userRoles.includes('solicitante');
+  const regresarRuta = isSolicitante ? '/solicitudes' : '/ordenes';
+%>
 
 <style>
   .detail-container {
@@ -107,7 +114,7 @@
       </div>
 
       <div class="action-buttons">
-        <a href="/ordenes" class="btn btn-secondary">
+        <a href="<%= regresarRuta %>" class="btn btn-secondary">
           <i class="fas fa-arrow-left me-1"></i> Regresar
         </a>
       </div>

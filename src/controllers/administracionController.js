@@ -62,12 +62,15 @@ class AdministracionController {
       let proveedores = [];
       let bancos = [];
       let tiposOrden = [];
+      let gerentes = [];
 
       if (tabla === "ProveedorBanco") {
         proveedores = await this.administracionService.obtenerProveedores();
         bancos = await this.administracionService.obtenerBancos();
       } else if (tabla === "DetalleTipoOrden") {
         tiposOrden = await this.administracionService.obtenerTiposOrden();
+      } else if (tabla === "CentroCosto") {
+        gerentes = await this.administracionService.obtenerGerentes();
       }
 
       res.render("administracion/crear", {
@@ -76,6 +79,7 @@ class AdministracionController {
         proveedores,
         bancos,
         tiposOrden,
+        gerentes,
       });
     } catch (error) {
       console.error(
@@ -145,6 +149,11 @@ class AdministracionController {
           tabla === "DetalleTipoOrden"
             ? await this.administracionService.obtenerTiposOrden()
             : [];
+        const gerentes =
+          tabla === "CentroCosto"
+            ? await this.administracionService.obtenerGerentes()
+            : [];
+
         return res.status(400).render("administracion/crear", {
           tabla,
           columnas: columnas,
@@ -152,6 +161,7 @@ class AdministracionController {
           proveedores,
           bancos,
           tiposOrden,
+          gerentes,
         });
       }
 
@@ -206,12 +216,15 @@ class AdministracionController {
       let proveedores = [];
       let bancos = [];
       let tiposOrden = [];
+      let gerentes = [];
 
       if (tabla === "ProveedorBanco") {
         proveedores = await this.administracionService.obtenerProveedores();
         bancos = await this.administracionService.obtenerBancos();
       } else if (tabla === "DetalleTipoOrden") {
         tiposOrden = await this.administracionService.obtenerTiposOrden();
+      } else if (tabla === "CentroCosto") {
+        gerentes = await this.administracionService.obtenerGerentes();
       }
 
       res.render("administracion/editar", {
@@ -222,6 +235,7 @@ class AdministracionController {
         proveedores,
         bancos,
         tiposOrden,
+        gerentes,
       });
     } catch (error) {
       console.error(`Error al obtener registro de la tabla ${tabla}:`, error);
@@ -292,6 +306,11 @@ class AdministracionController {
           tabla === "DetalleTipoOrden"
             ? await this.administracionService.obtenerTiposOrden()
             : [];
+        const gerentes =
+          tabla === "CentroCosto"
+            ? await this.administracionService.obtenerGerentes()
+            : [];
+
         return res.status(400).render("administracion/editar", {
           tabla,
           registro,
@@ -301,6 +320,7 @@ class AdministracionController {
           proveedores,
           bancos,
           tiposOrden,
+          gerentes,
         });
       }
 
@@ -311,7 +331,12 @@ class AdministracionController {
         const tabla = req.params.tabla;
         const id = req.params.id;
         const datos = req.body;
-        await this.administracionService.actualizarRegistro(tabla, id, datos);
+        await this.administracionService.actualizarRegistro(
+          tabla,
+          id,
+          datos,
+          res.locals.user.nombre
+        );
         res.redirect(`/administracion/${tabla}`);
       } catch (error) {
         console.error(
@@ -352,7 +377,8 @@ class AdministracionController {
           tabla,
           id,
           "ELIMINADO",
-          1
+          1,
+          res.locals.user.nombre
         );
         res.redirect(`/administracion/${tabla}`);
       } else if (columnasEstatus.length > 0) {
@@ -361,7 +387,8 @@ class AdministracionController {
             tabla,
             id,
             col.nombre,
-            0
+            0,
+            res.locals.user.nombre
           );
         }
         res.redirect(`/administracion/${tabla}`);
@@ -386,7 +413,11 @@ class AdministracionController {
         return res.status(403).send("Acceso prohibido.");
       }
 
-      await this.administracionService.eliminarFisico(tabla, id);
+      await this.administracionService.eliminarFisico(
+        tabla,
+        id,
+        res.locals.user.nombre
+      );
       res.redirect(`/administracion/${tabla}`);
     } catch (error) {
       console.error(
@@ -451,7 +482,8 @@ class AdministracionController {
             NUMERO_CUENTA,
             TIPO_CUENTA,
             CORREO_BANCO,
-          }
+          },
+          res.locals.user.nombre
         );
       } else if (tabla === "TipoOrden") {
         const { NOMBRE_DETALLE, CANTIDAD, TIPO_DETALLE } = req.body;
@@ -461,7 +493,8 @@ class AdministracionController {
             NOMBRE_DETALLE,
             CANTIDAD,
             TIPO_DETALLE,
-          }
+          },
+          res.locals.user.nombre
         );
       }
 

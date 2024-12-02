@@ -27,11 +27,11 @@ class AdministracionService {
     return this.administracionRepository.obtenerRegistroPorId(tabla, id);
   }
 
-  actualizarRegistro(tabla, id, datos) {
+  actualizarRegistro(tabla, id, datos, nombreUsuario) {
     return this.administracionRepository.actualizarRegistro(tabla, id, datos);
   }
 
-  eliminarLogico(tabla, id, columna, valor) {
+  eliminarLogico(tabla, id, columna, valor, nombreUsuario) {
     return this.administracionRepository.eliminarLogico(
       tabla,
       id,
@@ -40,7 +40,7 @@ class AdministracionService {
     );
   }
 
-  eliminarFisico(tabla, id) {
+  eliminarFisico(tabla, id, nombreUsuario) {
     return this.administracionRepository.eliminarFisico(tabla, id);
   }
 
@@ -56,14 +56,14 @@ class AdministracionService {
     return this.administracionRepository.obtenerTiposOrden();
   }
 
-  establecerRelacionTipoOrden(idTipoOrden, data) {
+  establecerRelacionTipoOrden(idTipoOrden, data, nombreUsuario) {
     return this.administracionRepository.establecerRelacionTipoOrden(
       idTipoOrden,
       data
     );
   }
 
-  establecerRelacionProveedorBanco(idProveedor, idBanco, data) {
+  establecerRelacionProveedorBanco(idProveedor, idBanco, data, nombreUsuario) {
     return this.administracionRepository.establecerRelacionProveedorBanco(
       idProveedor,
       idBanco,
@@ -73,6 +73,10 @@ class AdministracionService {
 
   obtenerDetallesTipoOrden() {
     return this.administracionRepository.obtenerDetallesTipoOrden();
+  }
+
+  obtenerGerentes() {
+    return this.administracionRepository.obtenerGerentes();
   }
 }
 

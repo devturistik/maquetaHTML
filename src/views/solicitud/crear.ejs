@@ -40,13 +40,18 @@
           <input
             type="text"
             class="form-control <%= errors.asunto ? 'is-invalid' : '' %>"
+            style="background-color: white;"
             id="asunto"
             placeholder="Indica el asunto de la solicitud"
             name="asunto"
             aria-label="Asunto de la Solicitud"
-            value="<%= typeof asunto !== 'undefined' ? asunto : '' %>"
+            value="<%= asunto %>"
             required
+            maxlength="100"
           />
+          <small id="asuntoHelp" class="form-text text-muted">
+            Máximo 100 caracteres.
+          </small>
           <% if (errors.asunto) { %>
             <div class="invalid-feedback"><%= errors.asunto %></div>
           <% } %>
@@ -56,39 +61,53 @@
           <label class="form-label" for="descripcion">Descripción <span class="text-danger">*</span></label>
           <textarea
             class="form-control <%= errors.descripcion ? 'is-invalid' : '' %>"
+            style="resize: none; background-color: white;"
             id="descripcion"
             placeholder="Describe los detalles de la solicitud"
             name="descripcion"
-            rows="4"
+            rows="3"
             required
-          ><%= typeof descripcion !== 'undefined' ? descripcion : '' %></textarea>
-          <% if (errors.descripcion) { %>
-            <div class="invalid-feedback"><%= errors.descripcion %></div>
-          <% } %>
+            maxlength="300"
+          ><%= descripcion %></textarea>
+          <div class="d-flex justify-content-between">
+            <% if (errors.descripcion) { %>
+              <div class="invalid-feedback"><%= errors.descripcion %></div>
+            <% } %>
+            <small id="descripcionCount" class="form-text text-muted">
+              <%= descripcion.length %> / 300 caracteres
+            </small>
+          </div>
         </div>
 
         <div class="mb-3">
           <label class="form-label" for="archivos">Subir Archivos</label>
-          <input
-            type="file"
-            class="form-control d-none"
-            id="archivos"
-            name="archivos"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
-            multiple
-            aria-label="Subir Archivos"
-            onchange="handleFileSelect(this)"
-          />
-          <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('archivos').click()">
-            <i class="fas fa-upload me-1"></i> Seleccionar archivos
-          </button>
+          <div class="mb-2">
+            <input
+              type="file"
+              class="form-control d-none"
+              id="archivos"
+              name="archivos"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+              multiple
+              aria-label="Subir Archivos"
+              onchange="handleFileSelect(this)"
+            />
+            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('archivos').click()">
+              <i class="fas fa-upload me-1"></i> Seleccionar archivos
+            </button>
+          </div>
           <small class="form-text text-muted">
             Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG, PNG (máximo 10 archivos y 10 MB en total)
           </small>
           <% if (errors.archivos) { %>
-            <div class="invalid-feedback"><%= errors.archivos %></div>
+            <div class="invalid-feedback d-block"><%= errors.archivos %></div>
           <% } %>
+
           <ul id="file-list" class="list-group mt-2"></ul>
+
+          <div class="mt-3" id="file-indicators" style="display: none;">
+            <p id="file-count">0/10 archivos (0 MB)</p>
+          </div>
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
@@ -122,31 +141,67 @@
   })();
 
   let selectedFiles = [];
+  const maxFiles = 10;
+  const maxSizeTotal = 10 * 1024 * 1024;
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    } else if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(2)} KB`;
+    } else {
+      return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    }
+  }
+
+  const extensionIcons = {
+    'pdf': { icon: 'fa-file-pdf', color: 'text-danger' },
+    'doc': { icon: 'fa-file-word', color: 'text-primary' },
+    'docx': { icon: 'fa-file-word', color: 'text-primary' },
+    'xls': { icon: 'fa-file-excel', color: 'text-success' },
+    'xlsx': { icon: 'fa-file-excel', color: 'text-success' },
+    'ppt': { icon: 'fa-file-powerpoint', color: 'text-warning' },
+    'pptx': { icon: 'fa-file-powerpoint', color: 'text-warning' },
+    'jpg': { icon: 'fa-file-image', color: 'text-info' },
+    'jpeg': { icon: 'fa-file-image', color: 'text-info' },
+    'png': { icon: 'fa-file-image', color: 'text-info' },
+    'default': { icon: 'fa-file', color: 'text-secondary' }
+  };
+
+  function getFileIcon(extension) {
+    return extensionIcons[extension.toLowerCase()] || extensionIcons['default'];
+  }
 
   function handleFileSelect(input) {
     const files = Array.from(input.files);
-    const maxFiles = 10;
-    const maxSizeTotal = 10 * 1024 * 1024;
     const allowedExtensions = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg", "jpeg", "png"];
-    if (files.length + selectedFiles.length > maxFiles) {
+    const existingFileCount = selectedFiles.length;
+
+    if (files.length + existingFileCount > maxFiles) {
       alert(`Puedes subir un máximo de ${maxFiles} archivos.`);
       input.value = "";
       return;
     }
 
-    let totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
     for (const file of files) {
-      if (!allowedExtensions.includes(file.name.split('.').pop().toLowerCase())) {
+      const extension = file.name.split('.').pop().toLowerCase();
+      if (!allowedExtensions.includes(extension)) {
         alert(`El archivo "${file.name}" tiene una extensión no permitida.`);
-        input.value = "";
-        return;
+        continue;
       }
-      totalSize += file.size;
-      if (totalSize > maxSizeTotal) {
+
+      if (selectedFiles.length >= maxFiles) {
+        alert(`Has alcanzado el límite máximo de ${maxFiles} archivos.`);
+        break;
+      }
+
+      const currentTotalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
+      if ((currentTotalSize + file.size) > maxSizeTotal) {
         alert("El tamaño total de los archivos no puede superar los 10 MB.");
         input.value = "";
         return;
       }
+
       selectedFiles.push(file);
     }
 
@@ -156,21 +211,39 @@
 
   function updateFileList() {
     const fileList = document.getElementById("file-list");
+    const fileCount = document.getElementById("file-count");
+    const fileIndicators = document.getElementById("file-indicators");
+
     fileList.innerHTML = "";
+
+    if (selectedFiles.length > 0) {
+      fileIndicators.style.display = 'block';
+    } else {
+      fileIndicators.style.display = 'none';
+    }
 
     selectedFiles.forEach((file, index) => {
       const listItem = document.createElement("li");
       listItem.className = "list-group-item d-flex justify-content-between align-items-center";
-      listItem.textContent = file.name;
+
+      const fileInfo = document.createElement("div");
+      const extension = file.name.split('.').pop().toLowerCase();
+      const { icon, color } = getFileIcon(extension);
+      fileInfo.innerHTML = `<i class="fas ${icon} ${color} me-2"></i><strong>${file.name}</strong> (${formatFileSize(file.size)})`;
 
       const removeButton = document.createElement("button");
       removeButton.className = "btn btn-sm btn-danger";
       removeButton.innerHTML = '<i class="fas fa-times"></i>';
       removeButton.onclick = () => removeFile(index);
 
+      listItem.appendChild(fileInfo);
       listItem.appendChild(removeButton);
       fileList.appendChild(listItem);
     });
+
+    const totalSizeBytes = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    const totalSizeFormatted = formatFileSize(totalSizeBytes);
+    fileCount.textContent = `${selectedFiles.length}/${maxFiles} archivos (${totalSizeFormatted})`;
   }
 
   function removeFile(index) {
@@ -182,6 +255,15 @@
     const dataTransfer = new DataTransfer();
     selectedFiles.forEach(file => dataTransfer.items.add(file));
     document.getElementById("archivos").files = dataTransfer.files;
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const descripcion = document.getElementById('descripcion');
+    const descripcionCount = document.getElementById('descripcionCount');
+
+    descripcion.addEventListener('input', () => {
+      descripcionCount.textContent = `${descripcion.value.length} / 300 caracteres`;
+    });
   });
 </script>
 

@@ -79,20 +79,6 @@
     <!-- Template customizer & Theme config files -->
     <script src="../../assets/vendor/js/template-customizer.js"></script>
     <script src="../../assets/js/config.js"></script>
-    <style>
-      .form-control {
-        transition: border-color 0.3s; /* Transición suave */
-      }
-      .form-control:hover,
-      .form-control:focus {
-        /* Cambia el color en hover y focus */
-        border-color: #cc0000 !important; /* Color del borde al hacer hover o focus */
-      }
-      .input-group .form-control:hover,
-      .input-group .form-control:focus {
-        border-color: #cc0000 !important; /* Asegura que funcione dentro del grupo */
-      }
-    </style>
   </head>
 
   <body>
@@ -124,7 +110,6 @@
         </div>
         <!-- /Left Text -->
 
-        <!-- Login -->
         <!-- Login -->
         <div
           class="d-flex col-12 col-lg-4 align-items-center authentication-bg p-sm-12 p-6"
@@ -164,14 +149,13 @@
               <button
                 type="submit"
                 class="btn btn-primary d-grid w-100"
-                style="background-color: #cc0000; border: 2px solid #cc0000"
               >
                 Iniciar sesión
               </button>
 
               <!-- Mostrar el mensaje de error aquí -->
               <% if (error) { %>
-              <div id="error-message" style="color: red; margin-top: 10px">
+              <div id="error-message">
                 <%= error %>
               </div>
               <% } %>

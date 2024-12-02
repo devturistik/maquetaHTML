@@ -141,7 +141,6 @@ class UserRepository {
         params.clave = clave;
       }
 
-      console.log("QUERY", queryFields);
 
       // Si no hay cambios, no ejecutar la actualización
       if (!queryFields.length) {
