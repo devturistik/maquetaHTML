@@ -5,49 +5,49 @@
  * ! To clear local storage: (https://www.leadshook.com/help/how-to-clear-local-storage-in-google-chrome-browser/).
  */
 
-'use strict';
+"use strict";
 
 // JS global variables
 window.config = {
   colors: {
-    primary: '#cc0000',
-    secondary: '#808390',
-    success: '#28c76f',
-    info: '#00bad1',
-    warning: '#ff9f43',
-    danger: '#FF4C51',
-    dark: '#4b4b4b',
-    black: '#000',
-    white: '#fff',
-    cardColor: '#fff',
-    bodyBg: '#f8f7fa',
-    bodyColor: '#6d6b77',
-    headingColor: '#444050',
-    textMuted: '#acaab1',
-    borderColor: '#e6e6e8'
+    primary: "#0d6efd",
+    secondary: "#808390",
+    success: "#28c76f",
+    info: "#00bad1",
+    warning: "#ff9f43",
+    danger: "#FF4C51",
+    dark: "#4b4b4b",
+    black: "#000",
+    white: "#fff",
+    cardColor: "#fff",
+    bodyBg: "#f8f7fa",
+    bodyColor: "#6d6b77",
+    headingColor: "#444050",
+    textMuted: "#acaab1",
+    borderColor: "#e6e6e8",
   },
   colors_label: {
-    primary: '#cc000029',
-    secondary: '#a8aaae29',
-    success: '#28c76f29',
-    info: '#00cfe829',
-    warning: '#ff9f4329',
-    danger: '#ea545529',
-    dark: '#4b4b4b29'
+    primary: "#0d6efd29",
+    secondary: "#a8aaae29",
+    success: "#28c76f29",
+    info: "#00cfe829",
+    warning: "#ff9f4329",
+    danger: "#ea545529",
+    dark: "#4b4b4b29",
   },
   colors_dark: {
-    cardColor: '#2f3349',
-    bodyBg: '#25293c',
-    bodyColor: '#b2b1cb',
-    headingColor: '#cfcce4',
-    textMuted: '#8285a0',
-    borderColor: '#565b79'
+    cardColor: "#2f3349",
+    bodyBg: "#25293c",
+    bodyColor: "#b2b1cb",
+    headingColor: "#cfcce4",
+    textMuted: "#8285a0",
+    borderColor: "#565b79",
   },
-  enableMenuLocalStorage: true // Enable menu state with local storage support
+  enableMenuLocalStorage: true, // Enable menu state with local storage support
 };
 
-window.assetsPath = document.documentElement.getAttribute('data-assets-path');
-window.templateName = document.documentElement.getAttribute('data-template');
+window.assetsPath = document.documentElement.getAttribute("data-assets-path");
+window.templateName = document.documentElement.getAttribute("data-template");
 window.rtlSupport = true; // set true for rtl support (rtl + ltr), false for ltr only.
 
 /**
@@ -87,12 +87,14 @@ TemplateCustomizer.LANGUAGES.fr = { ... };
  * defaultShowDropdownOnHover : true, false (for horizontal layout only)
  */
 
-if (typeof TemplateCustomizer !== 'undefined') {
+if (typeof TemplateCustomizer !== "undefined") {
   window.templateCustomizer = new TemplateCustomizer({
-    cssPath: assetsPath + 'vendor/css' + (rtlSupport ? '/rtl' : '') + '/',
-    themesPath: assetsPath + 'vendor/css' + (rtlSupport ? '/rtl' : '') + '/',
+    cssPath: assetsPath + "vendor/css" + (rtlSupport ? "/rtl" : "") + "/",
+    themesPath: assetsPath + "vendor/css" + (rtlSupport ? "/rtl" : "") + "/",
     displayCustomizer: true,
-    lang: localStorage.getItem('templateCustomizer-' + templateName + '--Lang') || 'en', // Set default language here
+    lang:
+      localStorage.getItem("templateCustomizer-" + templateName + "--Lang") ||
+      "en", // Set default language here
     // defaultTheme: 2,
     // defaultStyle: 'system',
     // defaultTextDir: 'rtl',
@@ -102,6 +104,14 @@ if (typeof TemplateCustomizer !== 'undefined') {
     // defaultNavbarType: 'sticky',
     // defaultFooterFixed: false,
     // defaultShowDropdownOnHover: false,
-    controls: ['rtl', 'style', 'headerType', 'contentLayout', 'layoutCollapsed', 'layoutNavbarOptions', 'themes']
+    controls: [
+      "rtl",
+      "style",
+      "headerType",
+      "contentLayout",
+      "layoutCollapsed",
+      "layoutNavbarOptions",
+      "themes",
+    ],
   });
 }

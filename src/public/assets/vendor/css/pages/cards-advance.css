@@ -1,5 +1,5 @@
 .swiper-container.swiper-card-advance-bg {
-  background-color: #cc0000;
+  background-color: #0d6efd;
   border-radius: 0.375rem;
   box-shadow: 0 0.1875rem 0.75rem 0 rgba(47, 43, 61, 0.14);
 }
@@ -21,21 +21,29 @@
   bottom: auto;
   top: 1rem;
 }
-html:not([dir=rtl]) .swiper-container.swiper-container-horizontal > .swiper-pagination-bullets {
+html:not([dir="rtl"])
+  .swiper-container.swiper-container-horizontal
+  > .swiper-pagination-bullets {
   right: 1rem;
   text-align: right;
   left: unset;
 }
-[dir=rtl] .swiper-container.swiper-container-horizontal > .swiper-pagination-bullets {
+[dir="rtl"]
+  .swiper-container.swiper-container-horizontal
+  > .swiper-pagination-bullets {
   left: 1rem;
   text-align: left;
   right: unset;
 }
-.swiper-container.swiper-container-horizontal > .swiper-pagination-bullets .swiper-pagination-bullet {
+.swiper-container.swiper-container-horizontal
+  > .swiper-pagination-bullets
+  .swiper-pagination-bullet {
   opacity: unset;
   background: rgba(255, 255, 255, 0.4) !important;
 }
-.swiper-container.swiper-container-horizontal > .swiper-pagination-bullets .swiper-pagination-bullet.swiper-pagination-bullet-active {
+.swiper-container.swiper-container-horizontal
+  > .swiper-pagination-bullets
+  .swiper-pagination-bullet.swiper-pagination-bullet-active {
   background: #fff !important;
 }
 
@@ -43,18 +51,34 @@ html:not([dir=rtl]) .swiper-container.swiper-container-horizontal > .swiper-pagi
   .swiper-container .swiper-wrapper .swiper-slide .card-website-analytics-img {
     position: absolute;
   }
-  html:not([dir=rtl]) .swiper-container .swiper-wrapper .swiper-slide .card-website-analytics-img {
+  html:not([dir="rtl"])
+    .swiper-container
+    .swiper-wrapper
+    .swiper-slide
+    .card-website-analytics-img {
     right: 3%;
   }
-  [dir=rtl] .swiper-container .swiper-wrapper .swiper-slide .card-website-analytics-img {
+  [dir="rtl"]
+    .swiper-container
+    .swiper-wrapper
+    .swiper-slide
+    .card-website-analytics-img {
     left: 3%;
   }
 }
 @media (min-width: 1400px) {
-  html:not([dir=rtl]) .swiper-container .swiper-wrapper .swiper-slide .card-website-analytics-img {
+  html:not([dir="rtl"])
+    .swiper-container
+    .swiper-wrapper
+    .swiper-slide
+    .card-website-analytics-img {
     right: 8%;
   }
-  [dir=rtl] .swiper-container .swiper-wrapper .swiper-slide .card-website-analytics-img {
+  [dir="rtl"]
+    .swiper-container
+    .swiper-wrapper
+    .swiper-slide
+    .card-website-analytics-img {
     left: 8%;
   }
 }

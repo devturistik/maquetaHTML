@@ -2,7 +2,7 @@
  *  Logistics Dashboard
  */
 
-'use strict';
+"use strict";
 
 (function () {
   let borderColor, labelColor, headingColor, legendColor;
@@ -23,104 +23,115 @@
   const chartColors = {
     donut: {
       series1: config.colors.success,
-      series2: '#53D28C',
-      series3: '#7EDDA9',
-      series4: '#A9E9C5'
+      series2: "#53D28C",
+      series3: "#7EDDA9",
+      series4: "#A9E9C5",
     },
     line: {
       series1: config.colors.warning,
       series2: config.colors.primary,
-      series3: '#cc0000'
-    }
+      series3: "#0d6efd",
+    },
   };
 
   // Shipment statistics Chart
   // --------------------------------------------------------------------
-  const shipmentEl = document.querySelector('#shipmentStatisticsChart'),
+  const shipmentEl = document.querySelector("#shipmentStatisticsChart"),
     shipmentConfig = {
       series: [
         {
-          name: 'Shipment',
-          type: 'column',
-          data: [38, 45, 33, 38, 32, 50, 48, 40, 42, 37]
+          name: "Shipment",
+          type: "column",
+          data: [38, 45, 33, 38, 32, 50, 48, 40, 42, 37],
         },
         {
-          name: 'Delivery',
-          type: 'line',
-          data: [23, 28, 23, 32, 28, 44, 32, 38, 26, 34]
-        }
+          name: "Delivery",
+          type: "line",
+          data: [23, 28, 23, 32, 28, 44, 32, 38, 26, 34],
+        },
       ],
       chart: {
         height: 320,
-        type: 'line',
+        type: "line",
         stacked: false,
         parentHeightOffset: 0,
         toolbar: { show: false },
-        zoom: { enabled: false }
+        zoom: { enabled: false },
       },
       markers: {
         size: 5,
         colors: [config.colors.white],
         strokeColors: chartColors.line.series2,
         hover: { size: 6 },
-        borderRadius: 4
+        borderRadius: 4,
       },
       stroke: {
-        curve: 'smooth',
+        curve: "smooth",
         width: [0, 3],
-        lineCap: 'round'
+        lineCap: "round",
       },
       legend: {
         show: true,
-        position: 'bottom',
+        position: "bottom",
         markers: {
           width: 8,
           height: 8,
-          offsetX: -3
+          offsetX: -3,
         },
         height: 40,
         itemMargin: {
           horizontal: 10,
-          vertical: 0
+          vertical: 0,
         },
-        fontSize: '15px',
-        fontFamily: 'Public Sans',
+        fontSize: "15px",
+        fontFamily: "Public Sans",
         fontWeight: 400,
         labels: {
           colors: headingColor,
-          useSeriesColors: false
+          useSeriesColors: false,
         },
-        offsetY: 10
+        offsetY: 10,
       },
       grid: {
         strokeDashArray: 8,
-        borderColor
+        borderColor,
       },
       colors: [chartColors.line.series1, chartColors.line.series2],
       fill: {
-        opacity: [1, 1]
+        opacity: [1, 1],
       },
       plotOptions: {
         bar: {
-          columnWidth: '30%',
-          startingShape: 'rounded',
-          endingShape: 'rounded',
-          borderRadius: 4
-        }
+          columnWidth: "30%",
+          startingShape: "rounded",
+          endingShape: "rounded",
+          borderRadius: 4,
+        },
       },
       dataLabels: { enabled: false },
       xaxis: {
         tickAmount: 10,
-        categories: ['1 Jan', '2 Jan', '3 Jan', '4 Jan', '5 Jan', '6 Jan', '7 Jan', '8 Jan', '9 Jan', '10 Jan'],
+        categories: [
+          "1 Jan",
+          "2 Jan",
+          "3 Jan",
+          "4 Jan",
+          "5 Jan",
+          "6 Jan",
+          "7 Jan",
+          "8 Jan",
+          "9 Jan",
+          "10 Jan",
+        ],
         labels: {
           style: {
             colors: labelColor,
-            fontSize: '13px',
-            fontWeight: 400
-          }
+            fontSize: "13px",
+            fontWeight: 400,
+          },
         },
         axisBorder: { show: false },
-        axisTicks: { show: false }
+        axisTicks: { show: false },
       },
       yaxis: {
         tickAmount: 4,
@@ -129,50 +140,50 @@
         labels: {
           style: {
             colors: labelColor,
-            fontSize: '13px',
-            fontFamily: 'Public Sans',
-            fontWeight: 400
+            fontSize: "13px",
+            fontFamily: "Public Sans",
+            fontWeight: 400,
           },
           formatter: function (val) {
-            return val + '%';
-          }
-        }
+            return val + "%";
+          },
+        },
       },
       responsive: [
         {
           breakpoint: 1400,
           options: {
             chart: { height: 320 },
-            xaxis: { labels: { style: { fontSize: '10px' } } },
+            xaxis: { labels: { style: { fontSize: "10px" } } },
             legend: {
               itemMargin: {
                 vertical: 0,
-                horizontal: 10
+                horizontal: 10,
               },
-              fontSize: '13px',
-              offsetY: 12
-            }
-          }
+              fontSize: "13px",
+              offsetY: 12,
+            },
+          },
         },
         {
           breakpoint: 1025,
           options: {
             chart: { height: 415 },
-            plotOptions: { bar: { columnWidth: '50%' } }
-          }
+            plotOptions: { bar: { columnWidth: "50%" } },
+          },
         },
         {
           breakpoint: 982,
-          options: { plotOptions: { bar: { columnWidth: '30%' } } }
+          options: { plotOptions: { bar: { columnWidth: "30%" } } },
         },
         {
           breakpoint: 480,
           options: {
             chart: { height: 250 },
-            legend: { offsetY: 7 }
-          }
-        }
-      ]
+            legend: { offsetY: 7 },
+          },
+        },
+      ],
     };
   if (typeof shipmentEl !== undefined && shipmentEl !== null) {
     const shipment = new ApexCharts(shipmentEl, shipmentConfig);
@@ -181,106 +192,119 @@
 
   // Reasons for delivery exceptions Chart
   // --------------------------------------------------------------------
-  const deliveryExceptionsChartE1 = document.querySelector('#deliveryExceptionsChart'),
+  const deliveryExceptionsChartE1 = document.querySelector(
+      "#deliveryExceptionsChart"
+    ),
     deliveryExceptionsChartConfig = {
       chart: {
         height: 420,
         parentHeightOffset: 0,
-        type: 'donut'
+        type: "donut",
       },
-      labels: ['Incorrect address', 'Weather conditions', 'Federal Holidays', 'Damage during transit'],
+      labels: [
+        "Incorrect address",
+        "Weather conditions",
+        "Federal Holidays",
+        "Damage during transit",
+      ],
       series: [13, 25, 22, 40],
       colors: [
         chartColors.donut.series1,
         chartColors.donut.series2,
         chartColors.donut.series3,
-        chartColors.donut.series4
+        chartColors.donut.series4,
       ],
       stroke: {
-        width: 0
+        width: 0,
       },
       dataLabels: {
         enabled: false,
         formatter: function (val, opt) {
-          return parseInt(val) + '%';
-        }
+          return parseInt(val) + "%";
+        },
       },
       legend: {
         show: true,
-        position: 'bottom',
+        position: "bottom",
         offsetY: 10,
         markers: {
           width: 8,
           height: 8,
-          offsetX: -3
+          offsetX: -3,
         },
         itemMargin: {
           horizontal: 15,
-          vertical: 5
+          vertical: 5,
         },
-        fontSize: '13px',
-        fontFamily: 'Public Sans',
+        fontSize: "13px",
+        fontFamily: "Public Sans",
         fontWeight: 400,
         labels: {
           colors: headingColor,
-          useSeriesColors: false
-        }
+          useSeriesColors: false,
+        },
       },
       tooltip: {
-        theme: false
+        theme: false,
       },
       grid: {
         padding: {
-          top: 15
-        }
+          top: 15,
+        },
       },
       plotOptions: {
         pie: {
           donut: {
-            size: '77%',
+            size: "77%",
             labels: {
               show: true,
               value: {
-                fontSize: '24px',
-                fontFamily: 'Public Sans',
+                fontSize: "24px",
+                fontFamily: "Public Sans",
                 color: headingColor,
                 fontWeight: 500,
                 offsetY: -20,
                 formatter: function (val) {
-                  return parseInt(val) + '%';
-                }
+                  return parseInt(val) + "%";
+                },
               },
               name: {
                 offsetY: 30,
-                fontFamily: 'Public Sans'
+                fontFamily: "Public Sans",
               },
               total: {
                 show: true,
-                fontSize: '15px',
-                fontFamily: 'Public Sans',
+                fontSize: "15px",
+                fontFamily: "Public Sans",
                 color: legendColor,
-                label: 'AVG. Exceptions',
+                label: "AVG. Exceptions",
                 formatter: function (w) {
-                  return '30%';
-                }
-              }
-            }
-          }
-        }
+                  return "30%";
+                },
+              },
+            },
+          },
+        },
       },
       responsive: [
         {
           breakpoint: 420,
           options: {
             chart: {
-              height: 360
-            }
-          }
-        }
-      ]
+              height: 360,
+            },
+          },
+        },
+      ],
     };
-  if (typeof deliveryExceptionsChartE1 !== undefined && deliveryExceptionsChartE1 !== null) {
-    const deliveryExceptionsChart = new ApexCharts(deliveryExceptionsChartE1, deliveryExceptionsChartConfig);
+  if (
+    typeof deliveryExceptionsChartE1 !== undefined &&
+    deliveryExceptionsChartE1 !== null
+  ) {
+    const deliveryExceptionsChart = new ApexCharts(
+      deliveryExceptionsChartE1,
+      deliveryExceptionsChartConfig
+    );
     deliveryExceptionsChart.render();
   }
 })();
@@ -289,32 +313,32 @@
 // --------------------------------------------------------------------
 $(function () {
   // Variable declaration for table
-  var dt_dashboard_table = $('.dt-route-vehicles');
+  var dt_dashboard_table = $(".dt-route-vehicles");
 
   // On route vehicles DataTable
   if (dt_dashboard_table.length) {
     var dt_dashboard = dt_dashboard_table.DataTable({
-      ajax: assetsPath + 'json/logistics-dashboard.json',
+      ajax: assetsPath + "json/logistics-dashboard.json",
       columns: [
-        { data: 'id' },
-        { data: 'id' },
-        { data: 'location' },
-        { data: 'start_city' },
-        { data: 'end_city' },
-        { data: 'warnings' },
-        { data: 'progress' }
+        { data: "id" },
+        { data: "id" },
+        { data: "location" },
+        { data: "start_city" },
+        { data: "end_city" },
+        { data: "warnings" },
+        { data: "progress" },
       ],
       columnDefs: [
         {
           // For Responsive
-          className: 'control',
+          className: "control",
           orderable: false,
           searchable: false,
           responsivePriority: 2,
           targets: 0,
           render: function (data, type, full, meta) {
-            return '';
-          }
+            return "";
+          },
         },
         {
           // For Checkboxes
@@ -327,68 +351,78 @@ $(function () {
             return '<input type="checkbox" class="dt-checkboxes form-check-input">';
           },
           checkboxes: {
-            selectAllRender: '<input type="checkbox" class="form-check-input">'
-          }
+            selectAllRender: '<input type="checkbox" class="form-check-input">',
+          },
         },
         {
           // Icon and location
           targets: 2,
           responsivePriority: 1,
           render: function (data, type, full, meta) {
-            var $location = full['location'];
+            var $location = full["location"];
             // Creates full output for row
             var $row_output =
               '<div class="d-flex justify-content-start align-items-center user-name">' +
               '<div class="avatar-wrapper">' +
               '<div class="avatar me-4">' +
               '<span class="avatar-initial rounded-circle bg-label-secondary"><i class="ti ti-car ti-28px"></i></span>' +
-              '</div>' +
-              '</div>' +
+              "</div>" +
+              "</div>" +
               '<div class="d-flex flex-column">' +
               '<a class="text-heading fw-medium" href="app-logistics-fleet.html">VOL-' +
               $location +
-              '</a>' +
-              '</div>' +
-              '</div>';
+              "</a>" +
+              "</div>" +
+              "</div>";
             return $row_output;
-          }
+          },
         },
         {
           // starting route
           targets: 3,
           render: function (data, type, full, meta) {
-            var $start_city = full['start_city'],
-              $start_country = full['start_country'];
-            var $row_output = '<div class="text-body">' + $start_city + ', ' + $start_country + '</div >';
+            var $start_city = full["start_city"],
+              $start_country = full["start_country"];
+            var $row_output =
+              '<div class="text-body">' +
+              $start_city +
+              ", " +
+              $start_country +
+              "</div >";
             return $row_output;
-          }
+          },
         },
         {
           // ending route
           targets: 4,
           render: function (data, type, full, meta) {
-            var $end_city = full['end_city'],
-              $end_country = full['end_country'];
-            var $row_output = '<div class="text-body">' + $end_city + ', ' + $end_country + '</div >';
+            var $end_city = full["end_city"],
+              $end_country = full["end_country"];
+            var $row_output =
+              '<div class="text-body">' +
+              $end_city +
+              ", " +
+              $end_country +
+              "</div >";
             return $row_output;
-          }
+          },
         },
         {
           // warnings
           targets: -2,
           render: function (data, type, full, meta) {
-            var $status_number = full['warnings'];
+            var $status_number = full["warnings"];
             var $status = {
-              1: { title: 'No Warnings', class: 'bg-label-success' },
+              1: { title: "No Warnings", class: "bg-label-success" },
               2: {
-                title: 'Temperature Not Optimal',
-                class: 'bg-label-warning'
+                title: "Temperature Not Optimal",
+                class: "bg-label-warning",
               },
-              3: { title: 'Ecu Not Responding', class: 'bg-label-danger' },
-              4: { title: 'Oil Leakage', class: 'bg-label-info' },
-              5: { title: 'fuel problems', class: 'bg-label-primary' }
+              3: { title: "Ecu Not Responding", class: "bg-label-danger" },
+              4: { title: "Oil Leakage", class: "bg-label-info" },
+              5: { title: "fuel problems", class: "bg-label-primary" },
             };
-            if (typeof $status[$status_number] === 'undefined') {
+            if (typeof $status[$status_number] === "undefined") {
               return data;
             }
             return (
@@ -396,15 +430,15 @@ $(function () {
               $status[$status_number].class +
               '">' +
               $status[$status_number].title +
-              '</span>'
+              "</span>"
             );
-          }
+          },
         },
         {
           // progress
           targets: -1,
           render: function (data, type, full, meta) {
-            var $progress = full['progress'];
+            var $progress = full["progress"];
             var $progress_output =
               '<div class="d-flex align-items-center">' +
               '<div div class="progress w-100" style="height: 8px;">' +
@@ -413,57 +447,59 @@ $(function () {
               '%;" aria-valuenow="' +
               $progress +
               '" aria-valuemin="0" aria-valuemax="100"></div>' +
-              '</div>' +
+              "</div>" +
               '<div class="text-body ms-3">' +
               $progress +
-              '%</div>' +
-              '</div>';
+              "%</div>" +
+              "</div>";
             return $progress_output;
-          }
-        }
+          },
+        },
       ],
-      order: [2, 'asc'],
+      order: [2, "asc"],
       dom: '<"table-responsive"t><"row d-flex align-items-center"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       displayLength: 5,
       language: {
         paginate: {
           next: '<i class="ti ti-chevron-right ti-sm"></i>',
-          previous: '<i class="ti ti-chevron-left ti-sm"></i>'
-        }
+          previous: '<i class="ti ti-chevron-left ti-sm"></i>',
+        },
       },
       responsive: {
         details: {
           display: $.fn.dataTable.Responsive.display.modal({
             header: function (row) {
               var data = row.data();
-              return 'Details of ' + data['location'];
-            }
+              return "Details of " + data["location"];
+            },
           }),
-          type: 'column',
+          type: "column",
           renderer: function (api, rowIdx, columns) {
             var data = $.map(columns, function (col, i) {
-              return col.title !== '' // ? Do not show row in modal popup if title is blank (for check box)
+              return col.title !== "" // ? Do not show row in modal popup if title is blank (for check box)
                 ? '<tr data-dt-row="' +
                     col.rowIndex +
                     '" data-dt-column="' +
                     col.columnIndex +
                     '">' +
-                    '<td>' +
+                    "<td>" +
                     col.title +
-                    ':' +
-                    '</td> ' +
-                    '<td>' +
+                    ":" +
+                    "</td> " +
+                    "<td>" +
                     col.data +
-                    '</td>' +
-                    '</tr>'
-                : '';
-            }).join('');
+                    "</td>" +
+                    "</tr>"
+                : "";
+            }).join("");
 
-            return data ? $('<table class="table"/><tbody />').append(data) : false;
-          }
-        }
-      }
+            return data
+              ? $('<table class="table"/><tbody />').append(data)
+              : false;
+          },
+        },
+      },
     });
-    $('.dataTables_info').addClass('pt-0');
+    $(".dataTables_info").addClass("pt-0");
   }
 });
