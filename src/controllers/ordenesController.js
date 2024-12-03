@@ -103,7 +103,6 @@ class OrdenesController {
         centrosdecosto,
         tiposdeorden,
         monedas,
-        productos,
         cuentascontables,
       ] = await Promise.all([
         this.ordenesService.getProveedores(),
@@ -112,7 +111,6 @@ class OrdenesController {
         this.ordenesService.getCentrosDeCosto(),
         this.ordenesService.getTiposDeOrden(),
         this.ordenesService.getMonedas(),
-        this.ordenesService.getProductos(),
         this.ordenesService.getCuentasContables(),
       ]);
 
@@ -132,7 +130,6 @@ class OrdenesController {
 
       return res.render("orden/crear", {
         solicitud,
-        productos,
         proveedores,
         plazosdepago,
         empresas,
@@ -198,7 +195,29 @@ class OrdenesController {
   };
 
   createOrden = async (req, res) => {
-    console.time("Crear OC en BD");
+    let id_orden, codigoOC;
+    let creadorOC;
+    let formattedFechaHoyForBlob;
+    let formattedFechaHoyForTemplate;
+    let Solicitud;
+    let parsedSubtotal,
+      parsedImpuesto,
+      parsedRetencion,
+      parsedPropina,
+      parsedTotal;
+    let productosArray;
+    let Moneda;
+    let datosAdicionales;
+    let fechaVencimiento;
+    let fechaCreacionDate;
+    let proveedor,
+      banco,
+      plazoPago,
+      empresa,
+      centroCosto,
+      tipoOrden,
+      cuentaContable;
+    let Nota;
     try {
       const id_solicitud = decodeBase64(req.params.id);
       const {
@@ -210,7 +229,7 @@ class OrdenesController {
         id_tipoOrden,
         id_moneda,
         id_cuentaContable,
-        Nota,
+        Nota: nota,
         subtotal,
         impuesto,
         retencion,
@@ -219,8 +238,8 @@ class OrdenesController {
         tokenDatos,
         productos: productosRaw = "[]",
       } = req.body;
+      Nota = nota;
 
-      let productosArray;
       try {
         productosArray = JSON.parse(productosRaw);
         if (!Array.isArray(productosArray) || productosArray.length === 0) {
@@ -256,55 +275,29 @@ class OrdenesController {
       }
 
       const fechaHoySantiago = dayjs().tz("America/Santiago");
-      const fechaVencimiento = calculateFechaVencimiento(30);
-      const formattedFechaHoyForBlob = fechaHoySantiago.format("DDMMYYYY");
-      const formattedFechaHoyForTemplate =
-        fechaHoySantiago.format("DD-MM-YYYY");
-      const fechaCreacionDate = fechaHoySantiago.utc().toDate();
-      const creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}`;
+      formattedFechaHoyForBlob = fechaHoySantiago.format("DDMMYYYY");
+      formattedFechaHoyForTemplate = fechaHoySantiago.format("DD-MM-YYYY");
+      fechaVencimiento = calculateFechaVencimiento(30);
+      fechaCreacionDate = fechaHoySantiago.utc().toDate();
+      creadorOC = `${res.locals.user.nombre} ${res.locals.user.apellido}`;
 
-      const documentosCotizacionPromise =
-        req.files && req.files.length > 0
-          ? AzureBlobService.uploadFilesWithNames(
-              req.files.map((file) => ({
-                blobName: `${formattedFechaHoyForBlob}_${file.originalname}`,
-                file,
-              }))
-            )
-          : Promise.resolve([]);
-
-      const datosAdicionalesPromise = (async () => {
-        try {
-          return jwt.verify(tokenDatos, process.env.JWT_SECRET);
-        } catch (err) {
-          throw new Error("Datos inválidos o sesión expirada.");
-        }
-      })();
-
-      const [documentosCotizacionURLs, datosAdicionales] = await Promise.all([
-        documentosCotizacionPromise,
-        datosAdicionalesPromise,
-      ]);
-
-      const documentosCotizacion = JSON.stringify(
-        documentosCotizacionURLs.map((url) => ({ url, eliminado: 0 }))
-      );
-
-      if (!datosAdicionales) {
+      try {
+        datosAdicionales = jwt.verify(tokenDatos, process.env.JWT_SECRET);
+      } catch (err) {
         req.flash("errorMessage", "Datos inválidos o sesión expirada.");
         return res.redirect(`/ordenes-crear/${req.params.id}`);
       }
 
       const [
-        Solicitud,
-        Proveedor,
-        Banco,
-        PlazoPago,
-        Empresa,
-        CentroCosto,
-        TipoOrden,
-        Moneda,
-        CuentaContable,
+        solicitud,
+        proveedorData,
+        bancoData,
+        plazoPagoData,
+        empresaData,
+        centroCostoData,
+        tipoOrdenData,
+        monedaData,
+        cuentaContableData,
       ] = await Promise.all([
         this.solicitudesService.getSolicitudById(id_solicitud),
         Promise.resolve(
@@ -339,15 +332,25 @@ class OrdenesController {
         ),
       ]);
 
+      Solicitud = solicitud;
+      Moneda = monedaData;
+      proveedor = proveedorData;
+      banco = bancoData;
+      plazoPago = plazoPagoData;
+      empresa = empresaData;
+      centroCosto = centroCostoData;
+      tipoOrden = tipoOrdenData;
+      cuentaContable = cuentaContableData;
+
       const validaciones = [
-        { entidad: Proveedor, mensaje: "Proveedor inválido." },
-        { entidad: Banco, mensaje: "Banco inválido." },
-        { entidad: PlazoPago, mensaje: "Plazo de pago inválido." },
-        { entidad: Empresa, mensaje: "Empresa inválida." },
-        { entidad: CentroCosto, mensaje: "Centro de costo inválido." },
-        { entidad: TipoOrden, mensaje: "Tipo de orden inválido." },
+        { entidad: proveedor, mensaje: "Proveedor inválido." },
+        { entidad: banco, mensaje: "Banco inválido." },
+        { entidad: plazoPago, mensaje: "Plazo de pago inválido." },
+        { entidad: empresa, mensaje: "Empresa inválida." },
+        { entidad: centroCosto, mensaje: "Centro de costo inválido." },
+        { entidad: tipoOrden, mensaje: "Tipo de orden inválida." },
         { entidad: Moneda, mensaje: "Moneda inválida." },
-        { entidad: CuentaContable, mensaje: "Cuenta contable inválida." },
+        { entidad: cuentaContable, mensaje: "Cuenta contable inválida." },
       ];
 
       for (const validacion of validaciones) {
@@ -358,17 +361,17 @@ class OrdenesController {
 
       const isCLP = Moneda.abrev === "CLP$";
 
-      const parsedSubtotal = isCLP
+      parsedSubtotal = isCLP
         ? Math.round(Number(subtotal))
         : parseFloat(subtotal);
-      const parsedTotal = isCLP ? Math.round(Number(total)) : parseFloat(total);
-      const parsedImpuesto = isCLP
+      parsedTotal = isCLP ? Math.round(Number(total)) : parseFloat(total);
+      parsedImpuesto = isCLP
         ? Math.round(Number(impuesto || 0))
         : parseFloat(impuesto || 0);
-      const parsedRetencion = isCLP
+      parsedRetencion = isCLP
         ? Math.round(Number(retencion || 0))
         : parseFloat(retencion || 0);
-      const parsedPropina = isCLP
+      parsedPropina = isCLP
         ? Math.round(Number(propina || 0))
         : parseFloat(propina || 0);
 
@@ -387,7 +390,7 @@ class OrdenesController {
         usuario_creador: creadorOC,
         correo_creador: res.locals.user.correo,
         nota_creador: Nota,
-        documentos_cotizacion: documentosCotizacion,
+        documentos_cotizacion: "[]",
         nivel_aprobacion: 0,
         total_local: totalLocal,
         id_centro_costo: id_centroCosto,
@@ -402,81 +405,14 @@ class OrdenesController {
         fecha_creacion: fechaCreacionDate,
       };
 
-      const { id_orden, codigoOC } =
-        await this.ordenesService.createOrdenConDetalles(
-          newOrden,
-          productosArray,
-          id_solicitud
-        );
-
-      const codigoOCShort = codigoOC.split("-")[1];
-
-      const templateData = {
-        codigooc: codigoOCShort,
-        creadoroc: creadorOC,
-        solicitud: Solicitud,
-        proveedor: Proveedor,
-        banco: Banco,
-        plazopago: PlazoPago,
-        empresa: Empresa,
-        centrocosto: CentroCosto,
-        tipoorden: TipoOrden,
-        moneda: Moneda,
-        cuentacontable: CuentaContable,
-        nota: Nota,
-        productos: productosArray,
-        totales: {
-          subtotal: parsedSubtotal,
-          impuesto: parsedImpuesto,
-          retencion: parsedRetencion,
-          propina: parsedPropina,
-          total: parsedTotal,
-        },
-        fechaHoy: formattedFechaHoyForTemplate,
-        defaultText,
-        formatNumber,
-      };
-
-      const bodyHtml = await ejs.renderFile(
-        path.join(
-          process.cwd(),
-          "src",
-          "views",
-          "orden",
-          "templates",
-          "pdfTemplate.ejs"
-        ),
-        templateData,
-        { encoding: "utf8" }
+      const result = await this.ordenesService.createOrdenConDetalles(
+        newOrden,
+        productosArray,
+        id_solicitud
       );
+      id_orden = result.id_orden;
+      codigoOC = result.codigoOC;
 
-      const pdfBufferFinal = await puppeteerService.generatePdf(
-        bodyHtml,
-        codigoOCShort
-      );
-
-      const pdfBlobName = `OC-${id_orden}-${formattedFechaHoyForBlob}.pdf`;
-      const pdfUrl = await AzureBlobService.uploadBufferWithName(
-        pdfBlobName,
-        pdfBufferFinal,
-        "application/pdf"
-      );
-
-      await Promise.all([
-        this.ordenesService.updateOrdenPdfUrl(id_orden, pdfUrl),
-        this.solicitudesService.updateEstatus(id_solicitud, "procesada"),
-      ]);
-
-      apiService
-        .enviarAprobacionAPI(codigoOC, process.env.API_USERNAME)
-        .catch((error) => {
-          console.error(
-            "Error al enviar la solicitud de aprobación:",
-            error.message
-          );
-        });
-
-      console.timeEnd("Crear OC en BD");
       req.flash("successMessage", "Orden creada exitosamente.");
       res.redirect("/ordenes");
     } catch (error) {
@@ -487,6 +423,128 @@ class OrdenesController {
           "Hubo un error al crear la orden. Por favor, inténtelo nuevamente."
       );
       res.redirect(`/ordenes-crear/${req.params.id}`);
+    } finally {
+      if (id_orden && codigoOC) {
+        (async () => {
+          const tasks = [];
+
+          tasks.push(
+            (async () => {
+              try {
+                const codigoOCShort = codigoOC.split("-")[1];
+                const templateData = {
+                  codigooc: codigoOCShort,
+                  creadoroc: creadorOC,
+                  solicitud: Solicitud,
+                  proveedor: proveedor,
+                  banco: banco,
+                  plazopago: plazoPago,
+                  empresa: empresa,
+                  centrocosto: centroCosto,
+                  tipoorden: tipoOrden,
+                  moneda: Moneda,
+                  cuentacontable: cuentaContable,
+                  nota: Nota,
+                  productos: productosArray,
+                  totales: {
+                    subtotal: parsedSubtotal,
+                    impuesto: parsedImpuesto,
+                    retencion: parsedRetencion,
+                    propina: parsedPropina,
+                    total: parsedTotal,
+                  },
+                  fechaHoy: formattedFechaHoyForTemplate,
+                  defaultText,
+                  formatNumber,
+                };
+                const bodyHtml = await ejs.renderFile(
+                  path.join(
+                    process.cwd(),
+                    "src",
+                    "views",
+                    "orden",
+                    "templates",
+                    "pdfTemplate.ejs"
+                  ),
+                  templateData,
+                  { encoding: "utf8" }
+                );
+
+                const pdfBufferFinal = await puppeteerService.generatePdf(
+                  bodyHtml,
+                  codigoOCShort
+                );
+
+                const pdfBlobName = `OC-${id_orden}-${formattedFechaHoyForBlob}.pdf`;
+
+                const pdfUrl = await AzureBlobService.uploadBufferWithName(
+                  pdfBlobName,
+                  pdfBufferFinal,
+                  "application/pdf"
+                );
+
+                await this.ordenesService.updateOrdenPdfUrl(id_orden, pdfUrl);
+              } catch (error) {
+                console.error(
+                  "Error en generación y subida de PDF:",
+                  error.message
+                );
+              }
+            })()
+          );
+
+          tasks.push(
+            (async () => {
+              try {
+                const documentosCotizacionURLs =
+                  req.files && req.files.length > 0
+                    ? await AzureBlobService.uploadFilesWithNames(
+                        req.files.map((file) => ({
+                          blobName: `${formattedFechaHoyForBlob}_${file.originalname}`,
+                          file,
+                        }))
+                      )
+                    : [];
+                const documentosCotizacion = JSON.stringify(
+                  documentosCotizacionURLs.map((url) => ({ url, eliminado: 0 }))
+                );
+
+                await this.ordenesService.updateOrdenDocumentosCotizacion(
+                  id_orden,
+                  documentosCotizacion
+                );
+              } catch (error) {
+                console.error(
+                  "Error en subida de documentos de cotización:",
+                  error.message
+                );
+              }
+            })()
+          );
+
+          tasks.push(
+            (async () => {
+              try {
+                await apiService.enviarAprobacionAPI(
+                  codigoOC,
+                  process.env.API_USERNAME
+                );
+              } catch (error) {
+                console.error(
+                  "Error al enviar la solicitud de aprobación:",
+                  error.message
+                );
+              }
+            })()
+          );
+
+          await Promise.allSettled(tasks);
+        })();
+      } else {
+        console.error(
+          "No se pudo iniciar el proceso en segundo plano debido a que faltan datos."
+        );
+      }
     }
   };
 
@@ -515,6 +573,39 @@ class OrdenesController {
       console.error("Error al cancelar el procesamiento:", error);
       req.flash("errorMessage", "Error al cancelar el procesamiento.");
       res.redirect("/solicitudes");
+    }
+  };
+
+  getProductos = async (req, res) => {
+    try {
+      const productos = await this.ordenesService.getProductos();
+      res.json(productos);
+    } catch (error) {
+      console.error("Error al obtener productos:", error.message);
+      res.status(500).json({ message: "Error al obtener productos" });
+    }
+  };
+
+  checkPdfStatus = async (req, res) => {
+    try {
+      const { ordenes } = req.body;
+      if (!Array.isArray(ordenes)) {
+        return res.status(400).json({ error: "Datos inválidos" });
+      }
+
+      const ordenesData = await this.ordenesService.getOrdenesByIds(ordenes);
+
+      const response = ordenesData.map((orden) => ({
+        id_orden: orden.id_orden,
+        ruta_archivo_pdf: orden.ruta_archivo_pdf
+          ? orden.ruta_archivo_pdf.replace(/^"|"$/g, "")
+          : null,
+      }));
+
+      res.json(response);
+    } catch (error) {
+      console.error("Error al verificar el estado de los PDFs:", error.message);
+      res.status(500).json({ error: "Error interno del servidor" });
     }
   };
 }

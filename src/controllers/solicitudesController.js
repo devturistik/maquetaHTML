@@ -11,7 +11,20 @@ class SolicitudesController {
 
   getAllSolicitudes = async (req, res) => {
     try {
-      const solicitudes = await this.solicitudesService.getAllSolicitudes();
+      const user = res.locals.user;
+      const isSolicitante = user.roles.some(
+        (role) => role.rol.toLowerCase() === "solicitante"
+      );
+      const userEmail = user.correo;
+
+      let solicitudes = await this.solicitudesService.getAllSolicitudes();
+
+      if (isSolicitante) {
+        solicitudes = solicitudes.filter(
+          (solicitud) => solicitud.correo_solicitante === userEmail
+        );
+      }
+
       res.render("solicitudes", {
         solicitudes: solicitudes.map((solicitud) => ({
           ...solicitud,

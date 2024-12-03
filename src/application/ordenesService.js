@@ -103,6 +103,21 @@ class OrdenesService {
     }
   }
 
+  async updateOrdenDocumentosCotizacion(id_orden, documentosCotizacion) {
+    try {
+      await this.ordenesRepository.updateOrdenDocumentosCotizacion(
+        id_orden,
+        documentosCotizacion
+      );
+    } catch (error) {
+      console.error(
+        "Error en OrdenesService.updateOrdenDocumentosCotizacion:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
   async updateOrdenCodigo(id_orden, codigo) {
     try {
       await this.ordenesRepository.updateOrdenCodigo(id_orden, codigo);
@@ -216,6 +231,19 @@ class OrdenesService {
         "Error en OrdenesService.getProveedorBanco:",
         error.message
       );
+      throw error;
+    }
+  }
+
+  async getProductos() {
+    return await this.ordenesRepository.getProductos();
+  }
+
+  async getOrdenesByIds(ids) {
+    try {
+      return await this.ordenesRepository.fetchOrdenesByIds(ids);
+    } catch (error) {
+      console.error("Error en OrdenesService.getOrdenesByIds:", error.message);
       throw error;
     }
   }

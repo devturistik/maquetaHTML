@@ -12,6 +12,9 @@
   const canEditDelete = isAdmin || isSolicitante;
   const canCreateOrdenCompra = isAdmin || isComprador;
   const canCreateNuevaSolicitud = isAdmin || isSolicitante;
+  const showSolicitanteColumn = !isSolicitante;
+  const estadoColumnIndex = showSolicitanteColumn ? 5 : 4;
+  const actionsColumnIndex = showSolicitanteColumn ? 7 : 6;
 %>
 
 <style>
@@ -70,6 +73,9 @@
     justify-content: center;
     min-width: 70px;
     text-align: center;
+  }
+  .table-responsive {
+    overflow-x: auto;
   }
 </style>
 
@@ -132,7 +138,9 @@
                   <th class="asunto-column">Asunto</th>
                   <th class="descripcion-column">Descripción</th>
                   <th class="d-none d-md-table-cell">Archivos</th>
-                  <th class="d-none d-lg-table-cell">Creador</th>
+                  <% if (showSolicitanteColumn) { %>
+                    <th class="d-none d-lg-table-cell">Solicitante</th>
+                  <% } %>
                   <th>Estado</th>
                   <th class="d-none d-lg-table-cell">Órdenes</th>
                   <th></th>
@@ -169,8 +177,10 @@
                         <i class="fas fa-folder text-muted" title="Sin archivos"></i>
                       <% } %>
                     </td>
-                    <td class="d-none d-lg-table-cell"><%= solicitud.usuario_solicitante ? solicitud.usuario_solicitante : '' %></td>
-                    <td class="estatus-column" data-filter="<%= estatusDisplay %>">
+                    <% if (showSolicitanteColumn) { %>
+                      <td class="d-none d-lg-table-cell"><%= solicitud.usuario_solicitante ? solicitud.usuario_solicitante : '' %></td>
+                    <% } %>
+                    <td class="estatus-column">
                       <% if (estatusClass) { %>
                         <span class="badge <%= estatusClass %> badge-status text-white">
                           <% if (estatusLower === 'abierta') { %>
@@ -254,7 +264,7 @@
                   <% }); %>
                 <% } else { %>
                   <tr>
-                    <td colspan="8" class="text-center">No hay solicitudes disponibles.</td>
+                    <td colspan="<%= showSolicitanteColumn ? 8 : 7 %>" class="text-center">No hay solicitudes disponibles.</td>
                   </tr>
                 <% } %>
               </tbody>
@@ -277,7 +287,7 @@
       responsive: true,
       autoWidth: false,
       language: {
-        url: "//cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
         search: "",
         emptyTable: "No hay solicitudes disponibles."
       },
@@ -286,18 +296,17 @@
       order: [[0, "desc"]],
       columnDefs: [
         {
-          targets: 5,
+          targets: <%= estadoColumnIndex %>,
           render: function (data, type, row, meta) {
-            var estatus = $(data).data('filter') || $(data).text();
             if (type === 'filter' || type === 'sort') {
-              return estatus;
+              return data.replace(/<[^>]+>/g, '').trim();
             }
             return data;
           },
           responsivePriority: 2
         },
         {
-          targets: 7,
+          targets: <%= actionsColumnIndex %>,
           orderable: false,
           responsivePriority: 1
         },
@@ -312,13 +321,15 @@
           responsivePriority: 4
         },
         {
-          targets: [3],
+          targets: 3,
           responsivePriority: 5
         },
-        {
-          targets: [4],
-          responsivePriority: 6
-        },
+        <% if (showSolicitanteColumn) { %>
+          {
+            targets: 4,
+            responsivePriority: 6
+          },
+        <% } %>
         {
           targets: '_all',
           responsivePriority: 7
@@ -343,9 +354,10 @@
         dataTableFilter.css('float', 'left');
       }
     });
+
     $('#estatus-filter').on('change', function () {
       var estatus = $(this).val();
-      table.column(5).search(estatus).draw();
+      table.column(<%= estadoColumnIndex %>).search(estatus).draw();
     });
   });
 </script>

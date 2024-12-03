@@ -606,6 +606,28 @@ class OrdenesRepository {
     }
   }
 
+  async updateOrdenDocumentosCotizacion(id_orden, documentosCotizacion) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET documentos_cotizacion = @DOCUMENTOS_COTIZACION
+      WHERE id_orden = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("DOCUMENTOS_COTIZACION", sql.NVarChar, documentosCotizacion)
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(query);
+    } catch (error) {
+      console.error(
+        "Error en OrdenesRepository.updateOrdenDocumentosCotizacion:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
   async updateOrdenCodigo(id_orden, codigo) {
     const query = `
       UPDATE oc.OrdenCompra
@@ -645,6 +667,36 @@ class OrdenesRepository {
     } catch (error) {
       console.error(
         "Error en ordenesRepository.updateOrdenPdfUrl:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async fetchOrdenesByIds(ids) {
+    const placeholders = ids.map((_, index) => `@ID${index}`).join(", ");
+    const query = `
+      SELECT
+        id_orden,
+        ruta_archivo_pdf
+      FROM
+        oc.OrdenCompra
+      WHERE
+        id_orden IN (${placeholders})
+    `;
+    try {
+      const pool = await poolPromise;
+      const request = pool.request();
+
+      ids.forEach((id, index) => {
+        request.input(`ID${index}`, sql.Int, id);
+      });
+
+      const result = await request.query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error(
+        "Error en ordenesRepository.fetchOrdenesByIds:",
         error.message
       );
       throw error;
@@ -872,6 +924,29 @@ class OrdenesRepository {
         "Error en ordenesRepository.getProveedorBanco:",
         error.message
       );
+      throw error;
+    }
+  }
+
+  async getProductos() {
+    const query = `
+      SELECT
+        id_producto,
+        descripcion,
+        unidad
+      FROM
+        oc.Producto
+      WHERE
+        estatus_producto = 1
+      ORDER BY
+        descripcion
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener productos:", error.message);
       throw error;
     }
   }

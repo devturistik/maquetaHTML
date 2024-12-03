@@ -34,4 +34,10 @@ router.get(
   ordenesController.getDetallesTipoOrden
 );
 
+// Ruta API para obtener los productos
+router.get("/api/productos", ordenesController.getProductos);
+
+// Ruta para verificar el estado de los PDFs
+router.post("/ordenes/check-pdf-status", ordenesController.checkPdfStatus);
+
 export default router;

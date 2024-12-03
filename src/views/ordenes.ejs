@@ -40,15 +40,14 @@
       <div style="display: none;">
         <select id="estatus-filter" class="form-select" style="width: 200px;">
           <option value="">Sin filtro</option>
-          <%
-            const estatusSet = new Set();
+          <% const estatusSet = new Set();
             ordenes.forEach(orden => {
               let estatusDisplayOption = orden.estatus;
               estatusSet.add(estatusDisplayOption);
             });
             const estatusList = Array.from(estatusSet);
             estatusList.forEach(estatus => { %>
-              <option value="<%= estatus %>"><%= estatus %></option>
+            <option value="<%= estatus %>"><%= estatus %></option>
           <% }); %>
         </select>
       </div>
@@ -72,8 +71,7 @@
               <tbody>
                 <% if (ordenes.length > 0) { %>
                   <% ordenes.forEach(orden => { %>
-                  <%
-                    let estatusLower = orden.estatus.toLowerCase();
+                  <% let estatusLower = orden.estatus.toLowerCase();
                     let estatusClass = '';
                     let estatusDisplay = orden.estatus;
                     if (estatusLower === 'pendiente') {
@@ -88,9 +86,8 @@
                       estatusClass = 'bg-secondary';
                     } else if (estatusLower === 'eliminada') {
                       estatusClass = 'bg-dark';
-                    }
-                  %>
-                  <tr>
+                    } %>
+                  <tr data-id="<%= orden.id_orden %>">
                     <td><%= orden.oc %></td>
                     <td>
                       <a href="/solicitudes/<%= orden.Encoded_id_solicitud %>">#<%= orden.id_solicitud %></a>
@@ -101,7 +98,7 @@
                       <% if (orden.ruta_archivo_pdf) { %>
                       <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" rel="noreferrer">VER PDF</a>
                       <% } else { %>
-                        Sin PDF
+                        <span class="pdf-status">Generando PDF...</span>
                       <% } %>
                     </td>
                     <td data-filter="<%= estatusDisplay %>">
@@ -160,7 +157,7 @@
     var table = $("#table-ordenes").DataTable({
       responsive: true,
       language: {
-        url: "//cdn.datatables.net/plug-ins/2.1.8/i18n/es-ES.json",
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
         search: "",
         emptyTable: "No hay órdenes disponibles."
       },
@@ -207,5 +204,47 @@
       var estatus = $(this).val();
       table.column(5).search(estatus).draw();
     });
+
+    function checkPdfStatus() {
+      var ordenesSinPdf = [];
+      $('#table-ordenes tbody tr').each(function () {
+        var $row = $(this);
+        var pdfStatus = $row.find('.pdf-status');
+        if (pdfStatus.length > 0) {
+          var ordenId = $row.data('id');
+          ordenesSinPdf.push(ordenId);
+        }
+      });
+
+      if (ordenesSinPdf.length > 0) {
+        $.ajax({
+          url: '/ordenes/check-pdf-status',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ ordenes: ordenesSinPdf }),
+          success: function (response) {
+            response.forEach(function (orden) {
+              if (orden.ruta_archivo_pdf) {
+                var $row = $('#table-ordenes tbody tr[data-id="' + orden.id_orden + '"]');
+                var pdfCell = $row.find('.pdf-status').closest('td');
+                pdfCell.html('<a href="' + orden.ruta_archivo_pdf + '" target="_blank" rel="noreferrer">VER PDF</a>');
+              }
+            });
+
+            var quedanOrdenesSinPdf = $('#table-ordenes tbody tr').find('.pdf-status').length > 0;
+            if (!quedanOrdenesSinPdf) {
+              clearInterval(pdfStatusInterval);
+            }
+          },
+          error: function (err) {
+            console.error('Error al verificar el estado de los PDFs:', err);
+          }
+        });
+      } else {
+        clearInterval(pdfStatusInterval);
+      }
+    }
+
+    var pdfStatusInterval = setInterval(checkPdfStatus, 5000);
   });
 </script>

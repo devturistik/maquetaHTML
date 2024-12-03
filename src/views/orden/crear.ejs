@@ -1,5 +1,5 @@
 <%- include('../partials/header', { title: 'Crear Orden de Compra' }) %>
-<%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: #' + solicitud.nro_solicitud + '"' + solicitud.asunto + '"' }) %>
+<%- include('../partials/navbar', { navbarText: 'Creando OC para solicitud: #' + solicitud.nro_solicitud + ' "' + solicitud.asunto + '"' }) %>
 <%- include('../partials/sidebar') %>
 <%- include('../partials/content-wrapper-open') %>
 
@@ -244,9 +244,6 @@
             <label class="form-label" for="producto">Producto</label>
             <select id="producto" class="form-select select2" name="Producto" style="width: 100%;" disabled>
               <option value="">Seleccione un producto</option>
-              <% productos.forEach(producto => { %>
-                <option value="<%= producto.id_producto %>" data-unidad="<%= producto.unidad %>"><%= producto.descripcion %></option>
-              <% }); %>
             </select>
           </div>
           <div class="col-md-3 d-flex align-items-end">
@@ -363,8 +360,36 @@
       $select.trigger('change.select2');
     }
 
+    function initializeProductoSelect2() {
+      $('#producto').select2({
+        placeholder: 'Seleccione un producto',
+        allowClear: true,
+        width: '100%',
+        matcher: function(params, data) {
+          if (data.id === "") {
+            return null;
+          }
+          if ($.trim(params.term) === "") {
+            return data;
+          }
+          if (typeof data.text === 'undefined') {
+            return null;
+          }
+          if (data.text.toLowerCase().indexOf(params.term.toLowerCase()) > -1) {
+            var modifiedData = $.extend({}, data, true);
+            return modifiedData;
+          }
+          return null;
+        }
+      });
+      productoSelect2Initialized = true;
+    }
+
     $('#producto').prop('disabled', true);
     $('#add-producto').prop('disabled', true);
+
+    let productosCache = null;
+    let productoSelect2Initialized = false;
 
     function checkDropdowns() {
       const requiredDropdowns = [
@@ -388,16 +413,54 @@
 
       if (allSelected) {
         $('#producto').prop('disabled', false);
-        updateSelect2($('#producto'));
+        if (!productosCache) {
+          loadProductos();
+        } else {
+          if (!productoSelect2Initialized) {
+            initializeProductoSelect2();
+          }
+        }
       } else {
         $('#producto').prop('disabled', true);
         $('#producto').val(null).trigger('change.select2');
         $('#add-producto').prop('disabled', true);
-        updateSelect2($('#producto'));
+        if (productoSelect2Initialized) {
+          $('#producto').select2('destroy');
+          productoSelect2Initialized = false;
+        }
       }
     }
 
-    $('#orden-proveedor, #orden-banco, #orden-plazo, #orden-empresa, #orden-centro-costo, #orden-tipo, #orden-moneda, #orden-cuenta-contable').on('change', checkDropdowns);
+    function loadProductos() {
+      $('#producto').html('<option>Cargando productos...</option>');
+      $.ajax({
+        url: '/api/productos',
+        method: 'GET',
+        dataType: 'json',
+        success: function(productos) {
+          productosCache = productos;
+          populateProductosDropdown(productosCache);
+        },
+        error: function() {
+          alert('Error al cargar productos');
+          $('#producto').html('<option value="">Seleccione un producto</option>').trigger('change.select2');
+        }
+      });
+    }
+
+    function populateProductosDropdown(productos) {
+      $('#producto').empty().append('<option value="">Seleccione un producto</option>');
+      productos.forEach(function(producto) {
+        var newOption = new Option(producto.descripcion, producto.id_producto, false, false);
+        $(newOption).attr('data-unidad', producto.unidad);
+        $('#producto').append(newOption);
+      });
+      if (!productoSelect2Initialized) {
+        initializeProductoSelect2();
+      } else {
+        $('#producto').trigger('change.select2');
+      }
+    }
 
     $('#producto').on('change', function() {
       if ($(this).val()) {
@@ -418,7 +481,7 @@
       }
 
       let existente = $('#productos-tbody tr').filter(function() {
-        return $(this).data('producto-id') === productoId;
+        return $(this).data('producto-id') == productoId;
       }).length > 0;
 
       if (existente) {
@@ -819,7 +882,6 @@
         return;
       }
 
-      // Agregar clase de validación de Bootstrap
       $(this).addClass('was-validated');
 
       if ($('#productos-tbody tr').length === 0) {
@@ -892,10 +954,11 @@
       selectedFiles.forEach(file => dt.items.add(file));
       $('#orden-archivos')[0].files = dt.files;
 
-      // Cambio de texto y deshabilitación del botón
       isSubmitting = true;
       $('#submit-btn').text('Generando OC...').prop('disabled', true);
     });
+
+    $('#orden-proveedor, #orden-banco, #orden-plazo, #orden-empresa, #orden-centro-costo, #orden-tipo, #orden-moneda, #orden-cuenta-contable').on('change', checkDropdowns);
 
     checkDropdowns();
   });
