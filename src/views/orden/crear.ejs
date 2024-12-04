@@ -111,6 +111,26 @@
   .form-control.is-valid + .valid-feedback {
     display: none;
   }
+  .select2-container--default .select2-search--dropdown {
+  position: relative;
+}
+
+.select2-container--default .select2-search--dropdown::before {
+  content: "\f002";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #6c757d;
+  font-size: 1em;
+}
+
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  padding-left: 30px;
+}
 </style>
 
 <div class="content-wrapper">
@@ -312,7 +332,7 @@
         <input type="hidden" name="tokenDatos" value="<%= tokenDatos %>">
 
         <div class="d-flex justify-content-end gap-4">
-          <a href="/solicitudes/<%= solicitud.id_solicitud %>" class="btn btn-secondary">Regresar</a>
+          <a href="/solicitudes" class="btn btn-secondary">Regresar</a>
           <button type="submit" class="btn btn-primary" id="submit-btn">Crear Orden</button>
         </div>
       </form>
@@ -480,12 +500,14 @@
         return;
       }
 
-      let existente = $('#productos-tbody tr').filter(function() {
+      let existingRow = $('#productos-tbody tr').filter(function() {
         return $(this).data('producto-id') == productoId;
-      }).length > 0;
+      });
 
-      if (existente) {
-        alert('El producto seleccionado ya ha sido agregado.');
+      if (existingRow.length > 0) {
+        let cantidadInput = existingRow.find('.cantidad');
+        let currentCantidad = parseInt(cantidadInput.val()) || 0;
+        cantidadInput.val(currentCantidad + 1).trigger('input');
         return;
       }
 
@@ -570,9 +592,14 @@
     function calcularTotales() {
       let subtotal = 0;
       $('#productos-tbody tr').each(function () {
-        let valorTotalData = parseFloat($(this).find('.valor-total-data').attr('data-value')) || 0;
-        subtotal += valorTotalData;
+        let cantidad = parseFloat($(this).find('.cantidad').val()) || 0;
+        let valorUnitario = parseFloat($(this).find('.valor-unitario').val()) || 0;
+        let valorTotal = cantidad * valorUnitario;
+        $(this).find('.valor-total').text(formatNumber(valorTotal, useIntegers));
+        $(this).find('.valor-total-data').attr('data-value', valorTotal);
+        subtotal += valorTotal;
       });
+
       let formattedSubtotal = formatNumber(subtotal, useIntegers);
       $('#subtotal').html(`<span class="moneda-symbol">${currentMonedaAbrev}</span> ${formattedSubtotal}`);
 
