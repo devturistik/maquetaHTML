@@ -241,6 +241,16 @@ class OrdenesController {
       Nota = nota;
 
       try {
+        await this.solicitudesService.updateEstatus(id_solicitud, "Procesada");
+      } catch (error) {
+        req.flash(
+          "errorMessage",
+          "Error al actualizar el estatus de la solicitud. Intente nuevamente."
+        );
+        return res.redirect(`/ordenes-crear/${req.params.id}`);
+      }
+
+      try {
         productosArray = JSON.parse(productosRaw);
         if (!Array.isArray(productosArray) || productosArray.length === 0) {
           throw new Error("Debe agregar al menos un producto.");
