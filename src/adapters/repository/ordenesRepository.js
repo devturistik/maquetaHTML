@@ -96,21 +96,21 @@ class OrdenesRepository {
   async getHistorialAprobaciones(codigoOrden) {
     const query = `
       SELECT
-        h.ID_HISTORIAL,
-        h.ID_ORDEN_COMPRA,
-        h.CODIGO_ORDEN_COMPRA,
-        h.APROBADOR_ID,
-        h.NIVEL_APROBACION,
-        h.APPROVALS,
-        h.ESTATUS_ID,
-        h.COMENTARIO,
-        h.UPDATED_AT
+        h.id_historial,
+        h.id_orden_compra,
+        h.codigo_orden_compra,
+        h.aprobador_id,
+        h.nivel_aprobacion,
+        h.approvals,
+        h.estatus_id,
+        h.comentario,
+        h.updated_at
       FROM
         oc.HistorialAprobaciones h
       WHERE
-        h.CODIGO_ORDEN_COMPRA = @CODIGO_ORDEN_COMPRA
+        h.codigo_orden_compra = @CODIGO_ORDEN_COMPRA
       ORDER BY
-        h.NIVEL_APROBACION ASC
+        h.nivel_aprobacion ASC
     `;
     try {
       const pool = await poolPromise;

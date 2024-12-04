@@ -34,7 +34,7 @@ class OrdenesService {
   async getUsuariosAprobadores(historialAprobaciones) {
     try {
       const aprobadorIds = historialAprobaciones
-        .map((h) => h.APROBADOR_ID)
+        .map((h) => h.aprobador_id)
         .filter(Boolean);
       return await this.ordenesRepository.getUsuariosAprobadores(aprobadorIds);
     } catch (error) {

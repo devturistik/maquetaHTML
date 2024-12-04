@@ -66,7 +66,7 @@ class OrdenesController {
         historialAprobaciones
       );
 
-      orden.id = encodeBase64(orden.id_orden);
+      orden.id_orden = encodeBase64(orden.id_orden);
 
       res.render("orden/detalle", { orden, historialAprobaciones, usuarios });
     } catch (error) {

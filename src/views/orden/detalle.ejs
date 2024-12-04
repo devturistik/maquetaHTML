@@ -284,21 +284,21 @@
             <% historialAprobaciones.forEach((historial, index) => { %>
               <div class="step-wrapper">
                 <div class="step-container">
-                  <div class="level-label">Nivel <%= historial.NIVEL_APROBACION %></div>
-                  <div class="step-circle <%= historial.APPROVALS === 1 ? 'aprobado' : historial.APPROVALS === 2 ? 'rechazado' : 'pendiente' %>" aria-label="Nivel de aprobación <%= historial.NIVEL_APROBACION %>: <%= historial.APPROVALS === 1 ? 'Aprobado' : historial.APPROVALS === 2 ? 'Rechazado' : 'Pendiente' %>">
-                    <% if (historial.APPROVALS === 1) { %>
+                  <div class="level-label">Nivel <%= historial.nivel_aprobacion %></div>
+                  <div class="step-circle <%= historial.approvals === 1 ? 'aprobado' : historial.approvals === 2 ? 'rechazado' : 'pendiente' %>" aria-label="Nivel de aprobación <%= historial.nivel_aprobacion %>: <%= historial.approvals === 1 ? 'Aprobado' : historial.approvals === 2 ? 'Rechazado' : 'Pendiente' %>">
+                    <% if (historial.approvals === 1) { %>
                       <i class="fas fa-check"></i>
-                    <% } else if (historial.APPROVALS === 2) { %>
+                    <% } else if (historial.approvals === 2) { %>
                       <i class="fas fa-times"></i>
                     <% } else { %>
                       <i class="fas fa-clock"></i>
                     <% } %>
                   </div>
-                  <span class="approver-name"><%= usuarios[historial.APROBADOR_ID] ? usuarios[historial.APROBADOR_ID].nombre + ' ' + usuarios[historial.APROBADOR_ID].apellido : 'Desconocido' %></span>
-                  <div class="chat-icon <%= !historial.COMENTARIO ? 'no-comment' : '' %>">
-                    <% if (historial.COMENTARIO) { %>
+                  <span class="approver-name"><%= usuarios[historial.aprobador_id] ? usuarios[historial.aprobador_id].nombre + ' ' + usuarios[historial.aprobador_id].apellido : 'Desconocido' %></span>
+                  <div class="chat-icon <%= !historial.comentario ? 'no-comment' : '' %>">
+                    <% if (historial.comentario) { %>
                       <i class="fas fa-comment"></i>
-                      <div class="tooltip"><%= historial.COMENTARIO %></div>
+                      <div class="tooltip"><%= historial.comentario %></div>
                     <% } else { %>
                       <i class="fas fa-comment-slash"></i>
                     <% } %>
