@@ -1,7 +1,6 @@
 // src/application/solicitudesService.js
 import SolicitudesRepository from "../adapters/repository/solicitudesRepository.js";
 import OrdenesRepository from "../adapters/repository/ordenesRepository.js";
-import dayjs from "dayjs";
 
 class SolicitudesService {
   constructor() {
@@ -9,9 +8,8 @@ class SolicitudesService {
     this.ordenesRepository = new OrdenesRepository();
   }
 
-  async getAllSolicitudes() {
-    const solicitudes = await this.solicitudesRepository.getAllWithOrdenes();
-    return solicitudes;
+  async getAllSolicitudes(filtros = {}) {
+    return await this.solicitudesRepository.getAllWithOrdenes(filtros);
   }
 
   async getOrdenesBySolicitudId(solicitudId) {

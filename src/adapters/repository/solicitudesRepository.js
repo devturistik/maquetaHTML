@@ -2,10 +2,11 @@
 import { sql, poolPromise } from "../../config/database.js";
 
 class SolicitudesRepository {
-  async getAllWithOrdenes() {
+  async getAllWithOrdenes(filtros = {}) {
     try {
       const pool = await poolPromise;
-      const result = await pool.request().query(`
+
+      let query = `
         SELECT
           s.id_solicitud,
           s.asunto,
@@ -15,33 +16,46 @@ class SolicitudesRepository {
           s.correo_solicitante,
           s.created_at,
           e.nombre AS estatus,
-          COUNT(o.id_orden) AS ordenes_count
+          CASE 
+            WHEN s.archivos IS NOT NULL AND s.archivos != '[]' THEN 1 
+            ELSE 0 
+          END AS hasFiles,
+          (
+            SELECT COUNT(*) 
+            FROM oc.OrdenCompra o 
+            WHERE o.id_solicitud = s.id_solicitud
+          ) AS ordenes_count
         FROM
           oc.Solicitud s
         JOIN
           oc.Estatus e ON s.estatus_id = e.id_estatus
-        LEFT JOIN
-          oc.OrdenCompra o ON s.id_solicitud = o.id_solicitud
         WHERE
           s.eliminado = 0
-        GROUP BY
-          s.id_solicitud,
-          s.asunto,
-          s.descripcion,
-          s.archivos,
-          s.usuario_solicitante,
-          s.correo_solicitante,
-          s.created_at,
-          e.nombre
+      `;
+
+      if (filtros.correo_solicitante) {
+        query += ` AND s.correo_solicitante = @correo_solicitante`;
+      }
+
+      query += `
         ORDER BY
           s.created_at DESC
-      `);
+      `;
+
+      const request = pool.request();
+
+      if (filtros.correo_solicitante) {
+        request.input(
+          "correo_solicitante",
+          sql.NVarChar,
+          filtros.correo_solicitante
+        );
+      }
+
+      const result = await request.query(query);
       return result.recordset;
     } catch (error) {
-      console.error(
-        "Error al obtener solicitudes con el conteo de órdenes de la base de datos:",
-        error
-      );
+      console.error("Error al obtener solicitudes:", error);
       throw error;
     }
   }
@@ -202,15 +216,38 @@ class SolicitudesRepository {
   async deleteSolicitud(id, justificacion) {
     try {
       const pool = await poolPromise;
+
+      const archivosResult = await pool.request().input("ID", sql.Int, id)
+        .query(`
+          SELECT archivos
+          FROM oc.Solicitud
+          WHERE id_solicitud = @ID
+        `);
+
+      if (archivosResult.recordset.length === 0) {
+        throw new Error(`Solicitud con id ${id} no encontrada.`);
+      }
+
+      const archivos = JSON.parse(archivosResult.recordset[0].archivos || "[]");
+
+      const archivosActualizados = archivos.map((archivo) => ({
+        ...archivo,
+        eliminado: 1,
+      }));
+
       await pool
         .request()
-        .input("id", sql.Int, id)
-        .input("justificacion", sql.NVarChar, justificacion).query(`
+        .input("ID", sql.Int, id)
+        .input("JUSTIFICACION", sql.NVarChar, justificacion)
+        .input("ARCHIVOS", sql.NVarChar, JSON.stringify(archivosActualizados))
+        .query(`
           UPDATE oc.Solicitud
-          SET eliminado = 1,
-              justificacion_eliminacion = @justificacion,
-              updated_at = GETDATE()
-          WHERE id_solicitud = @id
+          SET
+            eliminado = 1,
+            justificacion_eliminacion = @JUSTIFICACION,
+            archivos = @ARCHIVOS,
+            updated_at = GETDATE()
+          WHERE id_solicitud = @ID
         `);
     } catch (error) {
       console.error("Error al eliminar la solicitud:", error);

@@ -9,7 +9,7 @@ const solicitudesController = new SolicitudesController();
 
 router.get("/solicitudes", solicitudesController.getAllSolicitudes);
 router.get("/solicitudes/:id", solicitudesController.getSolicitudById);
-router.get("/solicitudes-ver-archivos/:id", solicitudesController.viewArchivos);
+router.get("/solicitudes/:id/archivos", solicitudesController.viewArchivos);
 router.get(
   "/solicitudes/:id/ordenes",
   solicitudesController.viewOrdenesDeSolicitud

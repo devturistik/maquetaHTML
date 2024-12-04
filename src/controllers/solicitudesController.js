@@ -3,6 +3,7 @@ import SolicitudesService from "../application/solicitudesService.js";
 import { encodeBase64, decodeBase64 } from "../utils/base64.js";
 import AzureBlobService from "../services/azureBlobService.js";
 import dayjs from "dayjs";
+import { PassThrough } from "stream";
 
 class SolicitudesController {
   constructor() {
@@ -12,29 +13,38 @@ class SolicitudesController {
   getAllSolicitudes = async (req, res) => {
     try {
       const user = res.locals.user;
-      const isSolicitante = user.roles.some(
-        (role) => role.rol.toLowerCase() === "solicitante"
-      );
+      const userRoles = user.roles.map((role) => role.rol.toLowerCase());
+      const isSolicitante = userRoles.includes("solicitante");
+      const isAdmin = userRoles.includes("admin");
       const userEmail = user.correo;
 
-      let solicitudes = await this.solicitudesService.getAllSolicitudes();
+      let filtros = {};
 
-      if (isSolicitante) {
-        solicitudes = solicitudes.filter(
-          (solicitud) => solicitud.correo_solicitante === userEmail
-        );
+      if (isSolicitante && !isAdmin) {
+        filtros.correo_solicitante = userEmail;
       }
 
-      res.render("solicitudes", {
-        solicitudes: solicitudes.map((solicitud) => ({
+      const solicitudes = await this.solicitudesService.getAllSolicitudes(
+        filtros
+      );
+
+      const solicitudesProcesadas = solicitudes.map((solicitud) => {
+        const archivos = JSON.parse(solicitud.archivos || "[]");
+        const hasActiveFiles = archivos.some((file) => file.eliminado !== 1);
+
+        return {
           ...solicitud,
           nro_solicitud: solicitud.id_solicitud,
           id_solicitud: encodeBase64(solicitud.id_solicitud.toString()),
-          hasFiles:
-            solicitud.archivos &&
-            JSON.parse(solicitud.archivos).some((a) => a.eliminado === 0),
-          created_at: dayjs(solicitud.created_at).format("DD/MM/YYYY"),
-        })),
+          archivos,
+          hasActiveFiles,
+          estatusLower: solicitud.estatus.toLowerCase(),
+        };
+      });
+
+      res.render("solicitudes", {
+        solicitudes: solicitudesProcesadas,
+        user,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
       });
@@ -172,8 +182,9 @@ class SolicitudesController {
       }
 
       if (archivosUrls.length > 0) {
-        const archivosData = archivosUrls.map((url) => ({
+        const archivosData = archivosUrls.map((url, index) => ({
           url,
+          originalFileName: req.files[index].originalname,
           eliminado: 0,
         }));
         await this.solicitudesService.updateArchivosSolicitud(solicitudId, {
@@ -269,8 +280,10 @@ class SolicitudesController {
         const archivosUrls = await AzureBlobService.uploadFilesWithNames(
           archivosParaSubir
         );
-        const nuevosArchivos = archivosUrls.map((url) => ({
+
+        const nuevosArchivos = archivosUrls.map((url, index) => ({
           url,
+          originalFileName: archivosNuevos[index].originalname,
           eliminado: 0,
         }));
         archivosActuales = [...archivosActuales, ...nuevosArchivos];
@@ -283,25 +296,35 @@ class SolicitudesController {
       };
 
       await this.solicitudesService.updateSolicitud(id, solicitudData);
-      await this.solicitudesService.updateEstatus(id, "abierta");
 
       req.flash("successMessage", "Solicitud actualizada con éxito.");
       res.redirect("/solicitudes");
     } catch (error) {
       console.error("Error al actualizar la solicitud:", error);
-      if (error.validationErrors) {
+
+      try {
+        const id = decodeBase64(req.params.id);
+        const solicitud = await this.solicitudesService.getSolicitudById(id);
+        solicitud.nro_solicitud = solicitud.id_solicitud;
+        solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
+        solicitud.archivos = JSON.parse(solicitud.archivos || "[]");
+
         res.render("solicitud/editar", {
-          solicitud: {
-            ...req.body,
-            id: req.params.id,
-          },
-          errors: error.validationErrors,
+          solicitud,
+          errors: error.validationErrors || {},
           asunto: req.body.asunto,
           descripcion: req.body.descripcion,
+          archivos: solicitud.archivos.filter(
+            (archivo) => archivo.eliminado === 0
+          ),
           successMessage: "",
           errorMessage: "Por favor, corrige los errores en el formulario.",
         });
-      } else {
+      } catch (innerError) {
+        console.error(
+          "Error al manejar el error de actualización:",
+          innerError
+        );
         req.flash("errorMessage", "Error al actualizar la solicitud.");
         res.redirect("/solicitudes");
       }
@@ -345,7 +368,7 @@ class SolicitudesController {
       }
 
       solicitud.nro_solicitud = solicitud.id_solicitud;
-      solicitud.id = encodeBase64(solicitud.id_solicitud);
+      solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
 
       res.render("solicitud/eliminar", {
         solicitud,
@@ -371,7 +394,7 @@ class SolicitudesController {
 
       if (!justificacion || justificacion.trim() === "") {
         const solicitud = await this.solicitudesService.getSolicitudById(id);
-        solicitud.id = encodeBase64(solicitud.id_solicitud);
+        solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
         return res.render("solicitud/eliminar", {
           solicitud,
           errors: { justificacion: "La justificación es requerida." },
@@ -396,6 +419,7 @@ class SolicitudesController {
       }
 
       await this.solicitudesService.deleteSolicitud(id, justificacion);
+
       await this.solicitudesService.updateEstatus(id, "eliminada");
 
       req.flash("successMessage", "Solicitud eliminada con éxito.");
@@ -421,60 +445,49 @@ class SolicitudesController {
         (archivo) => archivo.eliminado === 0
       );
 
-      const conteo = {
-        pdf: 0,
-        imagen: 0,
-        word: 0,
-        excel: 0,
-        ppt: 0,
-      };
+      archivos = archivos.map((archivo) => {
+        const extension = archivo.url.split(".").pop().toLowerCase();
+        let iconClass = "fas fa-file text-secondary";
+        let isPreviewable = false;
+        let originalFileName = archivo.originalFileName || "archivo";
 
-      archivos = await Promise.all(
-        archivos.map(async (archivo) => {
-          const extension = archivo.url.split(".").pop().toLowerCase();
+        if (extension === "pdf") {
+          iconClass = "fas fa-file-pdf text-danger";
+          isPreviewable = true;
+        } else if (["jpg", "jpeg", "png"].includes(extension)) {
+          iconClass = "fas fa-file-image text-info";
+          isPreviewable = true;
+        } else if (["doc", "docx"].includes(extension)) {
+          iconClass = "fas fa-file-word text-primary";
+          isPreviewable = true;
+        } else if (["xls", "xlsx"].includes(extension)) {
+          iconClass = "fas fa-file-excel text-success";
+          isPreviewable = true;
+        } else if (["ppt", "pptx"].includes(extension)) {
+          iconClass = "fas fa-file-powerpoint text-danger";
+          isPreviewable = true;
+        }
 
-          if (extension === "pdf") conteo.pdf++;
-          else if (["jpg", "jpeg", "png"].includes(extension)) conteo.imagen++;
-          else if (["doc", "docx"].includes(extension)) conteo.word++;
-          else if (["xls", "xlsx"].includes(extension)) conteo.excel++;
-          else if (["ppt", "pptx"].includes(extension)) conteo.ppt++;
+        let sasUrl = "";
+        if (isPreviewable) {
+          const blobName = decodeURIComponent(archivo.url.split("/").pop());
+          sasUrl = AzureBlobService.generateSasUrl(
+            blobName,
+            originalFileName,
+            "inline"
+          );
+        }
 
-          const isPreviewable = [
-            "pdf",
-            "jpg",
-            "jpeg",
-            "png",
-            "doc",
-            "docx",
-            "xls",
-            "xlsx",
-            "ppt",
-            "pptx",
-          ].includes(extension);
-
-          if (isPreviewable) {
-            const url = new URL(archivo.url);
-            const blobName = decodeURIComponent(url.pathname.split("/").pop());
-
-            const sasUrl = AzureBlobService.generateSasUrl(blobName);
-
-            return {
-              ...archivo,
-              sasUrl,
-            };
-          } else {
-            return archivo;
-          }
-        })
-      );
-
-      const navbarText = `
-        [ PDFs: ${conteo.pdf} ]
-        [ Imágenes: ${conteo.imagen} ]
-        [ Word: ${conteo.word} ]
-        [ Excel: ${conteo.excel} ]
-        [ PowerPoint: ${conteo.ppt} ]
-      `;
+        return {
+          ...archivo,
+          extension,
+          iconClass,
+          isPreviewable,
+          sasUrl,
+          originalFileName,
+          blobName: decodeURIComponent(archivo.url.split("/").pop()),
+        };
+      });
 
       solicitud.nro_solicitud = solicitud.id_solicitud;
       solicitud.id_solicitud = encodeBase64(solicitud.id_solicitud);
@@ -482,8 +495,6 @@ class SolicitudesController {
       res.render("solicitud/archivos", {
         solicitud,
         archivos,
-        conteo,
-        navbarText,
         successMessage: req.flash("successMessage"),
         errorMessage: req.flash("errorMessage"),
       });
@@ -496,10 +507,10 @@ class SolicitudesController {
 
   downloadArchivo = async (req, res) => {
     try {
-      const solicitudId = decodeBase64(req.params.id);
-      const filenameEncoded = req.params.filename;
-      const filename = decodeURIComponent(filenameEncoded);
-      const blobName = filename;
+      const solicitudIdEncoded = req.params.id;
+      const solicitudId = decodeBase64(solicitudIdEncoded);
+      const blobNameEncoded = req.params.filename;
+      const blobName = decodeURIComponent(blobNameEncoded);
 
       const usuarioActual = res.locals.user;
       if (!usuarioActual) {
@@ -513,33 +524,60 @@ class SolicitudesController {
       const solicitud = await this.solicitudesService.getSolicitudById(
         solicitudId
       );
-
       if (!solicitud) {
         req.flash("errorMessage", "Solicitud no encontrada.");
         return res.status(404).redirect("back");
       }
 
-      const blobParts = blobName.split("-");
-      if (blobParts.length < 3) {
-        req.flash("errorMessage", "Nombre de archivo inválido.");
-        return res.status(400).redirect("back");
+      const archivos = JSON.parse(solicitud.archivos || "[]").filter(
+        (archivo) => archivo.eliminado === 0
+      );
+
+      const archivoEncontrado = archivos.find(
+        (archivo) =>
+          decodeURIComponent(archivo.url.split("/").pop()) === blobName
+      );
+
+      if (!archivoEncontrado) {
+        req.flash("errorMessage", "Archivo no encontrado en la solicitud.");
+        return res.status(404).redirect("back");
       }
 
-      const originalFilename = blobParts.slice(2).join("-");
+      const originalFilename = archivoEncontrado.originalFileName || "archivo";
 
-      const sasUrl = AzureBlobService.generateSasUrl(
-        blobName,
-        originalFilename
-      );
-      if (!sasUrl) {
+      const blockBlobClient = AzureBlobService.getBlobClient(blobName);
+
+      const exists = await blockBlobClient.exists();
+      if (!exists) {
         req.flash(
           "errorMessage",
-          "No se pudo generar la descarga del archivo."
+          "Archivo no encontrado en el almacenamiento."
         );
-        return res.redirect("back");
+        return res.status(404).redirect("back");
       }
 
-      res.redirect(sasUrl);
+      const downloadOptions = {
+        blobHTTPHeaders: {
+          blobContentType:
+            archivoEncontrado.mimetype || "application/octet-stream",
+          blobContentDisposition: `attachment; filename="${originalFilename}"`,
+        },
+      };
+
+      const downloadStream = await blockBlobClient.download(0);
+
+      res.setHeader("Content-Length", downloadStream.contentLength);
+      res.setHeader(
+        "Content-Type",
+        archivoEncontrado.mimetype || "application/octet-stream"
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${originalFilename}"`
+      );
+
+      const passThrough = new PassThrough();
+      downloadStream.readableStreamBody.pipe(passThrough).pipe(res);
     } catch (error) {
       console.error("Error al descargar el archivo:", error);
       req.flash("errorMessage", "Error al descargar el archivo.");

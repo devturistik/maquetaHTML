@@ -122,7 +122,11 @@ class AzureBlobService {
    * @param {string} [downloadName] - Nombre que tendrá el archivo al descargarse.
    * @returns {string} - URL SAS completa.
    */
-  static generateSasUrl(blobName, downloadName = null) {
+  static generateSasUrl(
+    blobName,
+    originalFilename = null,
+    disposition = "inline"
+  ) {
     try {
       const sasOptions = {
         containerName: CONTAINER_NAME,
@@ -132,10 +136,9 @@ class AzureBlobService {
         expiresOn: new Date(new Date().valueOf() + 60 * 60 * 1000), // 1 hora
       };
 
-      if (downloadName) {
-        sasOptions.contentDisposition = `attachment; filename="${encodeURIComponent(
-          downloadName
-        )}"`;
+      if (originalFilename) {
+        const sanitizedFilename = originalFilename.replace(/"/g, '\\"');
+        sasOptions.contentDisposition = `${disposition}; filename="${sanitizedFilename}"`;
       }
 
       const sasToken = generateBlobSASQueryParameters(
@@ -173,6 +176,15 @@ class AzureBlobService {
       );
       throw new Error("Error al subir el archivo");
     }
+  }
+
+  /**
+   * Obtiene el cliente de un blob específico.
+   * @param {string} blobName - Nombre del blob.
+   * @returns {BlobClient} - Cliente del blob.
+   */
+  static getBlobClient(blobName) {
+    return containerClient.getBlockBlobClient(blobName);
   }
 }
 

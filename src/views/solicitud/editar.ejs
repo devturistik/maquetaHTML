@@ -10,70 +10,57 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
   }
-
   .card-header {
     background-color: #f8f9fa;
     font-weight: 600;
     font-size: 1.2rem;
     border-bottom: 1px solid #ddd;
   }
-
   .card-body {
     padding: 20px;
   }
-
   .form-label {
     font-weight: 600;
     margin-bottom: 5px;
   }
-
   .form-control {
     border-radius: 8px;
     padding: 10px;
     font-size: 1rem;
   }
-
   .btn {
     border-radius: 8px;
     font-size: 1rem;
   }
-
   .file-icon {
     font-size: 1.5rem;
     margin-right: 10px;
   }
-
   .list-group-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
   }
-
   .character-count {
     font-size: 0.9rem;
     color: #6c757d;
   }
-
   .character-count.error {
     color: #dc3545;
   }
-
   .btn-back {
     margin-bottom: 20px;
   }
-
   .file-actions {
     display: flex;
     gap: 10px;
   }
-
   .file-upload {
     display: flex;
     align-items: center;
     gap: 15px;
   }
-
   #file-list .list-group-item {
     display: flex;
     align-items: center;
@@ -149,10 +136,12 @@
           <div class="card mt-4">
             <div class="card-header">Archivos Adjuntos</div>
             <div class="card-body">
+              <% let existingFilesCount = 0; %>
               <% if (archivos && archivos.length > 0) { %>
                 <h6 class="text-primary">Archivos Existentes</h6>
                 <ul class="list-group mb-3" id="existing-file-list">
                   <% archivos.forEach((archivo) => { 
+                    existingFilesCount++;
                     const blobName = archivo.url.split('/').pop();
                     const originalFileName = blobName.split('-').slice(2).join('-');
                     const extension = originalFileName.split('.').pop().toLowerCase();
@@ -201,8 +190,8 @@
                   Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG, PNG. Máximo 10 archivos o 10 MB en total.
                 </small>
                 <ul id="file-list" class="list-group mt-2"></ul>
-                <div id="file-indicators" class="mt-3" style="display: none;">
-                  <p id="file-count">0/10 archivos (0 MB)</p>
+                <div id="file-indicators" class="mt-3">
+                  <p id="file-count"><%= existingFilesCount %>/10 archivos (0 MB)</p>
                 </div>
               </div>
             </div>
@@ -234,65 +223,97 @@
     default: { icon: 'fa-file', color: 'text-secondary' }
   };
 
+  const maxFiles = 10;
+  const maxSizeTotal = 10 * 1024 * 1024;
+
+  let existingFilesCount = <%= existingFilesCount %>;
+  const deletedFiles = [];
+
   function formatFileSize(bytes) {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
-  let selectedFiles = [];
-  const maxFiles = 10;
-  const maxSizeTotal = 10 * 1024 * 1024;
+  function updateFileCountDisplay() {
+    const input = document.getElementById("archivos");
+    const totalFiles = existingFilesCount + input.files.length;
+    const fileCount = document.getElementById("file-count");
+    const fileIndicators = document.getElementById("file-indicators");
+    let totalSize = 0;
+
+    Array.from(input.files).forEach(file => {
+      totalSize += file.size;
+    });
+
+    fileIndicators.style.display = totalFiles > 0 ? "block" : "none";
+    fileCount.textContent = `${totalFiles}/${maxFiles} archivos (${formatFileSize(totalSize)})`;
+  }
 
   function handleFileSelect(input) {
     const files = Array.from(input.files);
     const fileList = document.getElementById("file-list");
-    const fileCount = document.getElementById("file-count");
-    const fileIndicators = document.getElementById("file-indicators");
 
-    let currentTotalSize = selectedFiles.reduce((sum, f) => sum + f.size, 0);
-
-    for (const file of files) {
-      if (selectedFiles.length >= maxFiles) {
-        alert(`Puedes subir un máximo de ${maxFiles} archivos.`);
-        break;
-      }
-      if (currentTotalSize + file.size > maxSizeTotal) {
-        alert("El tamaño total de los archivos no puede superar los 10 MB.");
-        break;
-      }
-      const extension = file.name.split('.').pop().toLowerCase();
-      const { icon, color } = extensionIcons[extension] || extensionIcons.default;
-      selectedFiles.push({ file, icon, color });
-      currentTotalSize += file.size;
+    const totalFiles = existingFilesCount + files.length;
+    if (totalFiles > maxFiles) {
+      alert(`No puedes subir más de ${maxFiles} archivos en total.`);
+      input.value = "";
+      updateFileCountDisplay();
+      fileList.innerHTML = "";
+      return;
     }
 
-    fileIndicators.style.display = selectedFiles.length > 0 ? "block" : "none";
-    fileList.innerHTML = selectedFiles
-      .map(
-        ({ file, icon, color }, index) =>
-          `<li class="list-group-item"><div><i class="fas ${icon} ${color} me-2"></i>${file.name} (${formatFileSize(file.size)})</div>
-           <button class="btn btn-sm btn-danger" onclick="removeFile(${index})"><i class="fas fa-times"></i></button></li>`
-      )
-      .join("");
+    let totalSize = 0;
+    const fileItems = files.map((file, index) => {
+      totalSize += file.size;
+      const extension = file.name.split('.').pop().toLowerCase();
+      const { icon, color } = extensionIcons[extension] || extensionIcons.default;
+      return `<li class="list-group-item">
+                <div><i class="fas ${icon} ${color} me-2"></i>${file.name} (${formatFileSize(file.size)})</div>
+                <button class="btn btn-sm btn-danger" onclick="removeFile(${index})"><i class="fas fa-times"></i></button>
+              </li>`;
+    });
 
-    fileCount.textContent = `${selectedFiles.length}/${maxFiles} archivos (${formatFileSize(
-      currentTotalSize
-    )})`;
+    fileList.innerHTML = fileItems.join('');
+    updateFileCountDisplay();
   }
 
   function removeFile(index) {
-    selectedFiles.splice(index, 1);
-    handleFileSelect({ files: selectedFiles.map(({ file }) => file) });
+    const input = document.getElementById("archivos");
+    const dt = new DataTransfer();
+    const files = Array.from(input.files);
+
+    files.splice(index, 1);
+
+    files.forEach((file) => {
+      dt.items.add(file);
+    });
+
+    input.files = dt.files;
+    handleFileSelect(input);
   }
 
   function removeExistingFile(url, button) {
     const deletedFilesInput = document.getElementById('deletedFiles');
-    const deletedFiles = JSON.parse(deletedFilesInput.value);
-    deletedFiles.push(url);
-    deletedFilesInput.value = JSON.stringify(deletedFiles);
+    const deletedFilesValue = JSON.parse(deletedFilesInput.value || '[]');
+    deletedFilesValue.push(url);
+    deletedFilesInput.value = JSON.stringify(deletedFilesValue);
     button.closest('li').remove();
+
+    existingFilesCount--;
+    updateFileCountDisplay();
   }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    updateFileCountDisplay();
+
+    const descripcionInput = document.getElementById('descripcion');
+    const descripcionCount = document.getElementById('descripcionCount');
+    descripcionInput.addEventListener('input', function() {
+      const currentLength = descripcionInput.value.length;
+      descripcionCount.textContent = `${currentLength} / 300 caracteres`;
+    });
+  });
 </script>
 
 <%- include('../partials/footer-text') %>
