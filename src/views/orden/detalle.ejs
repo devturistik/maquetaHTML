@@ -12,6 +12,10 @@
 %>
 
 <style>
+  * {
+    box-sizing: border-box;
+  }
+
   .detail-container {
     padding: 2rem;
     background-color: #f9f9f9;
@@ -22,80 +26,182 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 2rem 0;
+    margin: 2rem auto;
+    width: 100%;
+  }
+
+  .approval-flow h4 {
+    margin-bottom: 1.5rem;
+    color: #212529;
+    text-align: center;
   }
 
   .flow-container {
     display: flex;
+    flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     width: 100%;
-    max-width: 800px;
+    overflow: visible;
+    padding-top: 0;
+  }
+
+  .step-wrapper {
+    display: flex;
+    align-items: center;
     position: relative;
   }
 
-  .flow-line {
-    position: absolute;
-    top: 25px;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background-color: #ddd;
-    z-index: 1;
-  }
-
-  .flow-line.active {
-    background-color: #28a745;
-  }
-
-  .flow-step {
-    text-align: center;
-    flex: 1;
-    position: relative;
+  .step-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    position: relative;
+    margin: 0;
+  }
+
+  .level-label,
+  .chat-icon {
+    width: 50px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #212529;
+    margin: 0.25rem 0;
+    flex: none;
   }
 
   .step-circle {
     width: 50px;
     height: 50px;
-    line-height: 50px;
     border-radius: 50%;
     font-size: 1.2rem;
     font-weight: bold;
     color: white;
-    display: inline-block;
-    z-index: 2;
-    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease;
+    margin-bottom: 0.5rem;
+    z-index: 1;
+    position: relative;
   }
 
-  .step-circle.pending {
+  .step-circle.pendiente {
     background-color: #ffc107;
   }
 
-  .step-circle.approved {
+  .step-circle.aprobado {
     background-color: #28a745;
   }
 
-  .step-circle.rejected {
+  .step-circle.rechazado {
     background-color: #dc3545;
   }
 
+  .separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+    width: 80px;
+    height: 2px;
+    flex-shrink: 0;
+  }
+
+  .connector-line-horizontal {
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 2px;
+    background-color: #ccc;
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    .flow-container {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .step-wrapper {
+      flex-direction: column;
+    }
+
+    .separator {
+      width: 2px;
+      height: 60px;
+      margin: 2rem 0 -2rem;
+    }
+
+    .connector-line-horizontal {
+      top: -30px;
+      left: 0;
+      width: 2px;
+      height: 100%;
+    }
+
+    .step-circle {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+  }
+
   .approver-name {
+    text-align: center;
     font-size: 0.9rem;
     color: #212529;
+    max-width: 150px;
+    word-wrap: break-word;
+    margin-bottom: 0.5rem;
+  }
+
+  .chat-icon {
+    text-align: center;
+    font-size: 1rem;
+    color: #212529;
     position: relative;
-    z-index: 2;
+    margin-bottom: 0.5rem;
+    width: 50px;
   }
 
-  .flow-container .flow-step:first-child .flow-line {
-    left: 25%;
+  .chat-icon.no-comment {
+    color: #ccc;
   }
 
-  .flow-container .flow-step:last-child .flow-line {
-    right: 25%;
+  .tooltip {
+    visibility: hidden;
+    max-width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: normal;
+    z-index: 1;
+  }
+
+  .tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #555 transparent transparent transparent;
+  }
+
+  .chat-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
   }
 
   .approval-level {
@@ -117,6 +223,7 @@
     border-radius: 20px;
     color: #fff;
     background-color: #6c757d;
+    transition: background-color 0.3s ease;
   }
 
   .approval-badge.pendiente {
@@ -150,6 +257,10 @@
       width: 100%;
       height: 400px;
     }
+
+    .approver-name {
+      max-width: 120px;
+    }
   }
 
   .action-buttons {
@@ -166,36 +277,38 @@
   <div class="container-xxl flex-grow-1 container-p-y">
     <div class="app-orden-detalle detail-container">
 
-      <div class="mb-4">
-        <h2>Detalle de Orden de Compra</h2>
-      </div>
-
       <% if (historialAprobaciones.length > 0) { %>
         <div class="approval-flow">
           <h4>Flujo de Historial de Aprobación</h4>
           <div class="flow-container">
-            <div class="flow-line <%= historialAprobaciones.some(h => h.APPROVALS === 1) ? 'active' : '' %>"></div>
             <% historialAprobaciones.forEach((historial, index) => { %>
-              <div class="flow-step">
-                <div
-                  class="step-circle <%=
-                    historial.APPROVALS === 1
-                      ? 'approved'
-                      : historial.APPROVALS === 2
-                      ? 'rejected'
-                      : 'pending'
-                  %>"
-                  title="<%= historial.COMENTARIO || 'Sin comentario' %>"
-                >
-                  <%= historial.NIVEL_APROBACION %>
+              <div class="step-wrapper">
+                <div class="step-container">
+                  <div class="level-label">Nivel <%= historial.NIVEL_APROBACION %></div>
+                  <div class="step-circle <%= historial.APPROVALS === 1 ? 'aprobado' : historial.APPROVALS === 2 ? 'rechazado' : 'pendiente' %>" aria-label="Nivel de aprobación <%= historial.NIVEL_APROBACION %>: <%= historial.APPROVALS === 1 ? 'Aprobado' : historial.APPROVALS === 2 ? 'Rechazado' : 'Pendiente' %>">
+                    <% if (historial.APPROVALS === 1) { %>
+                      <i class="fas fa-check"></i>
+                    <% } else if (historial.APPROVALS === 2) { %>
+                      <i class="fas fa-times"></i>
+                    <% } else { %>
+                      <i class="fas fa-clock"></i>
+                    <% } %>
+                  </div>
+                  <span class="approver-name"><%= usuarios[historial.APROBADOR_ID] ? usuarios[historial.APROBADOR_ID].nombre + ' ' + usuarios[historial.APROBADOR_ID].apellido : 'Desconocido' %></span>
+                  <div class="chat-icon <%= !historial.COMENTARIO ? 'no-comment' : '' %>">
+                    <% if (historial.COMENTARIO) { %>
+                      <i class="fas fa-comment"></i>
+                      <div class="tooltip"><%= historial.COMENTARIO %></div>
+                    <% } else { %>
+                      <i class="fas fa-comment-slash"></i>
+                    <% } %>
+                  </div>
                 </div>
-                <span class="approver-name">
-                  <% if (usuarios[historial.APROBADOR_ID]) { %>
-                    <%= usuarios[historial.APROBADOR_ID].nombre %> <%= usuarios[historial.APROBADOR_ID].apellido %>
-                  <% } else { %>
-                    Desconocido
-                  <% } %>
-                </span>
+                <% if (index < historialAprobaciones.length -1) { %>
+                  <div class="separator">
+                    <div class="connector-line-horizontal"></div>
+                  </div>
+                <% } %>
               </div>
             <% }); %>
           </div>
@@ -203,23 +316,35 @@
       <% } %>
 
       <div class="approval-level">
-        <h4>Nivel de Aprobación</h4>
+        <h4>Estatus de la Orden</h4>
         <%
-          let approvalClass = 'pendiente';
-          if (orden.nivel_aprobacion >= 3) {
-            approvalClass = 'aprobado';
-          } else if (orden.nivel_aprobacion < 0) {
-            approvalClass = 'rechazado';
+          let estatusClass = 'pendiente';
+          switch (orden.estatus.toLowerCase()) {
+            case 'aprobado':
+              estatusClass = 'aprobado';
+              break;
+            case 'rechazado':
+              estatusClass = 'rechazado';
+              break;
+            case 'pendiente':
+            default:
+              estatusClass = 'pendiente';
           }
         %>
-        <span class="approval-badge <%= approvalClass %>">
-          <%= orden.nivel_aprobacion >= 3 ? 'Aprobado' : (orden.nivel_aprobacion < 0 ? 'Rechazado' : 'Pendiente') %>
+        <span class="approval-badge <%= estatusClass %>">
+          <%= orden.estatus.charAt(0).toUpperCase() + orden.estatus.slice(1) %>
         </span>
       </div>
 
       <div class="pdf-preview-container">
         <% if (orden.ruta_archivo_pdf) { %>
-          <iframe src="<%= orden.ruta_archivo_pdf.replace(/\"/g, '') %>" class="pdf-preview" frameborder="0"></iframe>
+          <iframe
+            src="<%= orden.ruta_archivo_pdf.replace(/\"/g, '') %>" 
+            class="pdf-preview"
+            frameborder="0"
+            scrolling="auto"
+            aria-label="Vista previa del PDF de la orden de compra"
+          ></iframe>
         <% } else { %>
           <p>No hay archivo PDF disponible para esta orden.</p>
         <% } %>
