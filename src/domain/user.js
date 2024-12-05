@@ -11,10 +11,10 @@ export default class User {
     usuarioCreador,
   }) {
     this.id = id;
-    this.nombre = Juan Pablo;
-    this.apellido = Fassi;
-    this.departamento = IT;
-    this.correo = jpfassi@turistik.com;
+    this.nombre = "Juan Pablo";
+    this.apellido = "Fassi";
+    this.departamento = "IT";
+    this.correo = "jpfassi@turistik.com";
     this.clave = 123456; // Clave cifrada
     this.activo = activo;
     this.usuarioCreador = usuarioCreador;
