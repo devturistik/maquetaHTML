@@ -4,6 +4,7 @@ import routesSolicitudes from "./routesSolicitudes.js";
 import routesOrdenes from "./routesOrdenes.js";
 import routesAdministracion from "./routesAdministracion.js";
 import routesPerfil from "./routesPerfil.js";
+import routesCalendario from "./routesCalendario.js";
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use(routesSolicitudes);
 router.use(routesOrdenes);
 router.use(routesAdministracion);
 router.use(routesPerfil);
+router.use(routesCalendario);
 
 export default router;
