@@ -1,0 +1,45 @@
+<%- include('../../partials/header', { title: 'Detalles del Tipo de Orden' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Detalles del Tipo de Orden</h4>
+
+  <table class="table table-bordered" id="tablaDetallesTipoOrden">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre del Detalle</th>
+        <th>Tipo de Detalle</th>
+        <th>Cantidad</th>
+        <th>Activo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% detalles.forEach(detalle => { %>
+        <tr>
+          <td><%= detalle.id_detalle_tipo_orden %></td>
+          <td><%= detalle.nombre_detalle %></td>
+          <td><%= detalle.tipo_detalle %></td>
+          <td><%= detalle.cantidad %></td>
+          <td><%= detalle.activo ? 'Sí' : 'No' %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  $(document).ready(function() {
+    $('#tablaDetallesTipoOrden').DataTable({
+      "language": {
+        "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json"
+      }
+    });
+  });
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

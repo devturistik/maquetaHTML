@@ -1,0 +1,56 @@
+<%- include('../../partials/header', { title: 'Editar Producto' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Producto</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/producto/<%= producto.id_producto %>" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="descripcion" class="form-label">Descripción</label>
+      <input type="text" class="form-control" id="descripcion" name="descripcion" value="<%= producto.descripcion %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="unidad" class="form-label">Unidad</label>
+      <input type="text" class="form-control" id="unidad" name="unidad" value="<%= producto.unidad %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="presentacion" class="form-label">Presentación</label>
+      <input type="text" class="form-control" id="presentacion" name="presentacion" value="<%= producto.presentacion %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="estatus_producto" class="form-label">Estatus</label>
+      <select class="form-select" id="estatus_producto" name="estatus_producto" required>
+        <option value="1" <%= producto.estatus_producto === 1 ? 'selected' : '' %>>Activo</option>
+        <option value="0" <%= producto.estatus_producto === 0 ? 'selected' : '' %>>Inactivo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar Producto</button>
+    <a href="/administracion/producto" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const descripcion = document.getElementById('descripcion').value.trim();
+    const unidad = document.getElementById('unidad').value.trim();
+    const presentacion = document.getElementById('presentacion').value.trim();
+    const estatus = document.getElementById('estatus_producto').value;
+
+    if (!descripcion || !unidad || !presentacion || estatus === '') {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

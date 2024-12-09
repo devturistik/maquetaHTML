@@ -1,0 +1,55 @@
+<%- include('../../partials/header', { title: 'Crear Moneda' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Crear Nueva Moneda</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/monedas" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="abrev" class="form-label">Abreviatura</label>
+      <input type="text" class="form-control" id="abrev" name="abrev" value="<%= typeof data !== 'undefined' ? data.abrev : '' %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" value="<%= typeof data !== 'undefined' ? data.nombre : '' %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="cambio" class="form-label">Cambio</label>
+      <input type="text" class="form-control" id="cambio" name="cambio" value="<%= typeof data !== 'undefined' ? data.cambio : '' %>" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Crear Moneda</button>
+    <a href="/administracion/monedas" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const abrev = document.getElementById('abrev').value.trim();
+    const nombre = document.getElementById('nombre').value.trim();
+    const cambio = document.getElementById('cambio').value.trim();
+
+    if (!abrev || !nombre || !cambio) {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    // Validar formato de cambio (por ejemplo, números y decimales)
+    const cambioRegex = /^\d+(\.\d{1,2})?$/;
+    if (!cambioRegex.test(cambio)) {
+      alert('Ingrese un valor de cambio válido (números con hasta 2 decimales).');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

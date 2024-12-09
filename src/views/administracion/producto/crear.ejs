@@ -1,0 +1,48 @@
+<%- include('../../partials/header', { title: 'Crear Producto' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Crear Nuevo Producto</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/producto" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="descripcion" class="form-label">Descripción</label>
+      <input type="text" class="form-control" id="descripcion" name="descripcion" value="<%= typeof data !== 'undefined' ? data.descripcion : '' %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="unidad" class="form-label">Unidad</label>
+      <input type="text" class="form-control" id="unidad" name="unidad" value="<%= typeof data !== 'undefined' ? data.unidad : '' %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="presentacion" class="form-label">Presentación</label>
+      <input type="text" class="form-control" id="presentacion" name="presentacion" value="<%= typeof data !== 'undefined' ? data.presentacion : '' %>" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Crear Producto</button>
+    <a href="/administracion/producto" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const descripcion = document.getElementById('descripcion').value.trim();
+    const unidad = document.getElementById('unidad').value.trim();
+    const presentacion = document.getElementById('presentacion').value.trim();
+
+    if (!descripcion || !unidad || !presentacion) {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

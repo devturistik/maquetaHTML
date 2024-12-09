@@ -1,0 +1,160 @@
+<%- include('../../partials/header', { title: 'Bancos Asignados a Proveedor' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<style>
+  /* Estilos generales de la tabla */
+  .table thead th {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+  .table tbody td {
+    vertical-align: middle;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  /* Columnas específicas con alineación personalizada */
+  .nombre-column, .correo-column {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  /* Badges para estatus */
+  .estatus-column .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Botones estilizados */
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Responsividad */
+  @media (max-width: 767.98px) {
+    .nombre-column, .correo-column {
+      max-width: 150px;
+    }
+    .table th, .table td {
+      font-size: 0.875rem;
+    }
+  }
+</style>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Bancos Asignados a Proveedor: <%= proveedor.nombre_proveedor %></h4>
+    <a href="/administracion/proveedor/<%= proveedor.id_proveedor %>/asignarbanco" class="btn btn-primary d-flex align-items-center">
+      <i class="fas fa-plus me-1"></i> Asignar Nuevo Banco
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover w-100" id="tablaBancosAsignados">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th class="nombre-column">Nombre Banco</th>
+              <th>Número de Cuenta</th>
+              <th>Tipo de Cuenta</th>
+              <th>SWIFT</th>
+              <th>ABA</th>
+              <th>IBAN</th>
+              <th class="correo-column">Correo Banco</th>
+              <th class="estatus-column">Estatus Banco</th>
+              <th>Fecha Creación</th>
+              <th>Fecha Actualización</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% bancosAsignados.forEach(banco => { %>
+              <tr>
+                <td><%= banco.id_proveedor_banco %></td>
+                <td class="nombre-column"><%= banco.nombre_banco %></td>
+                <td><%= banco.numero_cuenta %></td>
+                <td><%= banco.tipo_cuenta %></td>
+                <td><%= banco.swift_cuenta %></td>
+                <td><%= banco.aba_cuenta %></td>
+                <td><%= banco.iban_cuenta %></td>
+                <td class="correo-column"><%= banco.correo_banco %></td>
+                <td class="estatus-column">
+                  <% if (banco.estatus_banco.toLowerCase() === "activo") { %>
+                    <span class="badge bg-success">Activo</span>
+                  <% } else { %>
+                    <span class="badge bg-secondary">Inactivo</span>
+                  <% } %>
+                </td>
+                <td><%= banco.fecha_creacion ? new Date(banco.fecha_creacion).toLocaleDateString() : '---' %></td>
+                <td><%= banco.fecha_actualizacion ? new Date(banco.fecha_actualizacion).toLocaleDateString() : '---' %></td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <a href="/administracion/proveedor/<%= proveedor.id_proveedor %>/bancos/<%= banco.id_proveedor_banco %>/editar" 
+                       class="btn btn-sm btn-outline-primary" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <form action="/administracion/proveedor/<%= proveedor.id_proveedor %>/bancos/<%= banco.id_proveedor_banco %>/eliminar" 
+                          method="POST" style="display:inline;" 
+                          onsubmit="return confirm('¿Estás seguro de eliminar esta asignación de banco? Esta acción no se puede deshacer.');">
+                      <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    $('#tablaBancosAsignados').DataTable({
+      responsive: true,
+      autoWidth: false,
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
+        search: "",
+        emptyTable: "No hay bancos asignados disponibles."
+      },
+      pageLength: 10,
+      lengthChange: false,
+      order: [[0, "asc"]],
+      columnDefs: [
+        { targets: 'nombre-column', className: 'nombre-column' },
+        { targets: 'correo-column', className: 'correo-column' },
+        { targets: 'estatus-column', className: 'estatus-column', orderable: false },
+        { targets: '_all', responsivePriority: 2 }
+      ],
+      initComplete: function () {
+        var dataTableFilter = $('#tablaBancosAsignados_filter');
+        var searchInput = dataTableFilter.find('input').detach();
+        dataTableFilter.empty();
+        var searchContainer = $('<div class="input-group"></div>');
+        var searchIcon = $('<span class="input-group-text"><i class="fas fa-search"></i></span>');
+        searchInput.addClass('form-control').attr('placeholder', 'Buscar banco asignado...');
+        searchContainer.append(searchIcon).append(searchInput);
+        dataTableFilter.append(searchContainer);
+      }
+    });
+  });
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

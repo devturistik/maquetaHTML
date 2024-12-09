@@ -1,0 +1,50 @@
+<%- include('../../partials/header', { title: 'Crear PlazoPago' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Crear Nuevo PlazoPago</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/plazopago" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" value="<%= typeof data !== 'undefined' ? data.nombre : '' %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="cambio" class="form-label">Cambio</label>
+      <input type="text" class="form-control" id="cambio" name="cambio" value="<%= typeof data !== 'undefined' ? data.cambio : '' %>" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Crear PlazoPago</button>
+    <a href="/administracion/plazopago" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const cambio = document.getElementById('cambio').value.trim();
+
+    if (!nombre || !cambio) {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    // Validar formato de cambio (por ejemplo, números y decimales)
+    const cambioRegex = /^\d+(\.\d{1,2})?$/;
+    if (!cambioRegex.test(cambio)) {
+      alert('Ingrese un valor de cambio válido (números con hasta 2 decimales).');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

@@ -1,0 +1,68 @@
+<%- include('../../partials/header', { title: 'Editar Proveedor' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Proveedor</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/proveedor/<%= proveedor.id_proveedor %>" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="nombre_proveedor" class="form-label">Nombre Proveedor</label>
+      <input type="text" class="form-control" id="nombre_proveedor" name="nombre_proveedor" value="<%= proveedor.nombre_proveedor %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="documento_proveedor" class="form-label">Documento Proveedor</label>
+      <input type="text" class="form-control" id="documento_proveedor" name="documento_proveedor" value="<%= proveedor.documento_proveedor %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="telefono_principal" class="form-label">Teléfono Principal</label>
+      <input type="text" class="form-control" id="telefono_principal" name="telefono_principal" value="<%= proveedor.telefono_principal %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="correo_principal" class="form-label">Correo Principal</label>
+      <input type="email" class="form-control" id="correo_principal" name="correo_principal" value="<%= proveedor.correo_principal %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="estatus_proveedor" class="form-label">Estatus</label>
+      <select class="form-select" id="estatus_proveedor" name="estatus_proveedor" required>
+        <option value="Activo" <%= proveedor.estatus_proveedor.toLowerCase() === 'activo' ? 'selected' : '' %>>Activo</option>
+        <option value="Inactivo" <%= proveedor.estatus_proveedor.toLowerCase() === 'inactivo' ? 'selected' : '' %>>Inactivo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar Proveedor</button>
+    <a href="/administracion/proveedor" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const nombre = document.getElementById('nombre_proveedor').value.trim();
+    const documento = document.getElementById('documento_proveedor').value.trim();
+    const telefono = document.getElementById('telefono_principal').value.trim();
+    const correo = document.getElementById('correo_principal').value.trim();
+    const estatus = document.getElementById('estatus_proveedor').value;
+
+    if (!nombre || !documento || !telefono || !correo || estatus === '') {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    // Validar formato de correo
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo)) {
+      alert('Ingrese un correo válido.');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

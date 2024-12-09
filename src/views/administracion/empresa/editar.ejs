@@ -1,0 +1,83 @@
+<%- include('../../partials/header', { title: 'Editar Empresa' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Empresa</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/empresa/<%= empresa.id_empresa %>" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" value="<%= empresa.nombre %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="documento" class="form-label">Documento</label>
+      <input type="text" class="form-control" id="documento" name="documento" value="<%= empresa.documento %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="giro" class="form-label">Giro</label>
+      <input type="text" class="form-control" id="giro" name="giro" value="<%= empresa.giro %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="direccion" class="form-label">Dirección</label>
+      <input type="text" class="form-control" id="direccion" name="direccion" value="<%= empresa.direccion %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="telefono" class="form-label">Teléfono</label>
+      <input type="text" class="form-control" id="telefono" name="telefono" value="<%= empresa.telefono %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="correo" class="form-label">Correo</label>
+      <input type="email" class="form-control" id="correo" name="correo" value="<%= empresa.correo %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="encargado" class="form-label">Encargado</label>
+      <input type="text" class="form-control" id="encargado" name="encargado" value="<%= empresa.encargado %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="estatus_empresa" class="form-label">Estatus</label>
+      <select class="form-select" id="estatus_empresa" name="estatus_empresa" required>
+        <option value="Activo" <%= empresa.estatus_empresa === 'Activo' ? 'selected' : '' %>>Activo</option>
+        <option value="Inactivo" <%= empresa.estatus_empresa === 'Inactivo' ? 'selected' : '' %>>Inactivo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar Empresa</button>
+    <a href="/administracion/empresa" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const nombre = document.getElementById('nombre').value.trim();
+    const documento = document.getElementById('documento').value.trim();
+    const giro = document.getElementById('giro').value.trim();
+    const direccion = document.getElementById('direccion').value.trim();
+    const telefono = document.getElementById('telefono').value.trim();
+    const correo = document.getElementById('correo').value.trim();
+    const encargado = document.getElementById('encargado').value.trim();
+    const estatus = document.getElementById('estatus_empresa').value;
+
+    if (!nombre || !documento || !giro || !direccion || !telefono || !correo || !encargado || !estatus) {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    // Validar formato de correo
+    const correoRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!correoRegex.test(correo)) {
+      alert('Ingrese un correo electrónico válido.');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

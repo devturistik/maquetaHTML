@@ -1,0 +1,186 @@
+<%- include('../../partials/header', { title: 'Crear Tipo de Orden' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Crear Tipo de Orden</h4>
+
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+
+  <form id="formTipoOrden" action="/administracion/tipoorden/crear" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre del Tipo de Orden</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" required>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="estatus_tipo_orden" name="estatus_tipo_orden">
+      <label class="form-check-label" for="estatus_tipo_orden">Activo</label>
+    </div>
+
+    <!-- Tabla con DataTables -->
+    <h5>Detalles del Tipo de Orden</h5>
+    <table class="table table-bordered table-hover" id="tablaDetalles">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre del Detalle</th>
+          <th>Tipo de Detalle</th>
+          <th>Cantidad</th>
+          <th>Activo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalDetalle">
+      Agregar Detalle
+    </button>
+
+    <!-- Datos ocultos -->
+    <input type="hidden" id="detalles" name="detalles">
+
+    <button type="submit" class="btn btn-success">Guardar Tipo de Orden</button>
+    <a href="/administracion/tipoorden" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<!-- Modal para Agregar Detalle -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDetalleLabel">Agregar Detalle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formDetalle">
+          <div class="mb-3">
+            <label for="nombre_detalle" class="form-label">Nombre del Detalle</label>
+            <select class="form-select" id="nombre_detalle" required>
+              <option value="">Seleccione...</option>
+              <option value="Impuesto">Impuesto</option>
+              <option value="Propina">Propina</option>
+              <option value="Retencion">Retención</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="tipo_detalle" class="form-label">Tipo de Detalle</label>
+            <select class="form-select" id="tipo_detalle" required>
+              <option value="">Seleccione...</option>
+              <option value="%">Porcentaje (%)</option>
+              <option value="fijo">Fijo</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="cantidad" class="form-label">Cantidad</label>
+            <input type="number" class="form-control" id="cantidad" placeholder="Valor válido" required>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="activo" checked>
+            <label class="form-check-label" for="activo">Activo</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarDetalle()">Agregar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let detalles = [];
+
+  // Validación dinámica del campo cantidad
+  document.getElementById("tipo_detalle").addEventListener("change", (e) => {
+    const tipo = e.target.value;
+    const cantidadInput = document.getElementById("cantidad");
+    cantidadInput.value = "";
+    cantidadInput.removeAttribute("max");
+    cantidadInput.removeAttribute("min");
+    cantidadInput.placeholder = "";
+
+    if (tipo === "%") {
+      cantidadInput.setAttribute("max", "100");
+      cantidadInput.setAttribute("min", "1");
+      cantidadInput.placeholder = "1-100";
+    } else if (tipo === "fijo") {
+      cantidadInput.setAttribute("min", "0");
+      cantidadInput.placeholder = "Número positivo";
+    }
+  });
+
+  function guardarDetalle() {
+    const nombreDetalle = document.getElementById("nombre_detalle").value;
+    const tipoDetalle = document.getElementById("tipo_detalle").value;
+    const cantidad = parseFloat(document.getElementById("cantidad").value);
+    const activo = document.getElementById("activo").checked ? 1 : 0;
+
+    if (!nombreDetalle || !tipoDetalle || isNaN(cantidad)) {
+      alert("Por favor, complete todos los campos correctamente.");
+      return;
+    }
+
+    // Validación específica para tipo porcentaje
+    if (tipoDetalle === "%" && (cantidad < 1 || cantidad > 100)) {
+      alert("La cantidad debe estar entre 1 y 100 para el tipo porcentaje.");
+      return;
+    }
+
+    detalles.push({ nombre_detalle: nombreDetalle, tipo_detalle: tipoDetalle, cantidad, activo });
+    actualizarTabla();
+    document.getElementById("formDetalle").reset();
+    bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
+  }
+
+  function actualizarTabla() {
+    const table = $('#tablaDetalles').DataTable();
+    table.clear();
+
+    detalles.forEach((detalle, index) => {
+      table.row.add([
+        detalle.nombre_detalle,
+        detalle.tipo_detalle,
+        detalle.cantidad,
+        detalle.activo ? 'Sí' : 'No',
+        `<button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(${index})">Eliminar</button>`
+      ]);
+    });
+
+    table.draw();
+    document.getElementById("detalles").value = JSON.stringify(detalles);
+  }
+
+  function eliminarDetalle(index) {
+    detalles.splice(index, 1);
+    actualizarTabla();
+  }
+
+  function validarFormulario() {
+    if (detalles.length === 0) {
+      alert("Debe agregar al menos un detalle.");
+      return false;
+    }
+    return true;
+  }
+
+  // Inicialización de DataTables
+  $(document).ready(function() {
+    $('#tablaDetalles').DataTable({
+      searching: false,
+      paging: false,
+      info: false,
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json"
+      }
+    });
+  });
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

@@ -1,0 +1,88 @@
+<%- include('../../partials/header', { title: 'Detalle de Proveedor' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Detalle de Proveedor: <%= proveedor.nombre_proveedor %></h4>
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <p><strong>ID Proveedor:</strong> <%= proveedor.id_proveedor %></p>
+      <p><strong>Nombre Proveedor:</strong> <%= proveedor.nombre_proveedor %></p>
+      <p><strong>Documento Proveedor:</strong> <%= proveedor.documento_proveedor %></p>
+      <p><strong>Teléfono Principal:</strong> <%= proveedor.telefono_principal %></p>
+      <p><strong>Correo Principal:</strong> <%= proveedor.correo_principal %></p>
+      <p><strong>Estatus:</strong> <%= proveedor.estatus_proveedor %></p>
+      <p><strong>Fecha de Creación:</strong> <%= proveedor.fecha_creacion ? new Date(proveedor.fecha_creacion).toLocaleDateString() : '---' %></p>
+      <p><strong>Fecha de Actualización:</strong> <%= proveedor.fecha_actualizacion ? new Date(proveedor.fecha_actualizacion).toLocaleDateString() : '---' %></p>
+    </div>
+  </div>
+  
+  <h5>Bancos Asignados</h5>
+  <a href="/administracion/proveedor/<%= proveedor.id_proveedor %>/asignarbanco" class="btn btn-success mb-3">Asignar Nuevo Banco</a>
+  
+  <table class="table table-bordered table-striped" id="tablaBancosAsignados">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre Banco</th>
+        <th>Número de Cuenta</th>
+        <th>Tipo de Cuenta</th>
+        <th>SWIFT</th>
+        <th>ABA</th>
+        <th>IBAN</th>
+        <th>Correo Banco</th>
+        <th>Estatus Banco</th>
+        <th>Fecha Creación</th>
+        <th>Fecha Actualización</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% bancosAsignados.forEach(banco => { %>
+        <tr>
+          <td><%= banco.id_proveedor_banco %></td>
+          <td><%= banco.nombre_banco %></td>
+          <td><%= banco.numero_cuenta %></td>
+          <td><%= banco.tipo_cuenta %></td>
+          <td><%= banco.swift_cuenta %></td>
+          <td><%= banco.aba_cuenta %></td>
+          <td><%= banco.iban_cuenta %></td>
+          <td><%= banco.correo_banco %></td>
+          <td>
+            <% if (banco.estatus_banco.toLowerCase() === "activo") { %>
+              <span class="badge bg-success">Activo</span>
+            <% } else { %>
+              <span class="badge bg-secondary">Inactivo</span>
+            <% } %>
+          </td>
+          <td><%= banco.fecha_creacion ? new Date(banco.fecha_creacion).toLocaleDateString() : '---' %></td>
+          <td><%= banco.fecha_actualizacion ? new Date(banco.fecha_actualizacion).toLocaleDateString() : '---' %></td>
+          <td>
+            <a href="/administracion/proveedor/<%= proveedor.id_proveedor %>/bancos/<%= banco.id_proveedor_banco %>/editar" class="btn btn-primary btn-sm">Editar</a>
+            <form action="/administracion/proveedor/<%= proveedor.id_proveedor %>/bancos/<%= banco.id_proveedor_banco %>/eliminar" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar esta asignación de banco? Esta acción no se puede deshacer.');">
+              <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // Inicializar DataTable si estás usando DataTables
+  $(document).ready(function() {
+    $('#tablaBancosAsignados').DataTable({
+      "order": [[0, "asc"]],
+      "language": {
+        "url": "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json"
+      }
+    });
+  });
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

@@ -1,0 +1,200 @@
+<%- include('../../partials/header', { title: 'Editar Tipo de Orden' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Tipo de Orden</h4>
+
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+
+  <form id="formTipoOrden" action="/administracion/tipoorden/<%= tipoOrden.id_tipo %>/editar" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre del Tipo de Orden</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" value="<%= tipoOrden.nombre %>" required>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" id="estatus_tipo_orden" name="estatus_tipo_orden" <%= tipoOrden.estatus_tipo_orden ? 'checked' : '' %>>
+      <label class="form-check-label" for="estatus_tipo_orden">Activo</label>
+    </div>
+
+    <!-- Tabla de detalles existentes con DataTables -->
+    <h5>Detalles del Tipo de Orden</h5>
+    <table class="table table-bordered table-hover" id="tablaDetalles">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre del Detalle</th>
+          <th>Tipo de Detalle</th>
+          <th>Cantidad</th>
+          <th>Activo</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% detalles.forEach((detalle, index) => { %>
+          <tr>
+            <td><%= detalle.nombre_detalle %></td>
+            <td><%= detalle.tipo_detalle %></td>
+            <td><%= detalle.cantidad %></td>
+            <td><%= detalle.activo ? 'Sí' : 'No' %></td>
+            <td>
+              <button type="button" class="btn btn-warning btn-sm" onclick="editarDetalle(<%= index %>)">Editar</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(<%= index %>)">Eliminar</button>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalDetalle">
+      Agregar Detalle
+    </button>
+
+    <input type="hidden" id="detalles" name="detalles" value='<%- JSON.stringify(detalles) %>'>
+
+    <button type="submit" class="btn btn-success">Actualizar Tipo de Orden</button>
+    <a href="/administracion/tipoorden" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<!-- Modal para Agregar/Editar Detalle -->
+<div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalDetalleLabel">Agregar/Editar Detalle</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formDetalle">
+          <input type="hidden" id="index_editar" value="-1">
+          <div class="mb-3">
+            <label for="nombre_detalle" class="form-label">Nombre del Detalle</label>
+            <select class="form-select" id="nombre_detalle" required>
+              <option value="">Seleccione...</option>
+              <option value="Impuesto">Impuesto</option>
+              <option value="Propina">Propina</option>
+              <option value="Retencion">Retención</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="tipo_detalle" class="form-label">Tipo de Detalle</label>
+            <select class="form-select" id="tipo_detalle" required>
+              <option value="">Seleccione...</option>
+              <option value="%">Porcentaje (%)</option>
+              <option value="fijo">Fijo</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="cantidad" class="form-label">Cantidad</label>
+            <input type="number" class="form-control" id="cantidad" required>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="activo" checked>
+            <label class="form-check-label" for="activo">Activo</label>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="guardarDetalle()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let detalles = <%- JSON.stringify(detalles) %>;
+
+  // Función para agregar/editar un detalle
+  function guardarDetalle() {
+    const nombreDetalle = document.getElementById("nombre_detalle").value;
+    const tipoDetalle = document.getElementById("tipo_detalle").value;
+    const cantidad = parseFloat(document.getElementById("cantidad").value);
+    const activo = document.getElementById("activo").checked ? 1 : 0;
+    const index = document.getElementById("index_editar").value;
+
+    if (isNaN(cantidad) || !nombreDetalle || !tipoDetalle) {
+      alert("Por favor complete todos los campos correctamente.");
+      return;
+    }
+
+    if (tipoDetalle === "%" && (cantidad < 1 || cantidad > 100)) {
+      alert("La cantidad debe estar entre 1 y 100 para el tipo porcentaje.");
+      return;
+    }
+
+    const detalle = { nombre_detalle: nombreDetalle, tipo_detalle: tipoDetalle, cantidad, activo };
+
+    if (index === "-1") {
+      detalles.push(detalle); // Nuevo detalle
+    } else {
+      detalles[index] = detalle; // Editar detalle existente
+    }
+
+    actualizarTabla();
+    bootstrap.Modal.getInstance(document.getElementById("modalDetalle")).hide();
+  }
+
+  function editarDetalle(index) {
+    const detalle = detalles[index];
+    document.getElementById("nombre_detalle").value = detalle.nombre_detalle;
+    document.getElementById("tipo_detalle").value = detalle.tipo_detalle;
+    document.getElementById("cantidad").value = detalle.cantidad;
+    document.getElementById("activo").checked = detalle.activo;
+    document.getElementById("index_editar").value = index;
+
+    new bootstrap.Modal(document.getElementById("modalDetalle")).show();
+  }
+
+  function eliminarDetalle(index) {
+    detalles.splice(index, 1);
+    actualizarTabla();
+  }
+
+  function actualizarTabla() {
+    const table = $('#tablaDetalles').DataTable();
+    table.clear();
+
+    detalles.forEach((detalle, index) => {
+      table.row.add([
+        detalle.nombre_detalle,
+        detalle.tipo_detalle,
+        detalle.cantidad,
+        detalle.activo ? 'Sí' : 'No',
+        `<button type="button" class="btn btn-warning btn-sm" onclick="editarDetalle(${index})">Editar</button>
+         <button type="button" class="btn btn-danger btn-sm" onclick="eliminarDetalle(${index})">Eliminar</button>`
+      ]);
+    });
+
+    table.draw();
+    document.getElementById("detalles").value = JSON.stringify(detalles);
+  }
+
+  // Inicializar DataTable
+  $(document).ready(function() {
+    $('#tablaDetalles').DataTable({
+      searching: false,
+      paging: false,
+      info: false,
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json"
+      }
+    });
+    actualizarTabla();
+  });
+
+  function validarFormulario() {
+    if (detalles.length === 0) {
+      alert("Debe agregar al menos un detalle.");
+      return false;
+    }
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

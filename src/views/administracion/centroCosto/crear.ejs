@@ -1,0 +1,48 @@
+<%- include('../../partials/header', { title: 'Crear Centro de Costo' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Crear Nuevo Centro de Costo</h4>
+  <form action="/administracion/centrocostos" method="POST">
+    <div class="mb-3">
+      <label for="codigo_centro_costo" class="form-label">Código del Centro de Costo</label>
+      <input type="text" class="form-control" id="codigo_centro_costo" name="codigo_centro_costo" required>
+    </div>
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" class="form-control" id="nombre" name="nombre" required>
+    </div>
+    <div class="mb-3">
+      <label for="estatus" class="form-label">Estatus</label>
+      <select class="form-select" id="estatus" name="estatus" required>
+        <option value="Activo" selected>Activo</option>
+        <option value="Inactivo">Inactivo</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="id_gerente" class="form-label">Gerente</label>
+      <select class="form-select" id="id_gerente" name="id_gerente" required>
+        <option value="">-- Selecciona un Gerente --</option>
+        <% gerentes.forEach(gerente => { %>
+          <option value="<%= gerente.id %>"><%= gerente.nombre %> <%= gerente.apellido %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="nivel" class="form-label">Nivel</label>
+      <input type="number" class="form-control" id="nivel" name="nivel" min="1" required>
+    </div>
+    <div class="mb-3">
+      <label for="monto" class="form-label">Monto</label>
+      <input type="number" step="0.01" class="form-control" id="monto" name="monto" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Crear Centro de Costo</button>
+    <a href="/administracion/centrocostos" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

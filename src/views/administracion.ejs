@@ -4,43 +4,126 @@
 <%- include('partials/content-wrapper-open') %>
 
 <div class="container-xxl flex-grow-1 container-p-y">
-  <div class="mb-4">
+  <div class="mb-4 text-center">
     <h4 class="mb-3">Administración de Tablas</h4>
     <p class="mb-0">Selecciona una tabla para gestionar sus datos.</p>
   </div>
-  <% const iconosTabla = {
-    'banco': 'ti ti-building-bank',
-    'centrocosto': 'ti ti-calculator',
-    'cuentas': 'ti ti-wallet',
-    'empresa': 'ti ti-building',
-    'monedas': 'ti ti-currency-dollar',
-    'plazopago': 'ti ti-clock',
-    'producto': 'ti ti-package',
-    'proveedor': 'ti ti-truck-delivery',
-    'tipoorden': 'ti ti-file-description',
-  }; %>
+
   <div class="row row-cols-1 row-cols-md-3 g-4">
-    <% tablas.forEach(tabla => { %>
-      <div class="col">
-        <a href="<%= tabla.ruta %>" class="text-decoration-none text-reset">
-          <div class="card h-100">
-            <div class="card-body text-center">
-              <div class="mb-3">
-                <%
-                const nombreTabla = tabla.nombre.toLowerCase();
-                const claseIcono = iconosTabla[nombreTabla] || 'ti ti-database';
-                %>
-                <i class="tf-icons <%= claseIcono %>" style="font-size: 2rem;"></i>
-              </div>
-              <h5 class="card-title"><%= tabla.nombre %></h5>
-            </div>
+    
+    <div class="col">
+      <a href="/administracion/bancos" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-university fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Banco</h5>
           </div>
-        </a>
-      </div>
-    <% }) %>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/centrocostos" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-coins fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Centro de Costo</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/cuentas" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-book fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Cuentas</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/empresa" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-building fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Empresa</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/monedas" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-money-bill-wave fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Monedas</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/plazopago" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-clock fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Plazo de Pago</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/producto" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-box-open fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Producto</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/proveedor" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-truck fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Proveedor</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="/administracion/tipoorden" class="text-decoration-none text-dark">
+        <div class="card h-100 shadow-sm hover-card text-center">
+          <div class="card-body">
+            <i class="fas fa-list-alt fa-3x mb-3 text-primary"></i>
+            <h5 class="card-title">Tipo Orden</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
   </div>
 </div>
 
 <%- include('partials/footer-text') %>
 <%- include('partials/footer') %>
 <%- include('partials/content-wrapper-close') %>
+
+<style>
+  .hover-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+</style>

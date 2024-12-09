@@ -1,0 +1,89 @@
+<%- include('../../partials/header', { title: 'Editar Asignación de Banco' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Asignación de Banco para Proveedor ID: <%= proveedorId %></h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/proveedor/<%= proveedorId %>/bancos/<%= bancoAsignado.id_proveedor_banco %>/editar" method="POST" onsubmit="return validarFormulario();">
+    <div class="mb-3">
+      <label for="id_banco" class="form-label">Seleccionar Banco</label>
+      <select class="form-select" id="id_banco" name="id_banco" required>
+        <option value="">-- Seleccionar Banco --</option>
+        <% bancos.forEach(banco => { %>
+          <option value="<%= banco.id_banco %>" <%= bancoAsignado.id_banco === banco.id_banco ? 'selected' : '' %>><%= banco.nombre_banco %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="numero_cuenta" class="form-label">Número de Cuenta</label>
+      <input type="text" class="form-control" id="numero_cuenta" name="numero_cuenta" value="<%= bancoAsignado.numero_cuenta %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="tipo_cuenta" class="form-label">Tipo de Cuenta</label>
+      <input type="text" class="form-control" id="tipo_cuenta" name="tipo_cuenta" value="<%= bancoAsignado.tipo_cuenta %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="swift_cuenta" class="form-label">SWIFT</label>
+      <input type="text" class="form-control" id="swift_cuenta" name="swift_cuenta" value="<%= bancoAsignado.swift_cuenta %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="aba_cuenta" class="form-label">ABA</label>
+      <input type="text" class="form-control" id="aba_cuenta" name="aba_cuenta" value="<%= bancoAsignado.aba_cuenta %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="iban_cuenta" class="form-label">IBAN</label>
+      <input type="text" class="form-control" id="iban_cuenta" name="iban_cuenta" value="<%= bancoAsignado.iban_cuenta %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="correo_banco" class="form-label">Correo del Banco</label>
+      <input type="email" class="form-control" id="correo_banco" name="correo_banco" value="<%= bancoAsignado.correo_banco %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="estatus_banco" class="form-label">Estatus del Banco</label>
+      <select class="form-select" id="estatus_banco" name="estatus_banco" required>
+        <option value="">-- Seleccionar Estatus --</option>
+        <option value="Activo" <%= bancoAsignado.estatus_banco.toLowerCase() === 'activo' ? 'selected' : '' %>>Activo</option>
+        <option value="Inactivo" <%= bancoAsignado.estatus_banco.toLowerCase() === 'inactivo' ? 'selected' : '' %>>Inactivo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar Asignación</button>
+    <a href="/administracion/proveedor/<%= proveedorId %>/bancos" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<script>
+  function validarFormulario() {
+    const id_banco = document.getElementById('id_banco').value;
+    const numero_cuenta = document.getElementById('numero_cuenta').value.trim();
+    const tipo_cuenta = document.getElementById('tipo_cuenta').value.trim();
+    const swift_cuenta = document.getElementById('swift_cuenta').value.trim();
+    const aba_cuenta = document.getElementById('aba_cuenta').value.trim();
+    const iban_cuenta = document.getElementById('iban_cuenta').value.trim();
+    const correo_banco = document.getElementById('correo_banco').value.trim();
+    const estatus_banco = document.getElementById('estatus_banco').value;
+
+    if (!id_banco || !numero_cuenta || !tipo_cuenta || !swift_cuenta || !aba_cuenta || !iban_cuenta || !correo_banco || estatus_banco === '') {
+      alert('Todos los campos son obligatorios.');
+      return false;
+    }
+
+    // Validar formato de correo del banco
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correo_banco)) {
+      alert('Ingrese un correo de banco válido.');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

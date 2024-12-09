@@ -1,0 +1,29 @@
+<%- include('../../partials/header', { title: 'Editar Cuenta' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Cuenta</h4>
+  
+  <% if (typeof error !== 'undefined') { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  
+  <form action="/administracion/cuentas/<%= cuenta.id_cuenta %>" method="POST">
+    <div class="mb-3">
+      <label for="codigo" class="form-label">Código</label>
+      <input type="text" class="form-control" id="codigo" name="codigo" value="<%= cuenta.codigo %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="nombre_cuenta" class="form-label">Nombre de la Cuenta</label>
+      <input type="text" class="form-control" id="nombre_cuenta" name="nombre_cuenta" value="<%= cuenta.nombre_cuenta %>" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar Cuenta</button>
+    <a href="/administracion/cuentas" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

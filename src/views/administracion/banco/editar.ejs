@@ -1,0 +1,27 @@
+<%- include('../../partials/header', { title: 'Editar Banco' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <h4 class="mb-4">Editar Banco</h4>
+  <form action="/administracion/bancos/<%= banco.id_banco %>" method="POST">
+    <div class="mb-3">
+      <label for="nombre_banco" class="form-label">Nombre del Banco</label>
+      <input type="text" class="form-control" id="nombre_banco" name="nombre_banco" value="<%= banco.nombre_banco %>" required>
+    </div>
+    <div class="mb-3">
+      <label for="estatus" class="form-label">Estatus</label>
+      <select class="form-select" id="estatus" name="estatus" required>
+        <option value="1" <%= banco.estatus === 1 ? 'selected' : '' %>>Activo</option>
+        <option value="0" <%= banco.estatus === 0 ? 'selected' : '' %>>Inactivo</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Actualizar Banco</button>
+    <a href="/administracion/bancos" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>

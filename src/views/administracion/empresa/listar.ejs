@@ -1,0 +1,172 @@
+<%- include('../../partials/header', { title: 'Listar Empresas' }) %>
+<%- include('../../partials/navbar') %>
+<%- include('../../partials/sidebar') %>
+<%- include('../../partials/content-wrapper-open') %>
+
+<style>
+  /* Estilos generales de la tabla */
+  .table thead th {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+  .table tbody td {
+    vertical-align: middle;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  /* Columnas con alineación especial */
+  .nombre-column, .direccion-column, .correo-column, .encargado-column {
+    text-align: left;
+    white-space: normal;
+    word-wrap: break-word;
+  }
+
+  /* Estilo de estatus */
+  .estatus-column .badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Estilos para botones */
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Responsividad */
+  @media (max-width: 767.98px) {
+    .nombre-column, .direccion-column, .correo-column {
+      max-width: 150px;
+    }
+    .table th, .table td {
+      font-size: 0.875rem;
+    }
+  }
+</style>
+
+<div class="container-xxl flex-grow-1 container-p-y">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Listado de Empresas</h4>
+    <a href="/administracion/empresa/nuevo" class="btn btn-primary d-flex align-items-center">
+      <i class="fas fa-plus me-1"></i> Nueva Empresa
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover w-100" id="tablaEmpresas">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th class="nombre-column">Nombre</th>
+              <th>Documento</th>
+              <th>Giro</th>
+              <th class="direccion-column">Dirección</th>
+              <th>Teléfono</th>
+              <th class="correo-column">Correo</th>
+              <th class="encargado-column">Encargado</th>
+              <th class="estatus-column">Estatus</th>
+              <th>Fecha Creación</th>
+              <th>Fecha Actualización</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% empresas.forEach(empresa => { %>
+              <tr>
+                <td><%= empresa.id_empresa %></td>
+                <td class="nombre-column"><%= empresa.nombre %></td>
+                <td><%= empresa.documento %></td>
+                <td><%= empresa.giro %></td>
+                <td class="direccion-column"><%= empresa.direccion %></td>
+                <td><%= empresa.telefono %></td>
+                <td class="correo-column"><%= empresa.correo %></td>
+                <td class="encargado-column"><%= empresa.encargado %></td>
+                <td class="estatus-column">
+                  <% if (empresa.estatus_empresa === '1') { %>
+                    <span class="badge bg-success">Activo</span>
+                  <% } else { %>
+                    <span class="badge bg-secondary">Inactivo</span>
+                  <% } %>
+                </td>
+                <td><%= empresa.fecha_creacion ? new Date(empresa.fecha_creacion).toLocaleDateString() : '---' %></td>
+                <td><%= empresa.fecha_actualizacion ? new Date(empresa.fecha_actualizacion).toLocaleDateString() : '---' %></td>
+                <td>
+                  <div class="btn-group" role="group">
+                    <a href="/administracion/empresa/<%= empresa.id_empresa %>/editar" 
+                       class="btn btn-sm btn-outline-primary" title="Editar">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <% if (empresa.estatus_empresa === '1') { %>
+                      <form action="/administracion/empresa/<%= empresa.id_empresa %>/desactivar" 
+                            method="POST" style="display:inline;" 
+                            onsubmit="return confirm('¿Estás seguro de desactivar esta empresa?');">
+                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Desactivar">
+                          <i class="fas fa-ban"></i>
+                        </button>
+                      </form>
+                    <% } else { %>
+                      <form action="/administracion/empresa/<%= empresa.id_empresa %>/activar" 
+                            method="POST" style="display:inline;" 
+                            onsubmit="return confirm('¿Estás seguro de activar esta empresa?');">
+                        <button type="submit" class="btn btn-sm btn-outline-success" title="Activar">
+                          <i class="fas fa-check-circle"></i>
+                        </button>
+                      </form>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    $('#tablaEmpresas').DataTable({
+      responsive: true,
+      autoWidth: false,
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
+        search: "",
+        emptyTable: "No hay empresas disponibles."
+      },
+      pageLength: 10,
+      lengthChange: false,
+      order: [[0, "asc"]],
+      columnDefs: [
+        { targets: 'nombre-column', className: 'nombre-column' },
+        { targets: 'direccion-column', className: 'direccion-column' },
+        { targets: 'correo-column', className: 'correo-column' },
+        { targets: 'encargado-column', className: 'encargado-column' },
+        { targets: 'estatus-column', className: 'estatus-column', orderable: false },
+        { targets: '_all', responsivePriority: 2 }
+      ],
+      initComplete: function () {
+        var dataTableFilter = $('#tablaEmpresas_filter');
+        var searchInput = dataTableFilter.find('input').detach();
+        dataTableFilter.empty();
+        var searchContainer = $('<div class="input-group"></div>');
+        var searchIcon = $('<span class="input-group-text"><i class="fas fa-search"></i></span>');
+        searchInput.addClass('form-control').attr('placeholder', 'Buscar empresa...');
+        searchContainer.append(searchIcon).append(searchInput);
+        dataTableFilter.append(searchContainer);
+      }
+    });
+  });
+</script>
+
+<%- include('../../partials/footer-text') %>
+<%- include('../../partials/footer') %>
+<%- include('../../partials/content-wrapper-close') %>
