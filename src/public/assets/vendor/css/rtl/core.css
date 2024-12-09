@@ -8953,7 +8953,7 @@ label.btn {
 }
 .btn-danger:hover {
   color: #fff !important;
-  background-color: #0d6efd !important;
+  background-color: #bb2d3b!important;
   border-color: #0d6efd !important;
 }
 .btn-check:focus + .btn-danger,

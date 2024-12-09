@@ -1,0 +1,446 @@
+<!-- views/solicitudes-archivadas.ejs -->
+<%- include('partials/header', { title: 'Solicitudes Archivadas' }) %>
+<%- include('partials/navbar') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/content-wrapper-open') %>
+
+<%
+  const userRoles = user.roles.map(role => role.rol.toLowerCase());
+  const isAdmin = userRoles.includes('admin');
+  const isSolicitante = userRoles.includes('solicitante');
+  const isComprador = userRoles.includes('comprador');
+  const canView = isAdmin || isSolicitante || isComprador;
+  const canEditDelete = isAdmin || isSolicitante;
+  const canCreateOrdenCompra = isAdmin || isComprador;
+  const canCreateNuevaSolicitud = isAdmin || isSolicitante;
+  const showSolicitanteColumn = !isSolicitante;
+%>
+
+<style>
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .badge-status i {
+    margin-right: 0.5rem;
+  }
+  .table thead th {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+  .table tbody td {
+    vertical-align: middle;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+  }
+  .table tbody td.asunto-column,
+  .table tbody td.descripcion-column {
+    text-align: left;
+  }
+  .ordenes-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    text-align: center;
+  }
+  .btn-group-actions .btn {
+    margin-right: 0.25rem;
+  }
+  .btn-group-actions .btn:last-child {
+    margin-right: 0;
+  }
+  .btn-primary, .btn-outline-primary, .btn-secondary, .btn-outline-secondary {
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .table-responsive {
+    overflow-x: auto;
+  }
+  .alert {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  .alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+  }
+  .btn-close:hover {
+    opacity: 0.75;
+  }
+  .disabled-link {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+</style>
+
+<div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-solicitudes-archivadas alert-container">
+      <% if (successMessage && successMessage.length > 0) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= successMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      <% } %>
+      <% if (errorMessage && errorMessage.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= errorMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      <% } %>
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+          <h4 class="mb-1">Solicitudes Archivadas</h4>
+          <p class="mb-0">Solicitudes que han sido procesadas y archivadas.</p>
+        </div>
+        <div class="d-flex justify-content-end mt-3 mt-md-0">
+          <a href="/solicitudes" class="btn btn-sm btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Regresar a Solicitudes Activas
+          </a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="table-solicitudes-archivadas" class="table table-hover w-100">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th class="asunto-column">Asunto</th>
+                  <th class="descripcion-column">Descripción</th>
+                  <th class="archivos-column d-none d-md-table-cell">Archivos</th>
+                  <% if (showSolicitanteColumn) { %>
+                    <th class="solicitante-column d-none d-lg-table-cell">Solicitante</th>
+                  <% } %>
+                  <th class="estado-column">Estado</th>
+                  <th class="ordenes-column d-none d-lg-table-cell">Órdenes</th>
+                  <th class="actions-column"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (solicitudes.length > 0) { %>
+                  <% solicitudes.forEach(solicitud => { %>
+                    <% 
+                      let estatusLower = solicitud.estatus.toLowerCase();
+                      let estatusClass = '';
+                      let estatusDisplay = solicitud.estatus;
+                      if (estatusLower === 'archivada') {
+                        estatusClass = 'bg-secondary';
+                      } else if (estatusLower === 'abierta') {
+                        estatusClass = 'bg-warning';
+                      } else if (estatusLower === 'procesada') {
+                        estatusClass = 'bg-success';
+                      } else if (estatusLower === 'editando' || estatusLower === 'procesando') {
+                        estatusClass = 'bg-info';
+                        estatusDisplay = estatusLower.charAt(0).toUpperCase() + estatusLower.slice(1) + '...';
+                      } else if (estatusLower === 'eliminada') {
+                        estatusClass = 'bg-danger';
+                      }
+                    %>
+                    <tr data-id="<%= solicitud.id_solicitud %>">
+                      <td class="id-column"><%= solicitud.nro_solicitud %></td>
+                      <td class="asunto-column"><%= solicitud.asunto %></td>
+                      <td class="descripcion-column"><%= solicitud.descripcion %></td>
+                      <td class="archivos-column d-none d-md-table-cell text-center">
+                        <% if (solicitud.hasActiveFiles) { %>
+                          <a href="/solicitudes/<%= solicitud.id_solicitud %>/archivos" title="Ver archivos">
+                            <i class="fas fa-folder-open text-primary"></i>
+                          </a>
+                        <% } else { %>
+                          <i class="fas fa-folder text-muted" title="Sin archivos"></i>
+                        <% } %>
+                      </td>
+                      <% if (showSolicitanteColumn) { %>
+                        <td class="solicitante-column d-none d-lg-table-cell"><%= solicitud.usuario_solicitante ? solicitud.usuario_solicitante : '' %></td>
+                      <% } %>
+                      <td class="estado-column">
+                        <% if (estatusClass) { %>
+                          <span class="badge <%= estatusClass %> badge-status text-white">
+                            <% if (estatusLower === 'archivada') { %>
+                              <i class="fas fa-archive"></i> Archivada
+                            <% } else if (estatusLower === 'abierta') { %>
+                              <i class="fas fa-exclamation-circle"></i> Abierta
+                            <% } else if (estatusLower === 'procesada') { %>
+                              <i class="fas fa-check-circle"></i> Procesada
+                            <% } else if (estatusLower === 'editando' || estatusLower === 'procesando') { %>
+                              <i class="fas fa-pencil-alt"></i> <%= estatusDisplay %>
+                            <% } else if (estatusLower === 'eliminada') { %>
+                              <i class="fas fa-times-circle"></i> Eliminada
+                            <% } %>
+                          </span>
+                        <% } %>
+                      </td>
+                      <td class="ordenes-column d-none d-lg-table-cell text-center">
+                        <% if (solicitud.ordenes_count && solicitud.ordenes_count > 0) { %>
+                          <a href="/solicitudes/<%= solicitud.id_solicitud %>/ordenes" title="Ver Órdenes de Compra" class="ordenes-icon">
+                            <i class="fas fa-file-invoice text-primary"></i> (<%= solicitud.ordenes_count %>)
+                          </a>
+                        <% } else { %>
+                          <span class="ordenes-icon">
+                            <i class="fas fa-file-invoice text-muted"></i> (0)
+                          </span>
+                        <% } %>
+                      </td>
+                      <td class="actions-column">
+                        <% if (canView || canCreateOrdenCompra || canEditDelete) { %>
+                          <div class="btn-group btn-group-actions" role="group">
+                            <% if (canView) { %>
+                              <a href="/solicitudes/<%= solicitud.id_solicitud %>" class="btn btn-sm btn-outline-primary" title="Ver" aria-label="Ver Solicitud <%= solicitud.nro_solicitud %>">
+                                <i class="fas fa-eye"></i>
+                              </a>
+                            <% } %>
+                            
+                            <% if (canEditDelete) { %>
+                              <% if (solicitud.canDesarchivar) { %>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-desarchivar" data-id="<%= solicitud.id_solicitud %>" title="Desarchivar" aria-label="Desarchivar Solicitud <%= solicitud.nro_solicitud %>">
+                                  <i class="fas fa-undo"></i>
+                                </button>
+                              <% } else { %>
+                                <button type="button" class="btn btn-sm btn-outline-secondary disabled-link" title="No puedes desarchivar" aria-label="No puedes desarchivar Solicitud <%= solicitud.nro_solicitud %>">
+                                  <i class="fas fa-undo"></i>
+                                </button>
+                              <% } %>
+                            <% } %>
+                            
+                            <% if (canCreateOrdenCompra) { %>
+                              <% if (solicitud.ordenes_count && solicitud.ordenes_count > 0) { %>
+                                <a href="/ordenes-crear/<%= solicitud.id_solicitud %>" class="btn btn-sm btn-primary" title="Crear otra Orden de Compra" aria-label="Crear otra Orden de Compra para Solicitud <%= solicitud.nro_solicitud %>">
+                                  <i class="fas fa-cart-plus"></i>
+                                </a>
+                              <% } else { %>
+                                <% if (estatusLower === 'abierta') { %>
+                                  <a href="/ordenes-crear/<%= solicitud.id_solicitud %>" class="btn btn-sm btn-primary" title="Crear Orden de Compra" aria-label="Crear Orden de Compra para Solicitud <%= solicitud.nro_solicitud %>">
+                                    <i class="fas fa-cart-shopping"></i>
+                                  </a>
+                                <% } %>
+                              <% } %>
+                            <% } %>
+                          </div>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="<%= showSolicitanteColumn ? 8 : 7 %>" class="text-center">No hay solicitudes archivadas disponibles.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="content-backdrop fade"></div>
+</div>
+
+<%- include('partials/footer-text') %>
+<%- include('partials/footer') %>
+<%- include('partials/content-wrapper-close') %>
+
+<script>
+  $(document).ready(function () {
+    var showSolicitanteColumn = <%= showSolicitanteColumn ? 'true' : 'false' %>;
+
+    var columnDefs = [
+      {
+        targets: 'estado-column',
+        render: function (data, type, row, meta) {
+          if (type === 'filter' || type === 'sort') {
+            return $(data).text().trim();
+          }
+          return data;
+        },
+        responsivePriority: 2
+      },
+      {
+        targets: 'actions-column',
+        orderable: false,
+        responsivePriority: 1
+      },
+      {
+        targets: 'asunto-column',
+        className: 'asunto-column',
+        responsivePriority: 3
+      },
+      {
+        targets: 'descripcion-column',
+        className: 'descripcion-column',
+        responsivePriority: 4
+      },
+      {
+        targets: 'archivos-column',
+        responsivePriority: 5
+      },
+    ];
+
+    if (showSolicitanteColumn) {
+      columnDefs.push({
+        targets: 'solicitante-column',
+        responsivePriority: 6
+      });
+    }
+
+    columnDefs.push({
+      targets: '_all',
+      responsivePriority: 7
+    });
+
+    var tableArchivadas = $("#table-solicitudes-archivadas").DataTable({
+      responsive: true,
+      autoWidth: false,
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
+        search: "",
+        emptyTable: "No hay solicitudes archivadas disponibles."
+      },
+      pageLength: 10,
+      lengthChange: false,
+      order: [[0, "desc"]],
+      columnDefs: columnDefs,
+      initComplete: function () {
+        var estatusFilter = $('#estatus-filter').detach();
+        var dataTableFilter = $('#table-solicitudes-archivadas_filter');
+        var searchInput = dataTableFilter.find('input').detach();
+        dataTableFilter.empty();
+        var filterContainer = $('<div class="d-flex align-items-center"></div>');
+        var searchInputGroup = $('<div class="input-group me-2"></div>');
+        var searchIcon = $('<span class="input-group-text"><i class="fas fa-search"></i></span>');
+        searchInput.addClass('form-control').attr('placeholder', 'Buscar...').css('width', 'auto');
+        searchInputGroup.append(searchIcon).append(searchInput);
+        estatusFilter.addClass('form-select').css({
+          'width': 'auto',
+          'min-width': '200px',
+        });
+        filterContainer.append(searchInputGroup).append(estatusFilter);
+        dataTableFilter.append(filterContainer);
+        dataTableFilter.css('float', 'left');
+      }
+    });
+
+    function closeAlerts(delay) {
+      setTimeout(function () {
+        $('.app-solicitudes-archivadas').find('.alert.alert-danger, .alert.alert-success').each(function(){
+          var bootstrapAlert = bootstrap.Alert.getInstance(this);
+          if (bootstrapAlert) {
+            bootstrapAlert.close();
+          }
+        });
+      }, delay);
+    }
+
+    closeAlerts(3000);
+
+    function showAlert(type, message) {
+      $('.app-solicitudes-archivadas').find('.alert').remove();
+
+      var alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      `;
+      var $newAlert = $(alertHtml);
+      $('.app-solicitudes-archivadas').prepend($newAlert);
+
+      setTimeout(function () {
+        $newAlert.alert('close');
+      }, 5000);
+    }
+
+    $('#estatus-filter').on('change', function () {
+      var estatus = $(this).val();
+      tableArchivadas.column('.estado-column').search(estatus).draw();
+    });
+
+    $('.btn-desarchivar').on('click', function() {
+      var id = $(this).data('id');
+      $.ajax({
+        url: '/solicitudes-desarchivar/' + id,
+        type: 'POST',
+        success: function(response) {
+          showAlert('success', 'Solicitud desarchivada exitosamente.');
+          tableArchivadas.row($('tr[data-id="' + id + '"]')).remove().draw();
+        },
+        error: function(xhr, status, error) {
+          showAlert('danger', 'Error al desarchivar la solicitud: ' + xhr.responseText);
+        }
+      });
+    });
+
+    function checkPdfStatusArchivadas() {
+      var solicitudesSinPdf = [];
+      $('#table-solicitudes-archivadas tbody tr').each(function () {
+        var $row = $(this);
+        var pdfStatus = $row.find('.pdf-status');
+        if (pdfStatus.length > 0) {
+          var solicitudId = $row.data('id');
+          solicitudesSinPdf.push(solicitudId);
+        }
+      });
+
+      if (solicitudesSinPdf.length > 0) {
+        $.ajax({
+          url: '/solicitudes/check-pdf-status',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ solicitudes: solicitudesSinPdf }),
+          success: function (response) {
+            response.forEach(function (solicitud) {
+              if (solicitud.ruta_archivo_pdf) {
+                var $row = $('#table-solicitudes-archivadas tbody tr[data-id="' + solicitud.id_solicitud + '"]');
+                var pdfCell = $row.find('.pdf-status').closest('td');
+                pdfCell.html('<a href="' + solicitud.ruta_archivo_pdf + '" target="_blank" rel="noreferrer">VER PDF</a>');
+              }
+            });
+
+            var quedanSolicitudesSinPdf = $('#table-solicitudes-archivadas tbody tr').find('.pdf-status').length > 0;
+            if (!quedanSolicitudesSinPdf) {
+              clearInterval(pdfStatusIntervalArchivadas);
+            }
+          },
+          error: function (err) {
+            console.error('Error al verificar el estado de los PDFs:', err);
+          }
+        });
+      } else {
+        clearInterval(pdfStatusIntervalArchivadas);
+      }
+    }
+
+    var pdfStatusIntervalArchivadas = setInterval(checkPdfStatusArchivadas, 5000);
+  });
+</script>

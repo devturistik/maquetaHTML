@@ -13,8 +13,8 @@ dotenv.config(); // Carga las variables de entorno desde el archivo .env
 const app = express();
 
 // Configuración de EJS como motor de plantillas
-app.set("view engine", "ejs");
 app.set("views", path.join(process.cwd(), "src", "views"));
+app.set("view engine", "ejs");
 
 // Configuración de la sesión
 app.use(
@@ -33,8 +33,8 @@ app.use(
 app.use(flash());
 // Middleware para pasar mensajes flash a las vistas
 app.use((req, res, next) => {
-  res.locals.successMessage = req.flash("successMessage");
-  res.locals.errorMessage = req.flash("errorMessage");
+  res.locals.successMessage = req.flash("successMessage")[0] || "";
+  res.locals.errorMessage = req.flash("errorMessage")[0] || "";
   next();
 });
 

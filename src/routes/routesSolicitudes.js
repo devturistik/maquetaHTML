@@ -38,4 +38,19 @@ router.post(
 router.get("/solicitudes-eliminar/:id", solicitudesController.renderDeleteForm);
 router.post("/solicitudes-eliminar/:id", solicitudesController.deleteSolicitud);
 
+router.get(
+  "/solicitudes-archivadas",
+  solicitudesController.getArchivedSolicitudes
+);
+
+router.post(
+  "/solicitudes-archivar/:id",
+  solicitudesController.archiveSolicitud
+);
+
+router.post(
+  "/solicitudes-desarchivar/:id",
+  solicitudesController.desarchiveSolicitud
+);
+
 export default router;

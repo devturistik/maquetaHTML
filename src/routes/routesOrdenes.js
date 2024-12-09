@@ -40,4 +40,16 @@ router.get("/api/productos", ordenesController.getProductos);
 // Ruta para verificar el estado de los PDFs
 router.post("/ordenes/check-pdf-status", ordenesController.checkPdfStatus);
 
+// Ruta para renderizar la confirmación de cancelación
+router.get("/ordenes-cancelar/:id", ordenesController.renderCancelConfirm);
+
+// Ruta para cancelar una orden
+router.post("/ordenes-cancelar/:id", ordenesController.cancelarOrden);
+
+router.get("/ordenes-archivadas", ordenesController.getOrdenesArchivadas);
+
+router.post("/ordenes-archivar/:id", ordenesController.archivarOrden);
+
+router.post("/ordenes-desarchivar/:id", ordenesController.desarchivarOrden);
+
 export default router;

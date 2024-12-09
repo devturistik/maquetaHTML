@@ -1,5 +1,6 @@
 // src/application/ordenesService.js
 import OrdenesRepository from "../adapters/repository/ordenesRepository.js";
+import { sql, poolPromise } from "../config/database.js";
 
 class OrdenesService {
   constructor() {
@@ -15,6 +16,36 @@ class OrdenesService {
       return await this.ordenesRepository.getOrdenById(id_orden);
     } catch (error) {
       console.error("Error en OrdenesService.getOrdenById:", error.message);
+      throw error;
+    }
+  }
+
+  async archivarOrden(id_orden) {
+    try {
+      return await this.ordenesRepository.archivarOrden(id_orden);
+    } catch (error) {
+      console.error("Error en OrdenesService.archivarOrden:", error.message);
+      throw error;
+    }
+  }
+
+  async desarchivarOrden(id_orden) {
+    try {
+      await this.ordenesRepository.desarchivarOrden(id_orden);
+    } catch (error) {
+      console.error("Error en OrdenesService.desarchivarOrden:", error.message);
+      throw error;
+    }
+  }
+
+  async getOrdenesArchivadas() {
+    try {
+      return await this.ordenesRepository.getOrdenesArchivadas();
+    } catch (error) {
+      console.error(
+        "Error en OrdenesService.getOrdenesArchivadas:",
+        error.message
+      );
       throw error;
     }
   }
@@ -142,6 +173,15 @@ class OrdenesService {
     }
   }
 
+  async cancelarOrden(id_orden, justificacion) {
+    try {
+      await this.ordenesRepository.cancelarOrden(id_orden, justificacion);
+    } catch (error) {
+      console.error("Error en OrdenesService.cancelarOrden:", error.message);
+      throw error;
+    }
+  }
+
   async getProveedorById(id) {
     try {
       return await this.ordenesRepository.getProveedorById(id);
@@ -235,15 +275,10 @@ class OrdenesService {
     }
   }
 
-  async getProductos() {
-    return await this.ordenesRepository.getProductos();
-  }
-
   async getOrdenesByIds(ids) {
     try {
       return await this.ordenesRepository.fetchOrdenesByIds(ids);
     } catch (error) {
-      console.error("Error en OrdenesService.getOrdenesByIds:", error.message);
       throw error;
     }
   }

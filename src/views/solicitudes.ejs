@@ -1,3 +1,4 @@
+<!-- views/solicitudes.ejs -->
 <%- include('partials/header', { title: 'Solicitudes' }) %>
 <%- include('partials/navbar') %>
 <%- include('partials/sidebar') %>
@@ -38,7 +39,7 @@
       max-width: 200px;
     }
   }
-  .estatus-column {
+  .estado-column {
     text-align: center;
     vertical-align: middle;
   }
@@ -46,11 +47,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 120px;
-    text-align: center;
-    padding: 0.5rem;
-    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
+    font-weight: 500;
   }
   .badge-status i {
     margin-right: 0.5rem;
@@ -58,10 +58,14 @@
   .table thead th {
     text-align: center;
     vertical-align: middle;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
   }
   .table tbody td {
     vertical-align: middle;
     text-align: center;
+    border-bottom: 1px solid #dee2e6;
   }
   .table tbody td.asunto-column,
   .table tbody td.descripcion-column {
@@ -74,8 +78,50 @@
     min-width: 70px;
     text-align: center;
   }
+  .btn-group-actions .btn {
+    margin-right: 0.25rem;
+  }
+  .btn-group-actions .btn:last-child {
+    margin-right: 0;
+  }
+  .btn-primary, .btn-outline-primary, .btn-secondary, .btn-outline-secondary {
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
   .table-responsive {
     overflow-x: auto;
+  }
+  .alert {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  .alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+  }
+  .btn-close:hover {
+    opacity: 0.75;
   }
 </style>
 
@@ -95,9 +141,14 @@
         </div>
       <% } %>
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div>
+        <div class="flex-grow-1">
           <h4 class="mb-1">Lista de Solicitudes</h4>
-          <p class="mb-0">Solicitudes realizadas por los usuarios.</p>
+          <p class="mb-2">Solicitudes realizadas por los usuarios.</p>
+          <div>
+            <a href="/solicitudes-archivadas" class="btn btn-sm btn-outline-secondary">
+              <i class="fas fa-archive me-2"></i> Ver Solicitudes Archivadas
+            </a>
+          </div>
         </div>
         <div>
           <% if (canCreateNuevaSolicitud) { %>
@@ -108,8 +159,8 @@
         </div>
       </div>
       <div style="display: none;">
-        <select id="estatus-filter" class="form-select" style="width: 200px;">
-          <option value="">Sin filtro</option>
+        <select id="estatus-filter" class="form-select">
+          <option value="">Filtrar por Estado</option>
           <%
             const estatusSet = new Set(); 
             solicitudes.forEach(solicitud => { 
@@ -164,7 +215,6 @@
                         estatusClass = 'bg-danger'; 
                       }
 
-                      // Utilizar la nueva propiedad hasActiveFiles
                       const hasActiveFiles = solicitud.hasActiveFiles;
                     %>
                   <tr>
@@ -210,42 +260,55 @@
                       <% } %>
                     </td>
                     <td class="actions-column">
-                      <% if (canView || canCreateOrdenCompra) { %>
+                      <% if (canView || canCreateOrdenCompra || canEditDelete) { %>
                         <div class="btn-group btn-group-actions" role="group">
                           <% if (canView) { %>
                             <a href="/solicitudes/<%= solicitud.id_solicitud %>" class="btn btn-sm btn-outline-primary" title="Ver" aria-label="Ver Solicitud <%= solicitud.nro_solicitud %>">
                               <i class="fas fa-eye"></i>
                             </a>
                           <% } %>
+  
                           <% if (canEditDelete) { %>
-                            <a 
-                              <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %> 
-                                class="btn btn-sm btn-outline-secondary disabled" 
-                                title="Editar" 
-                                aria-label="Editar Solicitud <%= solicitud.nro_solicitud %> (No disponible)" 
-                              <% } else { %> 
-                                href="/solicitudes-editar/<%= solicitud.id_solicitud %>" 
-                                class="btn btn-sm btn-outline-secondary" 
-                                title="Editar" 
-                                aria-label="Editar Solicitud <%= solicitud.nro_solicitud %>" 
-                              <% } %>
-                            >
-                              <i class="fas fa-edit"></i>
-                            </a>
-                            <a 
-                              <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %> 
-                                class="btn btn-sm btn-outline-danger disabled" 
-                                title="Eliminar" 
-                                aria-label="Eliminar Solicitud <%= solicitud.nro_solicitud %> (No disponible)" 
-                              <% } else { %> 
-                                href="/solicitudes-eliminar/<%= solicitud.id_solicitud %>" 
-                                class="btn btn-sm btn-outline-danger" 
-                                title="Eliminar" 
-                                aria-label="Eliminar Solicitud <%= solicitud.nro_solicitud %>" 
-                              <% } %>
-                            >
-                              <i class="fas fa-trash-alt"></i>
-                            </a>
+                            <% if (estatusLower === 'procesada') { %>
+                              <button 
+                                type="button" 
+                                class="btn btn-sm btn-outline-secondary btn-archivar" 
+                                data-id="<%= solicitud.id_solicitud %>" 
+                                title="Archivar" 
+                                aria-label="Archivar Solicitud <%= solicitud.nro_solicitud %>"
+                              >
+                                <i class="fas fa-archive"></i>
+                              </button>
+                            <% } else { %>
+                              <a 
+                                <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %> 
+                                  class="btn btn-sm btn-outline-secondary disabled" 
+                                  title="Editar" 
+                                  aria-label="Editar Solicitud <%= solicitud.nro_solicitud %> (No disponible)" 
+                                <% } else { %> 
+                                  href="/solicitudes-editar/<%= solicitud.id_solicitud %>" 
+                                  class="btn btn-sm btn-outline-secondary" 
+                                  title="Editar" 
+                                  aria-label="Editar Solicitud <%= solicitud.nro_solicitud %>" 
+                                <% } %>
+                              >
+                                <i class="fas fa-edit"></i>
+                              </a>
+                              <a 
+                                <% if (['eliminada', 'editando', 'procesada'].includes(estatusLower)) { %> 
+                                  class="btn btn-sm btn-outline-danger disabled" 
+                                  title="Eliminar" 
+                                  aria-label="Eliminar Solicitud <%= solicitud.nro_solicitud %> (No disponible)" 
+                                <% } else { %>
+                                  href="/solicitudes-eliminar/<%= solicitud.id_solicitud %>" 
+                                  class="btn btn-sm btn-outline-danger" 
+                                  title="Eliminar" 
+                                  aria-label="Eliminar Solicitud <%= solicitud.nro_solicitud %>" 
+                                <% } %>
+                              >
+                                <i class="fas fa-trash-alt"></i>
+                              </a>
+                            <% } %>
                           <% } %>
                           <% if (canCreateOrdenCompra) { %>
                             <% if (solicitud.ordenes_count && solicitud.ordenes_count > 0) { %>
@@ -364,9 +427,57 @@
       }
     });
 
+    function closeAlerts(delay) {
+      setTimeout(function () {
+        $('.app-solicitudes-lista').find('.alert.alert-danger, .alert.alert-success').each(function(){
+          var bootstrapAlert = bootstrap.Alert.getInstance(this);
+          if (bootstrapAlert) {
+            bootstrapAlert.close();
+          }
+        });
+      }, delay);
+    }
+
+    closeAlerts(3000);
+
+    function showAlert(type, message) {
+      $('.app-solicitudes-lista').find('.alert').remove();
+
+      var alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      `;
+      var $newAlert = $(alertHtml);
+      $('.app-solicitudes-lista').prepend($newAlert);
+
+      setTimeout(function () {
+        $newAlert.alert('close');
+      }, 5000);
+    }
+
     $('#estatus-filter').on('change', function () {
       var estatus = $(this).val();
       table.column('.estado-column').search(estatus).draw();
+    });
+
+    $('.btn-archivar').on('click', function (e) {
+      e.preventDefault();
+      var solicitudId = $(this).data('id');
+      var $button = $(this);
+
+        $.ajax({
+          url: '/solicitudes-archivar/' + solicitudId,
+          type: 'POST',
+          success: function (response) {
+            showAlert('success', 'Solicitud archivada exitosamente.');
+            table.row($button.parents('tr')).remove().draw();
+          },
+          error: function (xhr, status, error) {
+            showAlert('danger', 'Error al archivar la solicitud: ' + xhr.responseText);
+          }
+        });
     });
   });
 </script>

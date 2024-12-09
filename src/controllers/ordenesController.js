@@ -28,19 +28,26 @@ class OrdenesController {
   getAllOrdenes = async (req, res) => {
     try {
       const ordenes = await this.ordenesService.getAllOrdenes();
+
+      const ordenesConCancelacion = ordenes.map((orden) => ({
+        ...orden,
+        oc: orden.codigo.split("-")[1],
+        nro_solicitud: orden.id_solicitud,
+        id_orden_encoded: encodeBase64(orden.id_orden),
+        id_orden: orden.id_orden,
+        ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
+        created_at: new Date(orden.created_at).toLocaleString("es-CL", {
+          timeZone: "UTC",
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+        puedeCancelar: orden.nivel_actual < 1,
+      }));
+
       res.render("ordenes", {
-        ordenes: ordenes.map((orden) => ({
-          ...orden,
-          oc: orden.codigo.split("-")[1],
-          Encoded_id_orden: encodeBase64(orden.id_orden),
-          Encoded_id_solicitud: encodeBase64(orden.id_solicitud),
-          ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
-          created_at: new Date(orden.created_at).toLocaleString("es-CL", {
-            timeZone: "UTC",
-            dateStyle: "short",
-            timeStyle: "short",
-          }),
-        })),
+        ordenes: ordenesConCancelacion,
+        successMessage: req.flash("successMessage")[0] || "",
+        errorMessage: req.flash("errorMessage")[0] || "",
       });
     } catch (error) {
       console.error("Error al obtener ordenes:", error.message);
@@ -139,8 +146,8 @@ class OrdenesController {
         cuentascontables,
         tokenDatos,
         errors: {},
-        successMessage: req.flash("successMessage"),
-        errorMessage: req.flash("errorMessage"),
+        successMessage: req.flash("successMessage")[0] || "",
+        errorMessage: req.flash("errorMessage")[0] || "",
       });
     } catch (error) {
       console.error(
@@ -401,7 +408,6 @@ class OrdenesController {
         correo_creador: res.locals.user.correo,
         nota_creador: Nota,
         documentos_cotizacion: "[]",
-        nivel_aprobacion: 0,
         total_local: totalLocal,
         id_centro_costo: id_centroCosto,
         id_moneda: id_moneda,
@@ -558,34 +564,6 @@ class OrdenesController {
     }
   };
 
-  liberarProcesamiento = async (req, res) => {
-    try {
-      const encodedId = req.params.id;
-      const id_solicitud = decodeBase64(encodedId);
-      await this.solicitudesService.updateEstatus(id_solicitud, "abierta");
-      res.status(200).json({ message: "Bloqueo de procesamiento liberado." });
-    } catch (error) {
-      console.error("Error al liberar el bloqueo de procesamiento:", error);
-      res
-        .status(500)
-        .json({ message: "Error al liberar el bloqueo de procesamiento." });
-    }
-  };
-
-  cancelarProcesamiento = async (req, res) => {
-    try {
-      const encodedId = req.params.id;
-      const id_solicitud = decodeBase64(encodedId);
-      await this.solicitudesService.updateEstatus(id_solicitud, "abierta");
-      req.flash("successMessage", "Procesamiento cancelado.");
-      res.redirect("/solicitudes");
-    } catch (error) {
-      console.error("Error al cancelar el procesamiento:", error);
-      req.flash("errorMessage", "Error al cancelar el procesamiento.");
-      res.redirect("/solicitudes");
-    }
-  };
-
   getProductos = async (req, res) => {
     try {
       const productos = await this.ordenesService.getProductos();
@@ -593,6 +571,207 @@ class OrdenesController {
     } catch (error) {
       console.error("Error al obtener productos:", error.message);
       res.status(500).json({ message: "Error al obtener productos" });
+    }
+  };
+
+  renderCancelConfirm = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id_orden = decodeBase64(encodedId);
+      const orden = await this.ordenesService.getOrdenById(id_orden);
+
+      if (!orden) {
+        req.flash("errorMessage", "Orden de compra no encontrada.");
+        return res.redirect("/ordenes");
+      }
+
+      const estatusLower = orden.estatus.toLowerCase();
+      let estatusClass = "";
+      let estatusDisplay = orden.estatus;
+      if (estatusLower === "pendiente") {
+        estatusClass = "bg-warning";
+      } else if (estatusLower === "aprobada") {
+        estatusClass = "bg-success";
+      } else if (estatusLower === "rechazada") {
+        estatusClass = "bg-danger";
+      } else if (estatusLower === "pagada") {
+        estatusClass = "bg-primary";
+      } else if (estatusLower === "cerrada") {
+        estatusClass = "bg-secondary";
+      } else if (estatusLower === "eliminada") {
+        estatusClass = "bg-dark";
+      }
+
+      res.render("orden/cancelar", {
+        orden: {
+          ...orden,
+          Encoded_id_orden: encodeBase64(orden.id_orden),
+          Encoded_id_solicitud: encodeBase64(orden.id_solicitud),
+          ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
+          created_at: new Date(orden.created_at).toLocaleString("es-CL", {
+            timeZone: "UTC",
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+        },
+        estatusClass,
+        estatusDisplay,
+        successMessage: req.flash("successMessage")[0] || "",
+        errorMessage: req.flash("errorMessage")[0] || "",
+      });
+    } catch (error) {
+      console.error(
+        "Error al renderizar la confirmación de cancelación:",
+        error.message
+      );
+      req.flash(
+        "errorMessage",
+        "Error al cargar la confirmación de cancelación."
+      );
+      res.redirect("/ordenes");
+    }
+  };
+
+  cancelarOrden = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id_orden = decodeBase64(encodedId);
+      const { justificacion } = req.body;
+
+      if (!justificacion || justificacion.trim().length === 0) {
+        req.flash(
+          "errorMessage",
+          "Debe proporcionar una justificación para cancelar la orden."
+        );
+        return res.redirect(`/ordenes-cancelar/${encodedId}`);
+      }
+
+      const orden = await this.ordenesService.getOrdenById(id_orden);
+
+      if (!orden) {
+        req.flash("errorMessage", "Orden de compra no encontrada.");
+        return res.redirect("/ordenes");
+      }
+
+      const estatusActual = orden.estatus.toLowerCase();
+      const estatusCancelable = ["pendiente"];
+
+      if (!estatusCancelable.includes(estatusActual)) {
+        req.flash(
+          "errorMessage",
+          `La orden no se puede cancelar porque su estado es "${orden.estatus}".`
+        );
+        return res.redirect("/ordenes");
+      }
+
+      if (orden.nivel_actual >= 1) {
+        req.flash(
+          "errorMessage",
+          "No se puede cancelar la orden porque ya ha iniciado el proceso de aprobación."
+        );
+        return res.redirect("/ordenes");
+      }
+
+      await this.ordenesService.cancelarOrden(id_orden, justificacion);
+
+      req.flash("successMessage", "Orden de compra cancelada exitosamente.");
+      res.redirect("/ordenes");
+    } catch (error) {
+      console.error("Error al cancelar la orden de compra:", error.message);
+      req.flash(
+        "errorMessage",
+        "Hubo un error al cancelar la orden de compra."
+      );
+      res.redirect("/ordenes");
+    }
+  };
+
+  getOrdenesArchivadas = async (req, res) => {
+    try {
+      const ordenesArchivadas =
+        await this.ordenesService.getOrdenesArchivadas();
+
+      const ordenesConDetalle = ordenesArchivadas.map((orden) => ({
+        ...orden,
+        oc: orden.codigo.split("-")[1],
+        nro_solicitud: orden.id_solicitud,
+        id_orden: encodeBase64(orden.id_orden),
+        id_solicitud: encodeBase64(orden.id_solicitud),
+        ruta_archivo_pdf: orden.ruta_archivo_pdf?.replace(/^"|"$/g, ""),
+        created_at: new Date(orden.created_at).toLocaleString("es-CL", {
+          timeZone: "UTC",
+          dateStyle: "short",
+          timeStyle: "short",
+        }),
+      }));
+
+      res.render("ordenes-archivadas", {
+        ordenes: ordenesConDetalle,
+        successMessage: req.flash("successMessage")[0] || "",
+        errorMessage: req.flash("errorMessage")[0] || "",
+      });
+    } catch (error) {
+      console.error("Error al obtener órdenes archivadas:", error.message);
+      res.status(500).send("Error al obtener órdenes archivadas");
+    }
+  };
+
+  archivarOrden = async (req, res) => {
+    try {
+      const id_orden = decodeBase64(req.params.id);
+      await this.ordenesService.archivarOrden(id_orden);
+      res.json({ successMessage: "Orden archivada exitosamente." });
+    } catch (error) {
+      console.error("Error al archivar la orden:", error.message);
+      res
+        .status(500)
+        .json({ errorMessage: "Hubo un error al archivar la orden." });
+    }
+  };
+
+  desarchivarOrden = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id_orden = decodeBase64(encodedId);
+
+      const orden = await this.ordenesService.getOrdenById(id_orden);
+
+      if (!orden) {
+        const errorMsg = "Orden de compra no encontrada.";
+        if (req.xhr || req.headers.accept.indexOf("json") > -1) {
+          return res.status(404).json({ errorMessage: errorMsg });
+        }
+        req.flash("errorMessage", errorMsg);
+        return res.redirect("/ordenes");
+      }
+
+      if (!orden.archivado) {
+        const errorMsg = "La orden no está archivada.";
+        if (req.xhr || req.headers.accept.indexOf("json") > -1) {
+          return res.status(400).json({ errorMessage: errorMsg });
+        }
+        req.flash("errorMessage", errorMsg);
+        return res.redirect("/ordenes");
+      }
+
+      await this.ordenesService.desarchivarOrden(id_orden);
+
+      const successMsg = "Orden de compra desarchivada exitosamente.";
+
+      if (req.xhr || req.headers.accept.indexOf("json") > -1) {
+        return res.json({ successMessage: successMsg });
+      }
+
+      req.flash("successMessage", successMsg);
+      res.redirect("/ordenes-archivadas");
+    } catch (error) {
+      console.error("Error al desarchivar la orden de compra:", error.message);
+      const errorMsg = "Hubo un error al desarchivar la orden de compra.";
+      if (req.xhr || req.headers.accept.indexOf("json") > -1) {
+        return res.status(500).json({ errorMessage: errorMsg });
+      }
+      req.flash("errorMessage", errorMsg);
+      res.redirect("/ordenes");
     }
   };
 
@@ -614,7 +793,6 @@ class OrdenesController {
 
       res.json(response);
     } catch (error) {
-      console.error("Error al verificar el estado de los PDFs:", error.message);
       res.status(500).json({ error: "Error interno del servidor" });
     }
   };

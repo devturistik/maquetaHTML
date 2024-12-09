@@ -1,0 +1,65 @@
+<%- include('../partials/header', { title: 'Cancelar Orden' }) %>
+<%- include('../partials/navbar') %>
+<%- include('../partials/sidebar') %>
+<%- include('../partials/content-wrapper-open') %>
+
+<div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-ordenes-cancelar">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+          <h4 class="mb-1">Cancelar Orden</h4>
+          <p class="mb-0">Confirme la cancelación de la siguiente orden.</p>
+        </div>
+      </div>
+
+      <% if (successMessage && successMessage.length > 0) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= successMessage %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+      <% } %>
+      <% if (errorMessage && errorMessage.length > 0) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= errorMessage %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+      <% } %>
+
+      <div class="card">
+        <div class="card-body">
+          <h5>Detalles de la Orden</h5>
+          <ul class="list-group list-group-flush mb-3">
+            <li class="list-group-item"><strong>OC:</strong> <%= orden.codigo %></li>
+            <li class="list-group-item"><strong>Solicitud:</strong> <a href="/solicitudes/<%= orden.Encoded_id_solicitud %>">#<%= orden.id_solicitud %></a></li>
+            <li class="list-group-item"><strong>Creador OC:</strong> <%= orden.usuario_creador %></li>
+            <li class="list-group-item"><strong>Correo Creador OC:</strong> <%= orden.correo_creador %></li>
+            <li class="list-group-item"><strong>Estado:</strong> <span class="badge <%= estatusClass %> text-white"><%= estatusDisplay %></span></li>
+            <li class="list-group-item"><strong>Fecha Creación:</strong> <%= orden.created_at %></li>
+            <% if (orden.ruta_archivo_pdf) { %>
+              <li class="list-group-item"><strong>PDF OC:</strong> <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" rel="noreferrer">VER PDF</a></li>
+            <% } else { %>
+              <li class="list-group-item"><strong>PDF OC:</strong> <span class="pdf-status">Cargando PDF...</span></li>
+            <% } %>
+            <li class="list-group-item"><strong>Nota:</strong> <%= orden.nota_creador || 'SIN DATO' %></li>
+          </ul>
+
+          <form action="/ordenes-cancelar/<%= orden.Encoded_id_orden %>" method="POST">
+            <div class="mb-3">
+              <label for="justificacion" class="form-label">Justificación de la Cancelación</label>
+              <textarea class="form-control" id="justificacion" name="justificacion" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger">Confirmar Cancelación</button>
+            <a href="/ordenes" class="btn btn-secondary">Cancelar</a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-backdrop fade"></div>
+</div>
+
+<%- include('../partials/footer-text') %>
+<%- include('../partials/footer') %>
+<%- include('../partials/content-wrapper-close') %>

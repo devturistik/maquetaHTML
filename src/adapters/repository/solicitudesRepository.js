@@ -16,6 +16,7 @@ class SolicitudesRepository {
           s.correo_solicitante,
           s.created_at,
           e.nombre AS estatus,
+          s.archivado,
           CASE 
             WHEN s.archivos IS NOT NULL AND s.archivos != '[]' THEN 1 
             ELSE 0 
@@ -31,6 +32,8 @@ class SolicitudesRepository {
           oc.Estatus e ON s.estatus_id = e.id_estatus
         WHERE
           s.eliminado = 0
+        AND
+          s.archivado = 0
       `;
 
       if (filtros.correo_solicitante) {
@@ -76,6 +79,7 @@ class SolicitudesRepository {
             s.eliminado,
             s.locked_at,
             s.estatus_id,
+            s.archivado,
             (
               SELECT
                 o.id_orden,
@@ -251,6 +255,97 @@ class SolicitudesRepository {
         `);
     } catch (error) {
       console.error("Error al eliminar la solicitud:", error);
+      throw error;
+    }
+  }
+
+  async getArchivedSolicitudes(filtros = {}) {
+    try {
+      const pool = await poolPromise;
+
+      let query = `
+        SELECT
+          s.id_solicitud,
+          s.asunto,
+          s.descripcion,
+          s.archivos,
+          s.usuario_solicitante,
+          s.correo_solicitante,
+          s.created_at,
+          e.nombre AS estatus,
+          s.archivado,
+          (
+            SELECT COUNT(*) 
+            FROM oc.OrdenCompra o 
+            WHERE o.id_solicitud = s.id_solicitud
+          ) AS ordenes_count
+        FROM
+          oc.Solicitud s
+        JOIN
+          oc.Estatus e ON s.estatus_id = e.id_estatus
+        WHERE
+          s.eliminado = 0
+        AND
+          s.archivado = 1
+      `;
+
+      if (filtros.correo_solicitante) {
+        query += ` AND s.correo_solicitante = @correo_solicitante`;
+      }
+
+      query += `
+        ORDER BY
+          s.created_at DESC
+      `;
+
+      const request = pool.request();
+
+      if (filtros.correo_solicitante) {
+        request.input(
+          "correo_solicitante",
+          sql.NVarChar,
+          filtros.correo_solicitante
+        );
+      }
+
+      const result = await request.query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener solicitudes archivadas:", error);
+      throw error;
+    }
+  }
+
+  async archiveSolicitud(id) {
+    try {
+      const pool = await poolPromise;
+
+      await pool.request().input("id", sql.Int, id).query(`
+          UPDATE oc.Solicitud
+          SET
+            ARCHIVADO = 1,
+            updated_at = GETDATE()
+          WHERE id_solicitud = @id
+        `);
+    } catch (error) {
+      console.error("Error al archivar la solicitud:", error);
+      throw error;
+    }
+  }
+
+  async desarchiveSolicitud(id) {
+    try {
+      const pool = await poolPromise;
+
+      await pool.request().input("id", sql.Int, id).query(`
+          UPDATE oc.Solicitud
+          SET
+            ARCHIVADO = 0,
+            updated_at = GETDATE()
+          WHERE id_solicitud = @id
+        `);
+    } catch (error) {
+      console.error("Error al desarchivar la solicitud:", error);
       throw error;
     }
   }

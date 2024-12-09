@@ -120,6 +120,7 @@ class SolicitudesController {
           timeStyle: "short",
         }),
       }));
+
       res.render("solicitud/ordenes", {
         solicitud,
         ordenes: ordenesFormateadas,
@@ -328,32 +329,6 @@ class SolicitudesController {
         req.flash("errorMessage", "Error al actualizar la solicitud.");
         res.redirect("/solicitudes");
       }
-    }
-  };
-
-  cancelarEdicion = async (req, res) => {
-    try {
-      const id = decodeBase64(req.params.id);
-      await this.solicitudesService.updateEstatus(id, "abierta");
-      req.flash("successMessage", "Edición cancelada.");
-      res.redirect("/solicitudes");
-    } catch (error) {
-      req.flash("errorMessage", "Error al cancelar la edición.");
-      res.redirect("/solicitudes");
-    }
-  };
-
-  liberarEdicion = async (req, res) => {
-    try {
-      const encodedId = req.params.id;
-      const id = decodeBase64(encodedId);
-      await this.solicitudesService.updateEstatus(id, "abierta");
-      res.status(200).json({ message: "Bloqueo liberado." });
-    } catch (error) {
-      console.error("Error al liberar el bloqueo de edición:", error);
-      res
-        .status(500)
-        .json({ message: "Error al liberar el bloqueo de edición." });
     }
   };
 
@@ -582,6 +557,138 @@ class SolicitudesController {
       console.error("Error al descargar el archivo:", error);
       req.flash("errorMessage", "Error al descargar el archivo.");
       res.redirect("back");
+    }
+  };
+
+  getArchivedSolicitudes = async (req, res) => {
+    try {
+      const user = res.locals.user;
+      const userRoles = user.roles.map((role) => role.rol.toLowerCase());
+      const isSolicitante = userRoles.includes("solicitante");
+      const isAdmin = userRoles.includes("admin");
+      const userEmail = user.correo;
+
+      let filtros = {};
+
+      if (isSolicitante && !isAdmin) {
+        filtros.correo_solicitante = userEmail;
+      }
+
+      const solicitudes = await this.solicitudesService.getArchivedSolicitudes(
+        filtros
+      );
+
+      const solicitudesProcesadas = solicitudes.map((solicitud) => {
+        const archivos = JSON.parse(solicitud.archivos || "[]");
+        const hasActiveFiles = archivos.some((file) => file.eliminado !== 1);
+        const estatusLower = solicitud.estatus.toLowerCase();
+
+        let estatusClass = "";
+        let estatusDisplay = solicitud.estatus;
+
+        switch (estatusLower) {
+          case "archivada":
+            estatusClass = "badge-archived";
+            break;
+          case "abierta":
+            estatusClass = "badge-open";
+            break;
+          case "procesada":
+            estatusClass = "badge-processed";
+            break;
+          case "editando":
+          case "procesando":
+            estatusClass = "badge-editing";
+            estatusDisplay =
+              estatusLower.charAt(0).toUpperCase() + estatusLower.slice(1);
+            break;
+          case "eliminada":
+            estatusClass = "badge-eliminated";
+            break;
+          default:
+            estatusClass = "badge-secondary";
+        }
+
+        const canDesarchivar = isAdmin || isSolicitante;
+
+        return {
+          ...solicitud,
+          nro_solicitud: solicitud.id_solicitud,
+          id_solicitud: encodeBase64(solicitud.id_solicitud.toString()),
+          archivos,
+          hasActiveFiles,
+          estatusLower,
+          estatusClass,
+          estatusDisplay,
+          canDesarchivar,
+        };
+      });
+
+      res.render("solicitudes-archivadas", {
+        solicitudes: solicitudesProcesadas,
+        user,
+        successMessage: req.flash("successMessage"),
+        errorMessage: req.flash("errorMessage"),
+      });
+    } catch (error) {
+      console.error("Error al obtener solicitudes archivadas:", error);
+      req.flash("errorMessage", "Error al obtener solicitudes archivadas.");
+      res.redirect("/");
+    }
+  };
+
+  archiveSolicitud = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id = decodeBase64(encodedId);
+
+      const solicitud = await this.solicitudesService.getSolicitudById(id);
+
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes");
+      }
+
+      if (solicitud.archivado === true) {
+        req.flash("errorMessage", "La solicitud ya está archivada.");
+        return res.redirect("/solicitudes");
+      }
+
+      await this.solicitudesService.archiveSolicitud(id);
+
+      req.flash("successMessage", "Solicitud archivada con éxito.");
+      res.redirect("/solicitudes");
+    } catch (error) {
+      console.error("Error al archivar la solicitud:", error);
+      req.flash("errorMessage", "Error al archivar la solicitud.");
+      res.redirect("/solicitudes");
+    }
+  };
+
+  desarchiveSolicitud = async (req, res) => {
+    try {
+      const encodedId = req.params.id;
+      const id = decodeBase64(encodedId);
+
+      const solicitud = await this.solicitudesService.getSolicitudById(id);
+      if (!solicitud) {
+        req.flash("errorMessage", "Solicitud no encontrada.");
+        return res.redirect("/solicitudes-archivadas");
+      }
+
+      if (solicitud.archivado === 0) {
+        req.flash("errorMessage", "La solicitud ya está activa.");
+        return res.redirect("/solicitudes-archivadas");
+      }
+
+      await this.solicitudesService.desarchiveSolicitud(id);
+
+      req.flash("successMessage", "Solicitud desarchivada con éxito.");
+      res.redirect("/solicitudes-archivadas");
+    } catch (error) {
+      console.error("Error al desarchivar la solicitud:", error);
+      req.flash("errorMessage", "Error al desarchivar la solicitud.");
+      res.redirect("/solicitudes-archivadas");
     }
   };
 }

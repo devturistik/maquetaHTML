@@ -13,27 +13,22 @@ class OrdenesRepository {
       SELECT
         o.id_orden,
         o.codigo,
-        o.subtotal,
-        o.total,
-        o.impuesto,
-        o.retencion,
         o.usuario_creador,
         o.correo_creador,
-        o.nota_creador,
         o.ruta_archivo_pdf,
-        o.documentos_cotizacion,
-        o.nivel_aprobacion,
-        o.justificacion_rechazo,
-        o.total_local,
         o.id_solicitud,
         o.created_at,
-        e.nombre AS estatus
+        e.nombre AS estatus,
+        o.nivel_actual,
+        o.archivado
       FROM
         oc.OrdenCompra o
       JOIN
         oc.Estatus e
       ON
         o.estatus_id = e.id_estatus
+      WHERE
+        o.archivado = 0
       ORDER BY
         id_orden ASC
     `;
@@ -42,7 +37,7 @@ class OrdenesRepository {
       const result = await pool.request().query(query);
       return result.recordset;
     } catch (error) {
-      console.error("Error al obtener ordenes:", error.message);
+      console.error("Error al obtener órdenes:", error.message);
       throw error;
     }
   }
@@ -52,27 +47,14 @@ class OrdenesRepository {
       SELECT
         o.id_orden,
         o.codigo,
-        o.subtotal,
-        o.total,
-        o.impuesto,
-        o.retencion,
         o.usuario_creador,
         o.correo_creador,
         o.nota_creador,
         o.ruta_archivo_pdf,
-        o.documentos_cotizacion,
-        o.nivel_aprobacion,
-        o.justificacion_rechazo,
-        o.total_local,
-        o.id_centro_costo,
-        o.id_moneda,
-        o.id_empresa,
         o.id_solicitud,
-        o.id_proveedor,
-        o.id_tipo_orden,
-        o.id_plazo,
         o.created_at,
-        e.nombre AS estatus
+        e.nombre AS estatus,
+        o.archivado
       FROM
         oc.OrdenCompra o
       JOIN
@@ -89,6 +71,89 @@ class OrdenesRepository {
       return result.recordset[0];
     } catch (error) {
       console.error("Error al obtener la orden:", error.message);
+      throw error;
+    }
+  }
+
+  async archivarOrden(id_orden) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET archivado = 1
+      WHERE id_orden = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool.request().input("ID_ORDEN", sql.Int, id_orden).query(query);
+    } catch (error) {
+      console.error("Error al archivar la orden:", error.message);
+      throw error;
+    }
+  }
+
+  async desarchivarOrden(id_orden) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET archivado = 0
+      WHERE id_orden = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool.request().input("ID_ORDEN", sql.Int, id_orden).query(query);
+    } catch (error) {
+      console.error("Error al desarchivar la orden:", error.message);
+      throw error;
+    }
+  }
+
+  async cancelarOrden(id_orden, justificacion) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET estatus_id = (SELECT id_estatus FROM oc.Estatus WHERE nombre = 'Cerrada'),
+          justificacion_rechazo = @JUSTIFICACION
+      WHERE id_orden = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("JUSTIFICACION", sql.NVarChar, justificacion)
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(query);
+    } catch (error) {
+      console.error("Error al cancelar la orden:", error.message);
+      throw error;
+    }
+  }
+
+  async getOrdenesArchivadas() {
+    const query = `
+      SELECT
+        o.id_orden,
+        o.codigo,
+        o.usuario_creador,
+        o.correo_creador,
+        o.ruta_archivo_pdf,
+        o.id_solicitud,
+        o.created_at,
+        e.nombre AS estatus,
+        o.nivel_actual
+      FROM
+        oc.OrdenCompra o
+      JOIN
+        oc.Estatus e
+      ON
+        o.estatus_id = e.id_estatus
+      WHERE
+        o.archivado = 1
+      ORDER BY
+        o.id_orden DESC
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool.request().query(query);
+      return result.recordset;
+    } catch (error) {
+      console.error("Error al obtener órdenes archivadas:", error.message);
       throw error;
     }
   }
@@ -481,7 +546,6 @@ class OrdenesRepository {
           correo_creador,
           nota_creador,
           documentos_cotizacion,
-          nivel_aprobacion,
           total_local,
           id_centro_costo,
           id_moneda,
@@ -506,7 +570,6 @@ class OrdenesRepository {
           @CORREO_CREADOR,
           @NOTA_CREADOR,
           @DOCUMENTOS_COTIZACION,
-          @NIVEL_APROBACION,
           @TOTAL_LOCAL,
           @ID_CENTRO_COSTO,
           @ID_MONEDA,
@@ -536,7 +599,6 @@ class OrdenesRepository {
           sql.NVarChar,
           newOrden.documentos_cotizacion
         )
-        .input("NIVEL_APROBACION", sql.TinyInt, newOrden.nivel_aprobacion)
         .input("TOTAL_LOCAL", sql.Decimal(10, 2), newOrden.total_local)
         .input("ID_CENTRO_COSTO", sql.Int, newOrden.id_centro_costo)
         .input("ID_MONEDA", sql.Int, newOrden.id_moneda)
@@ -628,24 +690,30 @@ class OrdenesRepository {
     }
   }
 
-  async updateOrdenCodigo(id_orden, codigo) {
+  async updateOrdenCodigo(id_orden, codigo, request = null) {
     const query = `
       UPDATE oc.OrdenCompra
       SET codigo = @CODIGO
       WHERE id_orden = @ID_ORDEN
     `;
     try {
-      const pool = await poolPromise;
-      await pool
-        .request()
-        .input("CODIGO", sql.NVarChar, codigo)
-        .input("ID_ORDEN", sql.Int, id_orden)
-        .query(query);
+      if (request) {
+        await request
+          .input("CODIGO", sql.NVarChar, codigo)
+          .input("ID_ORDEN", sql.Int, id_orden)
+          .query(query);
+      } else {
+        const pool = await poolPromise;
+        await pool
+          .request()
+          .input("CODIGO", sql.NVarChar, codigo)
+          .input("ID_ORDEN", sql.Int, id_orden)
+          .query(query);
+      }
     } catch (error) {
-      await transaction.rollback();
       console.error(
-        "Error en OrdenesRepository.createOrdenConDetalles:",
-        error.stack || error
+        "Error en OrdenesRepository.updateOrdenCodigo:",
+        error.message
       );
       throw error;
     }
@@ -695,8 +763,54 @@ class OrdenesRepository {
       const result = await request.query(query);
       return result.recordset;
     } catch (error) {
+      throw error;
+    }
+  }
+
+  async getEstatusByName(nombreEstatus) {
+    const query = `
+      SELECT
+        id_estatus,
+        nombre
+      FROM
+        oc.Estatus
+      WHERE
+        nombre = @NOMBRE_ESTATUS
+    `;
+    try {
+      const pool = await poolPromise;
+      const result = await pool
+        .request()
+        .input("NOMBRE_ESTATUS", sql.NVarChar, nombreEstatus)
+        .query(query);
+      return result.recordset[0];
+    } catch (error) {
       console.error(
-        "Error en ordenesRepository.fetchOrdenesByIds:",
+        "Error en OrdenesRepository.getEstatusByName:",
+        error.message
+      );
+      throw error;
+    }
+  }
+
+  async updateEstatusOrden(id_orden, nuevoEstatusId, justificacion) {
+    const query = `
+      UPDATE oc.OrdenCompra
+      SET estatus_id = @NUEVO_ESTATUS_ID,
+          justificacion_rechazo = @JUSTIFICACION
+      WHERE id_orden = @ID_ORDEN
+    `;
+    try {
+      const pool = await poolPromise;
+      await pool
+        .request()
+        .input("NUEVO_ESTATUS_ID", sql.Int, nuevoEstatusId)
+        .input("JUSTIFICACION", sql.NVarChar, justificacion)
+        .input("ID_ORDEN", sql.Int, id_orden)
+        .query(query);
+    } catch (error) {
+      console.error(
+        "Error en OrdenesRepository.updateEstatusOrden:",
         error.message
       );
       throw error;

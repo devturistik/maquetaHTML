@@ -1,0 +1,474 @@
+<!-- views/ordenes-archivadas.ejs -->
+<%- include('partials/header', { title: 'Órdenes Archivadas' }) %>
+<%- include('partials/navbar') %>
+<%- include('partials/sidebar') %>
+<%- include('partials/content-wrapper-open') %>
+
+<%
+  const userRoles = user.roles.map(role => role.rol.toLowerCase());
+  const isAdmin = userRoles.includes('admin');
+  const isSolicitante = userRoles.includes('solicitante');
+  const isComprador = userRoles.includes('comprador');
+  const canView = isAdmin || isSolicitante || isComprador;
+  const canEditDelete = isAdmin || isSolicitante;
+  const canCreateOrdenCompra = isAdmin || isComprador;
+  const canCreateNuevaSolicitud = isAdmin || isSolicitante;
+  const showSolicitanteColumn = !isSolicitante;
+%>
+
+<style>
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .badge-status i {
+    margin-right: 0.5rem;
+  }
+  .table thead th {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+  .table tbody td {
+    vertical-align: middle;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+  }
+  .table tbody td.asunto-column,
+  .table tbody td.descripcion-column {
+    text-align: left;
+  }
+  .ordenes-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    text-align: center;
+  }
+  .btn-group-actions .btn {
+    margin-right: 0.25rem;
+  }
+  .btn-group-actions .btn:last-child {
+    margin-right: 0;
+  }
+  .btn-primary, .btn-outline-primary, .btn-secondary, .btn-outline-secondary {
+    border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  .table-responsive {
+    overflow-x: auto;
+  }
+  .alert {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+  .alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+  .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: inherit;
+    opacity: 0.5;
+    cursor: pointer;
+  }
+  .btn-close:hover {
+    opacity: 0.75;
+  }
+  .disabled-link {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+</style>
+
+<div class="content-wrapper">
+  <div class="container-xxl flex-grow-1 container-p-y">
+    <div class="app-ordenes-archivadas alert-container">
+      <% if (successMessage && successMessage.length > 0) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= successMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      <% } %>
+      <% if (errorMessage && errorMessage.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= errorMessage %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      <% } %>
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+          <h4 class="mb-1">Órdenes Archivadas</h4>
+          <p class="mb-0">Órdenes que ya han sido aprobadas, rechazadas, pagadas, canceladas o cerradas.</p>
+        </div>
+        <div class="d-flex justify-content-end mt-3 mt-md-0">
+          <a href="/ordenes" class="btn btn-sm btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Regresar a Órdenes Activas
+          </a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div style="display: none;">
+            <select id="estatus-filter" class="form-select" style="width: 200px;">
+              <option value="">Filtrar por Estado</option>
+              <% 
+                const estatusSet = new Set();
+                ordenes.forEach(orden => {
+                  estatusSet.add(orden.estatus);
+                });
+                const estatusList = Array.from(estatusSet);
+                estatusList.forEach(estatus => { 
+              %>
+                <option value="<%= estatus %>"><%= estatus.charAt(0).toUpperCase() + estatus.slice(1) %></option>
+              <% }); %>
+            </select>
+          </div>
+          <div class="table-responsive">
+            <table id="table-ordenes-archivadas" class="table table-hover w-100">
+              <thead>
+                <tr>
+                  <th>OC</th>
+                  <th>Solicitud</th>
+                  <th>Creador OC</th>
+                  <th>Correo Creador OC</th>
+                  <th>PDF OC</th>
+                  <th class="estado-column">Estado</th>
+                  <th>Fecha Creación</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (ordenes.length > 0) { %>
+                  <% ordenes.forEach(orden => { %>
+                    <% 
+                      let estatusLower = orden.estatus.toLowerCase();
+                      let estatusClass = '';
+                      let estatusDisplay = orden.estatus.charAt(0).toUpperCase() + orden.estatus.slice(1);
+                      let estatusIcon = '';
+                      if (estatusLower === 'pendiente') {
+                        estatusClass = 'bg-warning';
+                        estatusIcon = 'fas fa-exclamation-circle';
+                      } else if (estatusLower === 'aprobada') {
+                        estatusClass = 'bg-success';
+                        estatusIcon = 'fas fa-check-circle';
+                      } else if (estatusLower === 'rechazada') {
+                        estatusClass = 'bg-danger';
+                        estatusIcon = 'fas fa-times-circle';
+                      } else if (estatusLower === 'pagada') {
+                        estatusClass = 'bg-primary';
+                        estatusIcon = 'fas fa-money-check-alt';
+                      } else if (estatusLower === 'cerrada') {
+                        estatusClass = 'bg-secondary';
+                        estatusIcon = 'fas fa-lock';
+                      }
+                    %>
+                    <tr data-id="<%= orden.id_orden %>">
+                      <td><%= orden.oc %></td>
+                      <td>
+                        <a href="/solicitudes/<%= orden.id_solicitud %>">#<%= orden.nro_solicitud %></a>
+                      </td>
+                      <td><%= orden.usuario_creador %></td>
+                      <td><%= orden.correo_creador %></td>
+                      <td>
+                        <% if (orden.ruta_archivo_pdf) { %>
+                          <a href="<%= orden.ruta_archivo_pdf %>" target="_blank" rel="noreferrer">VER PDF</a>
+                        <% } else { %>
+                          <span class="pdf-status">Cargando PDF...</span>
+                        <% } %>
+                      </td>
+                      <td class="estado-column">
+                        <% if (estatusClass) { %>
+                          <span class="badge <%= estatusClass %> badge-status text-white">
+                            <i class="<%= estatusIcon %>"></i> <%= estatusDisplay %>
+                          </span>
+                        <% } %>
+                      </td>
+                      <td><%= orden.created_at %></td>
+                      <td class="actions-column">
+                        <div class="btn-group btn-group-actions" role="group">
+                          <% if (canView) { %>
+                            <a href="/ordenes/<%= orden.id_orden %>" class="btn btn-sm btn-outline-primary btn-view" title="Ver Orden" aria-label="Ver Orden <%= orden.oc %>">
+                              <i class="fas fa-eye"></i>
+                            </a>
+                          <% } %>
+                          <% if (canEditDelete) { %>
+                            <% if (['pendiente'].includes(estatusLower)) { %>
+                              <% if (orden.puedeCancelar) { %>
+                                <a href="/ordenes-cancelar/<%= orden.id_orden %>" class="btn btn-sm btn-outline-danger btn-cancelar" title="Cancelar Orden" aria-label="Cancelar Orden <%= orden.oc %>">
+                                  <i class="fas fa-times"></i>
+                                </a>
+                              <% } else { %>
+                                <button class="btn btn-sm btn-outline-danger" title="No se puede cancelar porque ya inició el proceso de aprobación" aria-label="Cancelar Orden <%= orden.oc %>" disabled>
+                                  <i class="fas fa-times"></i>
+                                </button>
+                              <% } %>
+                            <% } else { %>
+                              <button type="button" class="btn btn-sm btn-outline-secondary btn-archivar" title="Archivar Orden" aria-label="Archivar Orden <%= orden.oc %>" data-id="<%= orden.id_orden %>">
+                                <i class="fas fa-archive"></i>
+                              </button>
+                            <% } %>
+                          <% } %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }); %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="8" class="text-center">No hay órdenes archivadas disponibles.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="content-backdrop fade"></div>
+</div>
+
+<%- include('partials/footer-text') %>
+<%- include('partials/footer') %>
+<%- include('partials/content-wrapper-close') %>
+
+<script>
+  $(document).ready(function () {
+    var columnDefs = [
+      {
+        targets: 'estado-column',
+        render: function (data, type, row, meta) {
+          if (type === 'filter' || type === 'sort') {
+            return $(data).text().trim();
+          }
+          return data;
+        },
+        responsivePriority: 2
+      },
+      {
+        targets: 'actions-column',
+        orderable: false,
+        responsivePriority: 1
+      },
+      {
+        targets: 'oc-column',
+        className: 'oc-column',
+        responsivePriority: 3
+      },
+      {
+        targets: 'solicitud-column',
+        className: 'solicitud-column',
+        responsivePriority: 4
+      },
+      {
+        targets: 'archivos-column',
+        responsivePriority: 5
+      },
+    ];
+
+    if (<%= showSolicitanteColumn ? 'true' : 'false' %>) {
+      columnDefs.push({
+        targets: 'solicitante-column',
+        responsivePriority: 6
+      });
+    }
+
+    columnDefs.push({
+      targets: '_all',
+      responsivePriority: 7
+    });
+
+    var tableArchivadas = $("#table-ordenes-archivadas").DataTable({
+      responsive: true,
+      autoWidth: false,
+      language: {
+        url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
+        search: "",
+        emptyTable: "No hay órdenes archivadas disponibles."
+      },
+      pageLength: 10,
+      lengthChange: false,
+      order: [[0, "desc"]],
+      columnDefs: columnDefs,
+      initComplete: function () {
+        var estatusFilter = $('#estatus-filter').detach();
+        var dataTableFilter = $('#table-ordenes-archivadas_filter');
+        var searchInput = dataTableFilter.find('input').detach();
+        dataTableFilter.empty();
+        var filterContainer = $('<div class="d-flex align-items-center"></div>');
+        var searchInputGroup = $('<div class="input-group me-2"></div>');
+        var searchIcon = $('<span class="input-group-text"><i class="fas fa-search"></i></span>');
+        searchInput.addClass('form-control').attr('placeholder', 'Buscar...').css('width', 'auto');
+        searchInputGroup.append(searchIcon).append(searchInput);
+        estatusFilter.addClass('form-select').css({
+          'width': 'auto',
+          'min-width': '200px',
+        });
+        filterContainer.append(searchInputGroup).append(estatusFilter);
+        dataTableFilter.append(filterContainer);
+        dataTableFilter.css('float', 'left');
+      }
+    });
+
+    function closeAlerts(delay) {
+      setTimeout(function () {
+        $('.app-ordenes-archivadas').find('.alert.alert-danger, .alert.alert-success').each(function(){
+          var bootstrapAlert = bootstrap.Alert.getInstance(this);
+          if (bootstrapAlert) {
+            bootstrapAlert.close();
+          }
+        });
+      }, delay);
+    }
+
+    closeAlerts(3000);
+
+    function showAlert(type, message) {
+      $('.app-ordenes-archivadas').find('.alert').remove();
+
+      var alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+        </div>
+      `;
+      var $newAlert = $(alertHtml);
+      $('.app-ordenes-archivadas').prepend($newAlert);
+
+      setTimeout(function () {
+        $newAlert.alert('close');
+      }, 5000);
+    }
+
+    $('#estatus-filter').on('change', function () {
+      var estatus = $(this).val();
+      tableArchivadas.column('.estado-column').search(estatus).draw();
+    });
+
+    $('.btn-archivar').on('click', function (e) {
+      e.preventDefault();
+      var ordenId = $(this).data('id');
+      var $button = $(this);
+
+      $.ajax({
+        url: '/ordenes-archivar/' + ordenId,
+        type: 'POST',
+        success: function (response) {
+          showAlert('success', 'Orden archivada exitosamente.');
+          tableArchivadas.row($button.parents('tr')).remove().draw();
+        },
+        error: function (xhr, status, error) {
+          showAlert('danger', 'Error al archivar la orden: ' + xhr.responseText);
+        }
+      });
+    });
+
+    $('.btn-cancelar').on('click', function (e) {
+      var $link = $(this);
+      if (!$link.hasClass('disabled')) {
+        $link.addClass('disabled');
+        $link.css('pointer-events', 'none');
+      }
+    });
+
+    $('.btn-view').on('click', function (e) {
+      var $link = $(this);
+      if (!$link.hasClass('disabled-link')) {
+        $link.addClass('disabled-link');
+      }
+    });
+
+    var pdfFailCounts = {};
+
+    function checkPdfStatusArchivadas() {
+      var ordenesSinPdf = [];
+      $('#table-ordenes-archivadas tbody tr').each(function () {
+        var $row = $(this);
+        var pdfStatus = $row.find('.pdf-status');
+        if (pdfStatus.length > 0) {
+          var ordenId = $row.data('id');
+          ordenesSinPdf.push(ordenId);
+        }
+      });
+
+      if (ordenesSinPdf.length > 0) {
+        $.ajax({
+          url: '/ordenes/check-pdf-status',
+          method: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ ordenes: ordenesSinPdf }),
+          success: function (response) {
+            response.forEach(function (orden) {
+              if (orden.ruta_archivo_pdf) {
+                var $row = $('#table-ordenes-archivadas tbody tr[data-id="' + orden.id_orden + '"]');
+                var pdfCell = $row.find('.pdf-status').closest('td');
+                pdfCell.html('<a href="' + orden.ruta_archivo_pdf + '" target="_blank" rel="noreferrer">VER PDF</a>');
+                pdfFailCounts[orden.id_orden] = 0;
+              } else {
+                if (!pdfFailCounts[orden.id_orden]) {
+                  pdfFailCounts[orden.id_orden] = 1;
+                } else {
+                  pdfFailCounts[orden.id_orden]++;
+                }
+                if (pdfFailCounts[orden.id_orden] >= 3) {
+                  var $row = $('#table-ordenes-archivadas tbody tr[data-id="' + orden.id_orden + '"]');
+                  var pdfCell = $row.find('.pdf-status').closest('td');
+                  pdfCell.text('Sin PDF');
+                }
+              }
+            });
+
+            var quedanOrdenesSinPdf = $('#table-ordenes-archivadas tbody tr').find('.pdf-status').length > 0;
+            if (!quedanOrdenesSinPdf) {
+              clearInterval(pdfStatusIntervalArchivadas);
+            }
+          },
+          error: function (err) {
+            console.error('Error al verificar el estado de los PDFs:', err);
+            ordenesSinPdf.forEach(function (ordenId) {
+              if (!pdfFailCounts[ordenId]) {
+                pdfFailCounts[ordenId] = 1;
+              } else {
+                pdfFailCounts[ordenId]++;
+              }
+
+              if (pdfFailCounts[ordenId] >= 3) {
+                var $row = $('#table-ordenes-archivadas tbody tr[data-id="' + ordenId + '"]');
+                var pdfCell = $row.find('.pdf-status').closest('td');
+                pdfCell.text('Sin PDF');
+              }
+            });
+          }
+        });
+      } else {
+        clearInterval(pdfStatusIntervalArchivadas);
+      }
+    }
+
+    var pdfStatusIntervalArchivadas = setInterval(checkPdfStatusArchivadas, 5000);
+  });
+</script>

@@ -51,6 +51,18 @@ class SolicitudesService {
       archivos
     );
   }
+
+  async getArchivedSolicitudes(filtros = {}) {
+    return await this.solicitudesRepository.getArchivedSolicitudes(filtros);
+  }
+
+  async archiveSolicitud(id) {
+    return await this.solicitudesRepository.archiveSolicitud(id);
+  }
+
+  async desarchiveSolicitud(id) {
+    return await this.solicitudesRepository.desarchiveSolicitud(id);
+  }
 }
 
 export default SolicitudesService;
