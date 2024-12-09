@@ -126,7 +126,7 @@ class CentroCostoController {
   activarCentroCosto = async (req, res) => {
     try {
       const id = req.params.id;
-      await this.centroCostoService.actualizarEstatus(id, "Activo");
+      await this.centroCostoService.actualizarEstatus(id, "1");
       res.redirect("/administracion/centrocostos");
     } catch (error) {
       console.error("Error al activar Centro de Costo:", error);
@@ -138,7 +138,7 @@ class CentroCostoController {
   desactivarCentroCosto = async (req, res) => {
     try {
       const id = req.params.id;
-      await this.centroCostoService.actualizarEstatus(id, "Inactivo");
+      await this.centroCostoService.actualizarEstatus(id, "0");
       res.redirect("/administracion/centrocostos");
     } catch (error) {
       console.error("Error al desactivar Centro de Costo:", error);

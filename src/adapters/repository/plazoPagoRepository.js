@@ -55,15 +55,14 @@ class PlazoPagoRepository {
       await pool
         .request()
         .input("nombre", sql.VarChar, datos.nombre)
-        .input("cambio", sql.VarChar, datos.cambio)
         .input("estatus_forma_pago", sql.Bit, datos.estatus_forma_pago)
         .input("fecha_creacion", sql.Date, datos.fecha_creacion)
         .input("fecha_actualizacion", sql.Date, datos.fecha_actualizacion)
         .query(`
           INSERT INTO ${this.tabla} 
-            (nombre, cambio, estatus_forma_pago, fecha_creacion, fecha_actualizacion)
+            (nombre, estatus_forma_pago, fecha_creacion, fecha_actualizacion)
           VALUES 
-            (@nombre, @cambio, @estatus_forma_pago, @fecha_creacion, @fecha_actualizacion)
+            (@nombre, @estatus_forma_pago, @fecha_creacion, @fecha_actualizacion)
         `);
     } catch (error) {
       console.error("Error en PlazoPagoRepository.create:", error);
@@ -79,14 +78,12 @@ class PlazoPagoRepository {
         .request()
         .input("id_forma_pago", sql.Int, id_forma_pago)
         .input("nombre", sql.VarChar, datos.nombre)
-        .input("cambio", sql.VarChar, datos.cambio)
         .input("estatus_forma_pago", sql.Bit, datos.estatus_forma_pago)
         .input("fecha_actualizacion", sql.Date, datos.fecha_actualizacion)
         .query(`
           UPDATE ${this.tabla}
           SET 
             nombre = @nombre,
-            cambio = @cambio,
             estatus_forma_pago = @estatus_forma_pago,
             fecha_actualizacion = @fecha_actualizacion
           WHERE id_forma_pago = @id_forma_pago

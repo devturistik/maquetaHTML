@@ -90,7 +90,7 @@
                 <td><%= banco.iban_cuenta %></td>
                 <td class="correo-column"><%= banco.correo_banco %></td>
                 <td class="estatus-column">
-                  <% if (banco.estatus_banco.toLowerCase() === "activo") { %>
+                  <% if (banco.estatus_banco.toLowerCase() === "1") { %>
                     <span class="badge bg-success">Activo</span>
                   <% } else { %>
                     <span class="badge bg-secondary">Inactivo</span>

@@ -81,7 +81,7 @@
                 <td><%= cc.codigo_centro_costo %></td>
                 <td class="nombre-column"><%= cc.nombre %></td>
                 <td class="estatus-column">
-                  <% if (cc.estatus === 'Activo') { %>
+                  <% if (cc.estatus === '1') { %>
                     <span class="badge bg-success">Activo</span>
                   <% } else { %>
                     <span class="badge bg-secondary">Inactivo</span>
@@ -102,7 +102,7 @@
                        class="btn btn-sm btn-outline-primary" title="Editar">
                       <i class="fas fa-edit"></i>
                     </a>
-                    <% if (cc.estatus === 'Activo') { %>
+                    <% if (cc.estatus === '1') { %>
                       <form action="/administracion/centrocostos/<%= cc.id_centro_costo %>/desactivar" 
                             method="POST" style="display:inline;" 
                             onsubmit="return confirm('¿Estás seguro de desactivar este centro de costo?');">

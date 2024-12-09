@@ -89,7 +89,7 @@ class CentroCostoRepository {
   async create(datos) {
     try {
       const pool = await poolPromise;
-      const monto = datos.monto != null ? datos.monto : 0.0; // Valor predeterminado
+      const monto = datos.monto != null ? datos.monto : 0.0;
       await pool
         .request()
         .input("codigo_centro_costo", sql.NVarChar, datos.codigo_centro_costo)
@@ -98,9 +98,9 @@ class CentroCostoRepository {
         .input("id_gerente", sql.Int, datos.id_gerente)
         .input("nivel", sql.Int, datos.nivel)
         .input("monto", sql.Decimal(18, 2), monto).query(`
-          INSERT INTO ${this.tabla} 
+          INSERT INTO ${this.tabla}
             (codigo_centro_costo, nombre, estatus, id_gerente, create_at, create_update, nivel, monto)
-          VALUES 
+          VALUES
             (@codigo_centro_costo, @nombre, @estatus, @id_gerente, GETDATE(), GETDATE(), @nivel, @monto)
         `);
     } catch (error) {

@@ -26,29 +26,18 @@ class PlazoPagoController {
   // Crear un nuevo PlazoPago
   crearPlazoPago = async (req, res) => {
     try {
-      const { nombre, cambio } = req.body;
+      const { nombre } = req.body;
 
       // Validaciones básicas
-      if (!nombre || cambio === undefined) {
+      if (!nombre) {
         return res.render("administracion/plazopago/crear", {
           error: "Todos los campos son obligatorios.",
           data: req.body,
         });
       }
 
-      // Validar formato de cambio (por ejemplo, números y decimales)
-      const cambioRegex = /^\d+(\.\d{1,2})?$/;
-      if (!cambioRegex.test(cambio)) {
-        return res.render("administracion/plazopago/crear", {
-          error:
-            "Ingrese un valor de cambio válido (números con hasta 2 decimales).",
-          data: req.body,
-        });
-      }
-
       await this.plazoPagoService.crearPlazoPago({
         nombre,
-        cambio,
         estatus_forma_pago: 1, // Por defecto, activo
         fecha_creacion: new Date(),
         fecha_actualizacion: new Date(),
@@ -79,10 +68,10 @@ class PlazoPagoController {
   actualizarPlazoPago = async (req, res) => {
     try {
       const id = req.params.id;
-      const { nombre, cambio, estatus_forma_pago } = req.body;
+      const { nombre, estatus_forma_pago } = req.body;
 
       // Validaciones básicas
-      if (!nombre || cambio === undefined || estatus_forma_pago === undefined) {
+      if (!nombre || estatus_forma_pago === undefined) {
         const plazoPago = await this.plazoPagoService.obtenerPlazoPagoPorId(id);
         return res.render("administracion/plazopago/editar", {
           plazoPago,
@@ -90,20 +79,8 @@ class PlazoPagoController {
         });
       }
 
-      // Validar formato de cambio (números y decimales)
-      const cambioRegex = /^\d+(\.\d{1,2})?$/;
-      if (!cambioRegex.test(cambio)) {
-        const plazoPago = await this.plazoPagoService.obtenerPlazoPagoPorId(id);
-        return res.render("administracion/plazopago/editar", {
-          plazoPago,
-          error:
-            "Ingrese un valor de cambio válido (números con hasta 2 decimales).",
-        });
-      }
-
       await this.plazoPagoService.actualizarPlazoPago(id, {
         nombre,
-        cambio,
         estatus_forma_pago: estatus_forma_pago === "1" ? 1 : 0,
         fecha_actualizacion: new Date(),
       });

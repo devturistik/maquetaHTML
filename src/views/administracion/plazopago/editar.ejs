@@ -16,10 +16,6 @@
       <input type="text" class="form-control" id="nombre" name="nombre" value="<%= plazoPago.nombre %>" required>
     </div>
     <div class="mb-3">
-      <label for="cambio" class="form-label">Cambio</label>
-      <input type="text" class="form-control" id="cambio" name="cambio" value="<%= plazoPago.cambio %>" required>
-    </div>
-    <div class="mb-3">
       <label for="estatus_forma_pago" class="form-label">Estatus</label>
       <select class="form-select" id="estatus_forma_pago" name="estatus_forma_pago" required>
         <option value="1" <%= plazoPago.estatus_forma_pago === 1 ? 'selected' : '' %>>Activo</option>

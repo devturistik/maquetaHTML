@@ -18,10 +18,10 @@ class TipoOrdenController {
         nombre,
         estatus_tipo_orden: estatus_tipo_orden === "on",
         created_at: new Date(),
-        creado_por: req.user.nombre, // Asegúrate de tener el usuario
+        creado_por: res.locals.user.nombre,
       };
 
-      const parsedDetalles = JSON.parse(detalles); // Debe ser un array de objetos
+      const parsedDetalles = JSON.parse(detalles);
       await this.tipoOrdenService.crearTipoOrdenConDetalles(
         datosTipoOrden,
         parsedDetalles

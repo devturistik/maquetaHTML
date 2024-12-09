@@ -42,8 +42,8 @@
     <div class="mb-3">
       <label for="estatus_empresa" class="form-label">Estatus</label>
       <select class="form-select" id="estatus_empresa" name="estatus_empresa" required>
-        <option value="Activo" <%= empresa.estatus_empresa === 'Activo' ? 'selected' : '' %>>Activo</option>
-        <option value="Inactivo" <%= empresa.estatus_empresa === 'Inactivo' ? 'selected' : '' %>>Inactivo</option>
+        <option value="1" <%= empresa.estatus_empresa === 'Activo' ? 'selected' : '' %>>Activo</option>
+        <option value="0" <%= empresa.estatus_empresa === 'Inactivo' ? 'selected' : '' %>>Inactivo</option>
       </select>
     </div>
     <button type="submit" class="btn btn-primary">Actualizar Empresa</button>

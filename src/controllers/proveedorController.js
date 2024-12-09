@@ -115,6 +115,9 @@ class ProveedorController {
         });
       }
 
+      estatus_proveedor = estatus_proveedor === "Activo" ? 1 : estatus_proveedor;
+      estatus_proveedor = estatus_proveedor === "Inactivo" ? 0 : estatus_proveedor;
+
       // Validar formato de correo
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(correo_principal)) {
@@ -144,7 +147,7 @@ class ProveedorController {
   activarProveedor = async (req, res) => {
     try {
       const id = req.params.id;
-      await this.proveedorService.actualizarEstatus(id, "Activo");
+      await this.proveedorService.actualizarEstatus(id, "1");
       res.redirect("/administracion/proveedor");
     } catch (error) {
       console.error("Error al activar Proveedor:", error);
@@ -156,7 +159,7 @@ class ProveedorController {
   desactivarProveedor = async (req, res) => {
     try {
       const id = req.params.id;
-      await this.proveedorService.actualizarEstatus(id, "Inactivo");
+      await this.proveedorService.actualizarEstatus(id, "0");
       res.redirect("/administracion/proveedor");
     } catch (error) {
       console.error("Error al desactivar Proveedor:", error);

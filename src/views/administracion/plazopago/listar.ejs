@@ -69,7 +69,6 @@
               <th class="estatus-column">Estatus</th>
               <th>Fecha Creación</th>
               <th>Fecha Actualización</th>
-              <th>Cambio</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -87,7 +86,6 @@
                 </td>
                 <td><%= plazoPago.fecha_creacion ? new Date(plazoPago.fecha_creacion).toLocaleDateString() : '---' %></td>
                 <td><%= plazoPago.fecha_actualizacion ? new Date(plazoPago.fecha_actualizacion).toLocaleDateString() : '---' %></td>
-                <td><%= plazoPago.cambio %></td>
                 <td>
                   <div class="btn-group" role="group">
                     <a href="/administracion/plazopago/<%= plazoPago.id_forma_pago %>/editar" 

@@ -15,10 +15,6 @@
       <label for="nombre" class="form-label">Nombre</label>
       <input type="text" class="form-control" id="nombre" name="nombre" value="<%= typeof data !== 'undefined' ? data.nombre : '' %>" required>
     </div>
-    <div class="mb-3">
-      <label for="cambio" class="form-label">Cambio</label>
-      <input type="text" class="form-control" id="cambio" name="cambio" value="<%= typeof data !== 'undefined' ? data.cambio : '' %>" required>
-    </div>
     <button type="submit" class="btn btn-primary">Crear PlazoPago</button>
     <a href="/administracion/plazopago" class="btn btn-secondary">Cancelar</a>
   </form>

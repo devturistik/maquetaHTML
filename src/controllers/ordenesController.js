@@ -521,8 +521,13 @@ class OrdenesController {
                         }))
                       )
                     : [];
+
                 const documentosCotizacion = JSON.stringify(
-                  documentosCotizacionURLs.map((url) => ({ url, eliminado: 0 }))
+                  documentosCotizacionURLs.map((url, index) => ({
+                    url,
+                    originalFileName: req.files[index].originalname,
+                    eliminado: 0,
+                  }))
                 );
 
                 await this.ordenesService.updateOrdenDocumentosCotizacion(

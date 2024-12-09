@@ -60,8 +60,6 @@
               <th>ID</th>
               <th class="abrev-column">Abrev.</th>
               <th class="nombre-column">Nombre</th>
-              <th>Fecha Creación</th>
-              <th>Fecha Sistema</th>
               <th>Cambio</th>
               <th>Acciones</th>
             </tr>
@@ -72,8 +70,6 @@
                 <td><%= moneda.id_moneda %></td>
                 <td class="abrev-column"><%= moneda.abrev %></td>
                 <td class="nombre-column"><%= moneda.nombre %></td>
-                <td><%= moneda.fecha_creacion ? new Date(moneda.fecha_creacion).toLocaleDateString() : '---' %></td>
-                <td><%= moneda.fecha_sistema ? new Date(moneda.fecha_sistema).toLocaleString() : '---' %></td>
                 <td><%= moneda.cambio %></td>
                 <td>
                   <div class="btn-group" role="group">

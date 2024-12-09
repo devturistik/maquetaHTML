@@ -8,7 +8,7 @@
   <form action="/administracion/centrocostos/<%= centroCosto.id_centro_costo %>" method="POST">
     <div class="mb-3">
       <label for="codigo_centro_costo" class="form-label">Código del Centro de Costo</label>
-      <input type="text" class="form-control" id="codigo_centro_costo" name="codigo_centro_costo" value="<%= centroCosto.codigo_centro_costo %>" required>
+      <input type="text" class="form-control" id="codigo_centro_costo" name="codigo_centro_costo" value="<%= centroCosto.codigo_centro_costo %>">
     </div>
     <div class="mb-3">
       <label for="nombre" class="form-label">Nombre</label>
@@ -17,8 +17,8 @@
     <div class="mb-3">
       <label for="estatus" class="form-label">Estatus</label>
       <select class="form-select" id="estatus" name="estatus" required>
-        <option value="Activo" <%= centroCosto.estatus === 'Activo' ? 'selected' : '' %>>Activo</option>
-        <option value="Inactivo" <%= centroCosto.estatus === 'Inactivo' ? 'selected' : '' %>>Inactivo</option>
+        <option value="1" <%= centroCosto.estatus === 'Activo' ? 'selected' : '' %>>Activo</option>
+        <option value="0" <%= centroCosto.estatus === 'Inactivo' ? 'selected' : '' %>>Inactivo</option>
       </select>
     </div>
     <div class="mb-3">

@@ -21,7 +21,7 @@
     </div>
     <div class="mb-3">
       <label for="giro" class="form-label">Giro</label>
-      <input type="text" class="form-control" id="giro" name="giro" value="<%= typeof data !== 'undefined' ? data.giro : '' %>" required>
+      <input type="text" class="form-control" id="giro" name="giro" value="<%= typeof data !== 'undefined' ? data.giro : '' %>">
     </div>
     <div class="mb-3">
       <label for="direccion" class="form-label">Dirección</label>
@@ -29,11 +29,11 @@
     </div>
     <div class="mb-3">
       <label for="telefono" class="form-label">Teléfono</label>
-      <input type="text" class="form-control" id="telefono" name="telefono" value="<%= typeof data !== 'undefined' ? data.telefono : '' %>" required>
+      <input type="text" class="form-control" id="telefono" name="telefono" value="<%= typeof data !== 'undefined' ? data.telefono : '' %>">
     </div>
     <div class="mb-3">
       <label for="correo" class="form-label">Correo</label>
-      <input type="email" class="form-control" id="correo" name="correo" value="<%= typeof data !== 'undefined' ? data.correo : '' %>" required>
+      <input type="email" class="form-control" id="correo" name="correo" value="<%= typeof data !== 'undefined' ? data.correo : '' %>">
     </div>
     <div class="mb-3">
       <label for="encargado" class="form-label">Encargado</label>
@@ -42,8 +42,8 @@
     <div class="mb-3">
       <label for="estatus_empresa" class="form-label">Estatus</label>
       <select class="form-select" id="estatus_empresa" name="estatus_empresa" required>
-        <option value="Activo" <%= (typeof data !== 'undefined' && data.estatus_empresa === 'Activo') ? 'selected' : '' %>>Activo</option>
-        <option value="Inactivo" <%= (typeof data !== 'undefined' && data.estatus_empresa === 'Inactivo') ? 'selected' : '' %>>Inactivo</option>
+        <option value="1" <%= (typeof data !== 'undefined' && data.estatus_empresa === 'Activo') ? 'selected' : '' %>>Activo</option>
+        <option value="0" <%= (typeof data !== 'undefined' && data.estatus_empresa === 'Inactivo') ? 'selected' : '' %>>Inactivo</option>
       </select>
     </div>
     <button type="submit" class="btn btn-primary">Crear Empresa</button>
