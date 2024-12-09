@@ -4,38 +4,65 @@
 <%- include('../../partials/content-wrapper-open') %>
 
 <style>
-  /* Estilos generales de la tabla */
+  .container-xxl {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 0.75rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .table {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
   .table thead th {
     text-align: center;
     vertical-align: middle;
-    background-color: #f8f9fa;
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
-  }
-  .table tbody td {
-    vertical-align: middle;
-    text-align: center;
-    border-bottom: 1px solid #dee2e6;
+    background-color: #007bff;
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
   }
 
-  /* Estilos específicos para columnas */
+  .table tbody tr {
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .table tbody tr:hover {
+    background-color: #f1f5f9;
+  }
+
+  .table tbody td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 10px;
+    border: none;
+  }
+
   .nombre-column {
     text-align: left;
-    white-space: normal;
-    word-wrap: break-word;
   }
 
-  /* Estilo para botones */
-  .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
+  .btn-group .btn {
+    margin-right: 5px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-group .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  #tablaCuentas_filter input {
     border-radius: 0.5rem;
+    border: 1px solid #ced4da;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
 
-  /* Responsividad */
   @media (max-width: 767.98px) {
     .nombre-column {
       max-width: 150px;
+      word-break: break-word;
     }
     .table th, .table td {
       font-size: 0.875rem;
@@ -46,12 +73,12 @@
 <div class="container-xxl flex-grow-1 container-p-y">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Listado de Cuentas</h4>
-    <a href="/administracion/cuentas/nuevo" class="btn btn-primary d-flex align-items-center">
+    <a href="/administracion/cuentas/nuevo" class="btn btn-primary d-flex align-items-center shadow">
       <i class="fas fa-plus me-1"></i> Nueva Cuenta
     </a>
   </div>
 
-  <div class="card">
+  <div class="card shadow">
     <div class="card-body">
       <div class="table-responsive">
         <table class="table table-hover w-100" id="tablaCuentas">
@@ -72,7 +99,7 @@
                 <td>
                   <div class="btn-group" role="group">
                     <a href="/administracion/cuentas/<%= cuenta.id_cuenta %>/editar" 
-                       class="btn btn-sm btn-outline-primary" title="Editar">
+                       class="btn btn-sm btn-outline-primary shadow" title="Editar">
                       <i class="fas fa-edit"></i>
                     </a>
                   </div>

@@ -4,45 +4,71 @@
 <%- include('../../partials/content-wrapper-open') %>
 
 <style>
-  /* Estilos generales de la tabla */
+  .container-xxl {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 0.75rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .table {
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
   .table thead th {
     text-align: center;
     vertical-align: middle;
-    background-color: #f8f9fa;
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
+    background-color: #007bff;
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
   }
+
+  .table tbody tr {
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .table tbody tr:hover {
+    background-color: #f1f5f9;
+  }
+
   .table tbody td {
-    vertical-align: middle;
     text-align: center;
-    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+    padding: 10px;
+    border: none;
   }
-  
-  /* Estilo para las columnas */
+
   .nombre-column {
     text-align: left;
-    white-space: normal;
-    word-wrap: break-word;
   }
-  
-  /* Estilo de estatus */
+
   .estatus-column .badge {
     font-size: 0.875rem;
-    padding: 0.5rem 1rem;
+    padding: 0.3rem 0.75rem;
     border-radius: 0.5rem;
   }
 
-  /* Estilos de botones */
-  .btn-sm {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    border-radius: 0.5rem;
+  .btn-group .btn {
+    margin-right: 5px;
+    transition: all 0.2s ease;
   }
 
-  /* Estilo para responsividad */
+  .btn-group .btn:hover {
+    transform: translateY(-2px);
+  }
+
+  #tablaBancos_filter input {
+    border-radius: 0.5rem;
+    border: 1px solid #ced4da;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
   @media (max-width: 767.98px) {
     .nombre-column {
       max-width: 150px;
+      word-break: break-word;
     }
   }
 </style>
@@ -50,11 +76,12 @@
 <div class="container-xxl flex-grow-1 container-p-y">
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h4 class="mb-0">Listado de Bancos</h4>
-    <a href="/administracion/bancos/nuevo" class="btn btn-primary d-flex align-items-center">
+    <a href="/administracion/bancos/nuevo" class="btn btn-primary d-flex align-items-center shadow">
       <i class="fas fa-plus me-1"></i> Nuevo Banco
     </a>
   </div>
-  <div class="card">
+
+  <div class="card shadow">
     <div class="card-body">
       <div class="table-responsive">
         <table class="table table-hover w-100" id="tablaBancos">
@@ -81,14 +108,14 @@
                 <td>
                   <div class="btn-group" role="group">
                     <a href="/administracion/bancos/<%= banco.id_banco %>/editar" 
-                       class="btn btn-sm btn-outline-primary" title="Editar">
+                       class="btn btn-sm btn-outline-primary shadow" title="Editar">
                       <i class="fas fa-edit"></i>
                     </a>
                     <% if (banco.estatus === 1) { %>
                       <form action="/administracion/bancos/<%= banco.id_banco %>/desactivar" 
                             method="POST" style="display:inline;" 
                             onsubmit="return confirm('¿Estás seguro de desactivar este banco?');">
-                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Desactivar">
+                        <button type="submit" class="btn btn-sm btn-outline-warning shadow" title="Desactivar">
                           <i class="fas fa-ban"></i>
                         </button>
                       </form>
@@ -96,7 +123,7 @@
                       <form action="/administracion/bancos/<%= banco.id_banco %>/activar" 
                             method="POST" style="display:inline;" 
                             onsubmit="return confirm('¿Estás seguro de activar este banco?');">
-                        <button type="submit" class="btn btn-sm btn-outline-success" title="Activar">
+                        <button type="submit" class="btn btn-sm btn-outline-success shadow" title="Activar">
                           <i class="fas fa-check-circle"></i>
                         </button>
                       </form>
